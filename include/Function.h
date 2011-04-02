@@ -1,5 +1,5 @@
-#ifndef _FUNCTION_HPP_
-#define _FUNCTION_HPP_
+#ifndef FUNCTION_H_
+#define FUNCTION_H_
 
 #include "Scope.h"
 #include "GenericException.hpp"
@@ -31,7 +31,6 @@ public:
 
     virtual void Project(const Scope &s) = 0;
 
-//    virtual void Multiply(const Function &f) = 0;
 };
 
 } // end of aomdd namespace

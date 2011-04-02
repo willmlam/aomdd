@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef _GENERICEXCEPTION_HPP_
-#define _GENERICEXCEPTION_HPP_
+#ifndef GENERICEXCEPTION_HPP_
+#define GENERICEXCEPTION_HPP_
 
 #include <exception>
 
@@ -35,4 +35,4 @@ namespace aomdd {
 }
 
 
-#endif
+#endif /* GENERICEXCEPCTION_HPP_

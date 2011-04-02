@@ -16,7 +16,8 @@
 #endif
 
 #include "base.h"
-#include "Model.hpp"
+#include "Model.h"
+#include "Scope.h"
 #include <sstream>
 #include <fstream>
 

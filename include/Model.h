@@ -1,5 +1,5 @@
 /*
- *  Model.hpp
+ *  Model.h
  *  aomdd
  *
  *  Created by William Lam on Mar 31, 2011
@@ -9,11 +9,11 @@
 
 // Represents graphical models using table functions
 
-#ifndef MODEL_HPP_
-#define MODEL_HPP_
+#ifndef MODEL_H_
+#define MODEL_H_
 
 #include "base.h"
-#include "TableFunction.hpp"
+#include "TableFunction.h"
 
 namespace aomdd {
 
@@ -22,22 +22,16 @@ protected:
     std::vector<int> domains;
     std::vector<TableFunction> functions;
 public:
-    Model() {
-    }
+    Model();
 
-    Model(const std::vector<int> &domainsIn) :
-        domains(domainsIn) {
-    }
+    Model(const std::vector<int> &domainsIn);
 
     Model(const std::vector<int> &domainsIn,
-            const std::vector<TableFunction> &funcsIn) :
-        domains(domainsIn), functions(funcsIn) {
-    }
+            const std::vector<TableFunction> &funcsIn);
 
-    virtual ~Model() {
-    }
+    virtual ~Model();
 
-    const std::vector<TableFunction> &GetFunctions() {
+    inline const std::vector<TableFunction> &GetFunctions() {
         return functions;
     }
 

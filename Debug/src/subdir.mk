@@ -4,17 +4,23 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/Model.cpp \
 ../src/Scope.cpp \
+../src/TableFunction.cpp \
 ../src/parsers.cpp \
 ../src/utils.cpp 
 
 OBJS += \
+./src/Model.o \
 ./src/Scope.o \
+./src/TableFunction.o \
 ./src/parsers.o \
 ./src/utils.o 
 
 CPP_DEPS += \
+./src/Model.d \
 ./src/Scope.d \
+./src/TableFunction.d \
 ./src/parsers.d \
 ./src/utils.d 
 

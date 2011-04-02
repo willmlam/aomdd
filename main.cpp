@@ -1,9 +1,9 @@
 #include "Scope.h"
-#include "TableFunction.hpp"
+#include "TableFunction.h"
 #include "utils.h"
 #include "base.h"
 #include <iostream>
-#include "Model.hpp"
+#include "Model.h"
 using namespace aomdd;
 using namespace std;
 
