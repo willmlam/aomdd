@@ -25,9 +25,13 @@ public:
         return domain;
     }
 
-    virtual double GetVal(const Assignment &a) throw (GenericException) = 0;
+    virtual double GetVal(const Assignment &a) const = 0;
 
     virtual bool SetVal(const Assignment &a, double val) = 0;
+
+    virtual void Project(const Scope &s) = 0;
+
+//    virtual void Multiply(const Function &f) = 0;
 };
 
 } // end of aomdd namespace

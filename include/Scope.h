@@ -7,11 +7,13 @@ namespace aomdd {
 
 class Scope {
 protected:
-    enum oper { UNION, INTERSECT, DIFF };
+    enum oper {
+        UNION, INTERSECT, DIFF
+    };
 
-    std::map<int,unsigned int> varCard;
+    std::map<int, unsigned int> varCard;
     std::list<int> ordering;
-    
+
 public:
     Scope();
     Scope(const Scope &s);
@@ -19,7 +21,7 @@ public:
     // Provided the two scopes are compatible, perform the requested 
     // operation
     Scope(const Scope &lhs, const Scope &rhs, oper op);
-    ~Scope();
+    virtual ~Scope();
 
     // Add a variable if it does not already exist
     virtual bool AddVar(int i, unsigned int card);
@@ -30,6 +32,8 @@ public:
     // Check if a variable exists in the scope
     virtual bool VarExists(int i) const;
 
+    virtual bool IsEmpty() const { return varCard.empty(); }
+
     // Get the cardinality of a variable
     virtual unsigned int GetVarCard(int i) const;
 
@@ -38,7 +42,10 @@ public:
 
     // Check whether another scope has consistent cardinalities to this scope
     virtual bool HasConsistentCard(const Scope &rhs) const;
-    
+
+    // Get variable ordering
+    virtual const std::list<int> &GetOrdering() const;
+
     // Set variable ordering
     virtual void SetOrdering(const std::list<int> &ordering);
 
@@ -52,15 +59,17 @@ public:
 
 };
 
-class Assignment : public Scope {
+class Assignment: public Scope {
 protected:
-    std::map<int,int> varAssigns;
+    std::map<int, int> varAssigns;
 public:
     Assignment();
     Assignment(const Scope &s);
     Assignment(const Assignment &s);
 
     Assignment(const Assignment &lhs, const Assignment &rhs, oper op);
+
+//    virtual ~Assignment();
 
     // Add a variable if it does not already exist
     virtual bool AddVar(int i, unsigned int card);
@@ -73,6 +82,9 @@ public:
 
     // Set all variables to a specified value
     virtual void SetAllVal(unsigned int val);
+
+    // Set values to match the assignment passed in
+    virtual void SetAssign(const Assignment &a);
 
     // Unsets a value. (Sets it to UNKNOWN_VALUE)
     virtual bool UnsetVal(int i);
@@ -93,7 +105,7 @@ public:
     // Returns false if an unknown value is found or
     //   if the assignment wraps over
     virtual bool Iterate();
-    
+
     // Set variable ordering
     virtual void SetOrdering(const std::list<int> &ordering);
 

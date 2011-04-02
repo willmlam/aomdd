@@ -37,6 +37,10 @@ public:
     virtual ~Model() {
     }
 
+    const std::vector<TableFunction> &GetFunctions() {
+        return functions;
+    }
+
     // parsers
     void parseUAI(std::string filename);
 

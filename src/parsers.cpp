@@ -104,6 +104,13 @@ void Model::parseUAI(string filename) {
         } while(a.Iterate());
         cout << endl;
     }
+    list<int> newOrder;
+    newOrder.push_back(1);
+    newOrder.push_back(10);
+    newOrder.push_back(2);
+    newOrder.push_back(11);
+    newOrder.push_back(1);
+    newOrder.push_back(13);
 
     functions[nf-1].SetOrdering(newOrder);
     Assignment a(functions[nf-1].GetScope());
