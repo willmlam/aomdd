@@ -21,11 +21,11 @@ public:
     virtual ~Function() {
     }
 
-    const Scope &GetScope() {
+    const Scope &GetScope() const {
         return domain;
     }
 
-    virtual double GetVal(const Assignment &a) const = 0;
+    virtual double GetVal(const Assignment &a, bool logOut = false) const = 0;
 
     virtual bool SetVal(const Assignment &a, double val) = 0;
 

@@ -24,7 +24,7 @@ public:
 
     virtual ~TableFunction();
 
-    virtual double GetVal(const Assignment &a) const;
+    virtual double GetVal(const Assignment &a, bool logOut = false) const;
 
     virtual bool SetVal(const Assignment &a, double val);
 

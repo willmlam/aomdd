@@ -35,4 +35,4 @@ namespace aomdd {
 }
 
 
-#endif /* GENERICEXCEPCTION_HPP_
+#endif /* GENERICEXCEPCTION_HPP_*/

@@ -21,6 +21,7 @@ class Model {
 protected:
     std::vector<int> domains;
     std::vector<TableFunction> functions;
+    std::list<int> ordering;
 public:
     Model();
 
@@ -31,12 +32,16 @@ public:
 
     virtual ~Model();
 
-    inline const std::vector<TableFunction> &GetFunctions() {
+    inline const std::vector<TableFunction> &GetFunctions() const {
         return functions;
     }
 
+    void SetOrdering(const std::list<int> &orderIn);
+
     // parsers
     void parseUAI(std::string filename);
+
+    void Save(std::ostream &out);
 
 };
 

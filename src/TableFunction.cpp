@@ -10,24 +10,26 @@
 #include "TableFunction.h"
 
 namespace aomdd {
+using namespace std;
+
 TableFunction::TableFunction() {
 }
 
 TableFunction::TableFunction(const Scope &domainIn) :
-Function(domainIn) {
+    Function(domainIn) {
     values.resize(this->domain.GetCard());
 }
 
 TableFunction::~TableFunction() {
 }
 
-double TableFunction::GetVal(const Assignment &a) const {
+double TableFunction::GetVal(const Assignment &a, bool logOut) const {
     int idx = a.GetIndex();
     if (idx == UNKNOWN_VAL || idx >= (int) values.size()) {
-        std::cout << idx << ", Max is: " << values.size() << std::endl;
+        cout << idx << ", Max is: " << values.size() << std::endl;
         throw GenericException("Invalid indexing of function: " + idx);
     }
-    return values[idx];
+    return !logOut ? values[idx] : log(values[idx]);
 }
 
 bool TableFunction::SetVal(const Assignment &a, double val) {
@@ -63,7 +65,7 @@ void TableFunction::SetOrdering(const std::list<int> &ordering)
 void TableFunction::Project(const Scope &s) {
     Scope outScope = domain * s;
     Scope elimVars = domain - outScope;
-    std::vector<double> newValues;
+    vector<double> newValues;
     Assignment a(domain);
     Assignment outScopeA(outScope);
     Assignment elimVarsA(elimVars);
@@ -88,7 +90,7 @@ void TableFunction::Project(const Scope &s) {
 // Multiplies this function with another one
 void TableFunction::Multiply(const TableFunction &t) {
     Scope newDomain = domain + t.domain;
-    std::vector<double> newValues;
+    vector<double> newValues;
     Assignment a(newDomain);
     a.SetAllVal(0);
     Assignment lhsA(domain);
@@ -107,7 +109,7 @@ void TableFunction::Multiply(const TableFunction &t) {
 void TableFunction::Marginalize(const Scope &margVars) {
     Scope outScope = domain - margVars;
     Scope elimVars = domain * margVars;
-    std::vector<double> newValues;
+    vector<double> newValues;
     Assignment a(domain);
     Assignment outScopeA(outScope);
     Assignment elimVarsA(elimVars);
@@ -131,7 +133,7 @@ void TableFunction::Marginalize(const Scope &margVars) {
 
 void TableFunction::Condition(const Assignment &cond) {
     Scope outScope = domain - cond;
-    std::vector<double> newValues;
+    vector<double> newValues;
     Assignment a(domain);
     Assignment outScopeA(outScope);
     outScopeA.SetAllVal(0);
@@ -147,7 +149,7 @@ void TableFunction::Condition(const Assignment &cond) {
     values = newValues;
 }
 
-void TableFunction::Save(std::ostream& out) const {
+void TableFunction::Save(ostream& out) const {
     domain.Save(out);
     out << " ";
     for (unsigned int i = 0; i < values.size(); ++i) {

@@ -80,50 +80,50 @@ void Model::parseUAI(string filename) {
     /* DEBUG */
     /*
 
-    cout << "Type: " << type << endl;
-    cout << "# vars: " << nv << endl;
-    cout << "# funcs: " << nf << endl;
+     cout << "Type: " << type << endl;
+     cout << "# vars: " << nv << endl;
+     cout << "# funcs: " << nf << endl;
 
-    foreach(int i, domains)
-    {
-        cout << i << " ";
-    }
+     foreach(int i, domains)
+     {
+     cout << i << " ";
+     }
 
-    cout << endl;
+     cout << endl;
 
-    foreach(Scope s, fScopes)
-    {
-        s.Save(cout);
-        cout << endl;
-    }
+     foreach(Scope s, fScopes)
+     {
+     s.Save(cout);
+     cout << endl;
+     }
 
-    for(int i=0; i < nf; i++) {
-        Assignment a(fScopes[i]);
-        a.SetAllVal(0);
-        do {
-            cout << functions[i].GetVal(a) << " ";
-        } while(a.Iterate());
-        cout << endl;
-    }
-    list<int> newOrder;
-    newOrder.push_back(1);
-    newOrder.push_back(10);
-    newOrder.push_back(2);
-    newOrder.push_back(11);
-    newOrder.push_back(1);
-    newOrder.push_back(13);
+     for(int i=0; i < nf; i++) {
+     Assignment a(fScopes[i]);
+     a.SetAllVal(0);
+     do {
+     cout << functions[i].GetVal(a) << " ";
+     } while(a.Iterate());
+     cout << endl;
+     }
+     list<int> newOrder;
+     newOrder.push_back(1);
+     newOrder.push_back(10);
+     newOrder.push_back(2);
+     newOrder.push_back(11);
+     newOrder.push_back(1);
+     newOrder.push_back(13);
 
-    functions[nf-1].SetOrdering(newOrder);
-    Assignment a(functions[nf-1].GetScope());
-    a.SetAllVal(0);
-    do {
-        cout << functions[nf-1].GetVal(a) << " ";
-    } while(a.Iterate());
-    cout << endl;
+     functions[nf-1].SetOrdering(newOrder);
+     Assignment a(functions[nf-1].GetScope());
+     a.SetAllVal(0);
+     do {
+     cout << functions[nf-1].GetVal(a) << " ";
+     } while(a.Iterate());
+     cout << endl;
 
 
-    exit(1);
-    */
+     exit(1);
+     */
     /* DEBUG */
 
 }

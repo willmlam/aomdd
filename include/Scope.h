@@ -32,7 +32,9 @@ public:
     // Check if a variable exists in the scope
     virtual bool VarExists(int i) const;
 
-    virtual bool IsEmpty() const { return varCard.empty(); }
+    virtual bool IsEmpty() const {
+        return varCard.empty();
+    }
 
     // Get the cardinality of a variable
     virtual unsigned int GetVarCard(int i) const;
@@ -69,7 +71,7 @@ public:
 
     Assignment(const Assignment &lhs, const Assignment &rhs, oper op);
 
-//    virtual ~Assignment();
+    //    virtual ~Assignment();
 
     // Add a variable if it does not already exist
     virtual bool AddVar(int i, unsigned int card);
