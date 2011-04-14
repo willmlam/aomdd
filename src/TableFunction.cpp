@@ -20,6 +20,10 @@ TableFunction::TableFunction(const Scope &domainIn) :
     values.resize(this->domain.GetCard());
 }
 
+TableFunction::TableFunction(const Scope &domainIn, const vector<double> &valsIn) :
+    Function(domainIn), values(valsIn) {
+}
+
 TableFunction::~TableFunction() {
 }
 

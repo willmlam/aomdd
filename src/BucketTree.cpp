@@ -39,7 +39,7 @@ double BucketTree::Prob(bool logOut) {
     Assignment empty;
     for (; rit != ordering.rend(); ++rit) {
         cout << "Bucket #" << *rit << endl;
-        TableFunction *message = buckets[*rit].Flatten(ordering);
+        TableFunction *message = buckets[*rit].FlattenFast(ordering);
         Scope elim;
         elim.AddVar(*rit, message->GetScope().GetVarCard(*rit));
         message->Marginalize(elim);

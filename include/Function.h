@@ -8,6 +8,7 @@
 namespace aomdd {
 
 class Function {
+    friend class Bucket;
 protected:
     Scope domain;
 public:

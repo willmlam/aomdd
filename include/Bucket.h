@@ -27,6 +27,7 @@ public:
     void AddFunction(const TableFunction *f);
 
     TableFunction *Flatten(const std::list<int> &ordering);
+    TableFunction *FlattenFast(const std::list<int> &ordering);
 
     inline unsigned int GetCliqueSize() const {
         return s.GetOrdering().size();

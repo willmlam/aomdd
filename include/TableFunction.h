@@ -22,6 +22,8 @@ public:
 
     TableFunction(const Scope &domainIn);
 
+    TableFunction(const Scope &domainIn, const std::vector<double> &valsIn);
+
     virtual ~TableFunction();
 
     virtual double GetVal(const Assignment &a, bool logOut = false) const;
