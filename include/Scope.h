@@ -11,7 +11,7 @@ protected:
         UNION, INTERSECT, DIFF
     };
 
-    std::map<int, unsigned int> varCard;
+    boost::unordered_map<int, unsigned int> varCard;
     std::list<int> ordering;
 
 public:
@@ -63,7 +63,7 @@ public:
 
 class Assignment: public Scope {
 protected:
-    std::map<int, int> varAssigns;
+    boost::unordered_map<int, int> varAssigns;
 public:
     Assignment();
     Assignment(const Scope &s);
