@@ -7,8 +7,10 @@
 #include <map>
 #include <set>
 #include <boost/unordered_map.hpp>
+#include <boost/functional/hash.hpp>
 
 #include <iostream>
+#include <sstream>
 #include <cassert>
 
 // Exceptions

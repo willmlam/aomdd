@@ -26,6 +26,27 @@ list<int> parseOrder(string filename) {
     return ordering;
 }
 
+map<int,int> parseEvidence(string filename) {
+    ifstream infile(filename.c_str());
+
+    string buffer;
+    int ne, intBuffer;
+    getline(infile, buffer);
+
+    infile >> ne;
+
+    map<int,int> evidence;
+    for (int i = 0; i < ne; i++) {
+        infile >> intBuffer;
+        int var = intBuffer;
+        infile >> intBuffer;
+        int val = intBuffer;
+        cout << var << " " << val << endl;
+        evidence.insert(make_pair<int,int>(var, val));
+    }
+    return evidence;
+}
+
 void IterateTester(Assignment & a) {
     a.SetAllVal(0);
 
@@ -41,22 +62,73 @@ void IterateTester(Assignment & a) {
     cout << endl;
 }
 
+typedef boost::unordered_map<Assignment, double> FTable;
+
 int main(int argc, char **argv) {
+
+/*
+    Scope s;
+    s.AddVar(0, 2);
+    s.AddVar(1, 2);
+
+    TableFunction f(s);
+
+    Assignment a(s);
+    a.SetAllVal(0);
+    double count = 1;
+    do {
+        f.SetVal(a, count++ / 10);
+
+    } while(a.Iterate());
+
+    f.Save(cout); cout << endl;
+
+    Scope s2;
+    s2.AddVar(1, 2);
+    s2.AddVar(2, 2);
+
+    TableFunction f2(s2);
+
+    Assignment a2(s2);
+    a2.SetAllVal(0);
+    double count2 = 4;
+    do {
+        f2.SetVal(a2, count2-- / 10);
+
+    } while(a2.Iterate());
+
+    f2.Save(cout); cout << endl;
+
+    f.Multiply(f2);
+
+    f.Save(cout); cout << endl;
+
+
+
+    Scope marg;
+    marg.AddVar(0, 2);
+    f.Marginalize(marg);
+    f.Save(cout);
+    return 0;
+*/
 
     string inputFile(argv[1]);
     string orderFile(argv[2]);
+    string evidFile(argv[3]);
 
     Model m;
+
     try {
         m.parseUAI(inputFile);
         //m.Save(cout);
         cout << endl;
         list<int> ordering = parseOrder(orderFile);
+        map<int,int> evidence = parseEvidence(evidFile);
         m.SetOrdering(ordering);
-        BucketTree bt(m, ordering);
+        BucketTree bt(m, ordering, evidence);
         bt.Save(cout);
         cout << endl;
-        cout << "logPr= " << bt.Prob(true);
+        cout << "Pr= " << bt.Prob();
 
     } catch (GenericException & e) {
         cout << e.what();

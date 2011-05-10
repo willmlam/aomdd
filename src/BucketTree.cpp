@@ -8,12 +8,13 @@
  */
 
 #include "BucketTree.h"
+#include <iomanip>
 
 namespace aomdd {
 using namespace std;
 
-BucketTree::BucketTree(const Model &m, const list<int> &orderIn) :
-    ordering(orderIn) {
+BucketTree::BucketTree(const Model &m, const list<int> &orderIn, const map<int, int> &evidIn) :
+    ordering(orderIn), evidence(evidIn) {
     const vector<TableFunction> &functions = m.GetFunctions();
 
     buckets.resize(ordering.size());
@@ -37,12 +38,27 @@ double BucketTree::Prob(bool logOut) {
         pr = 1;
     }
     Assignment empty;
+    unsigned int count = 1;
     for (; rit != ordering.rend(); ++rit) {
+        cout << "Count:" << count++ << endl;
         cout << "Bucket #" << *rit << endl;
-        TableFunction *message = buckets[*rit].FlattenFast(ordering);
+        TableFunction *message = buckets[*rit].Flatten(ordering);
+        //cout.precision(15);
+        //message->Save(cout); cout << endl;
         Scope elim;
         elim.AddVar(*rit, message->GetScope().GetVarCard(*rit));
-        message->Marginalize(elim);
+        map<int, int>::iterator eit = evidence.find(*rit);
+        if(eit != evidence.end()) {
+            Assignment cond(elim);
+            cond.SetVal(*rit, eit->second);
+            cout << "Conditioning" << endl;
+            message->Condition(cond);
+
+        }
+        else {
+            cout << "Marginalizing" << endl;
+            message->Marginalize(elim);
+        }
         if (message->GetScope().IsEmpty()) {
             if (logOut) {
                 double val = message->GetVal(empty, true);
@@ -58,7 +74,7 @@ double BucketTree::Prob(bool logOut) {
             }
         } else {
             int destBucket = message->GetScope().GetOrdering().back();
-            cout << "Sending message to " << destBucket << endl;
+            cout << "Sending message to " << destBucket << endl << endl;;
             buckets[destBucket].AddFunction(message);
         }
     }

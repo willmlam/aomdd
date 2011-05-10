@@ -18,9 +18,9 @@
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929" name="Debug" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.897757763" name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.macosx.base.334491582" name="MacOSX GCC" superClass="cdt.managedbuild.toolchain.gnu.macosx.base">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.macosx.base.334491582" name="MacOSX GCC" nonInternalBuilderId="cdt.managedbuild.target.gnu.builder.macosx.base" superClass="cdt.managedbuild.toolchain.gnu.macosx.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.gnu.platform.macosx.base.722618581" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.gnu.platform.macosx.base"/>
-							<builder buildPath="${workspace_loc:/aomdd/Debug}" id="cdt.managedbuild.target.gnu.builder.macosx.base.721171847" keepEnvironmentInBuildfile="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.macosx.base"/>
+							<builder buildPath="${workspace_loc:/aomdd/Debug}" id="cdt.managedbuild.target.gnu.builder.macosx.base.101741176" keepEnvironmentInBuildfile="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.macosx.base"/>
 							<tool id="cdt.managedbuild.tool.macosx.c.linker.macosx.base.1289342284" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.base"/>
 							<tool id="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base.806658921" name="MacOS X C++ Linker" superClass="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base">
 								<inputType id="cdt.managedbuild.tool.macosx.cpp.linker.input.649420404" superClass="cdt.managedbuild.tool.macosx.cpp.linker.input">
@@ -36,7 +36,7 @@
 								<option id="gnu.cpp.compiler.option.include.paths.172907426" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/include}&quot;"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.debugging.gprof.403485173" superClass="gnu.cpp.compiler.option.debugging.gprof" value="true" valueType="boolean"/>
+								<option id="gnu.cpp.compiler.option.debugging.gprof.403485173" name="Generate gprof information (-pg)" superClass="gnu.cpp.compiler.option.debugging.gprof" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1605413634" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1413131629" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.base">
@@ -677,8 +677,8 @@
 						</scannerInfoProvider>
 					</profile>
 				</scannerConfigBuildInfo>
-				<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929;cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.897757763;cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1413131629;cdt.managedbuild.tool.gnu.c.compiler.input.1116885764">
-					<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+				<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.1471201229;cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.1471201229.;cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1844162039;cdt.managedbuild.tool.gnu.cpp.compiler.input.273881896">
+					<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 					<profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
 						<buildOutputProvider>
 							<openAction enabled="true" filePath=""/>
@@ -780,8 +780,8 @@
 						</scannerInfoProvider>
 					</profile>
 				</scannerConfigBuildInfo>
-				<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.1471201229;cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.1471201229.;cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1844162039;cdt.managedbuild.tool.gnu.cpp.compiler.input.273881896">
-					<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+				<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929;cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.897757763;cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1413131629;cdt.managedbuild.tool.gnu.c.compiler.input.1116885764">
+					<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 					<profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
 						<buildOutputProvider>
 							<openAction enabled="true" filePath=""/>
@@ -1664,8 +1664,8 @@
 						</scannerInfoProvider>
 					</profile>
 				</scannerConfigBuildInfo>
-				<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929;cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.897757763;cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1413131629;cdt.managedbuild.tool.gnu.c.compiler.input.1116885764">
-					<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+				<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.1471201229;cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.1471201229.;cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1844162039;cdt.managedbuild.tool.gnu.cpp.compiler.input.273881896">
+					<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 					<profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
 						<buildOutputProvider>
 							<openAction enabled="true" filePath=""/>
@@ -1767,8 +1767,8 @@
 						</scannerInfoProvider>
 					</profile>
 				</scannerConfigBuildInfo>
-				<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.1471201229;cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.1471201229.;cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1844162039;cdt.managedbuild.tool.gnu.cpp.compiler.input.273881896">
-					<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+				<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1094537929;cdt.managedbuild.toolchain.gnu.macosx.base.1094537929.897757763;cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1413131629;cdt.managedbuild.tool.gnu.c.compiler.input.1116885764">
+					<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 					<profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
 						<buildOutputProvider>
 							<openAction enabled="true" filePath=""/>

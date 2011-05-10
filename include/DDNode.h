@@ -11,6 +11,10 @@
 #define _DDNODE_H_
 
 class DDNode {
+    // ID: by pointer value
+    // should contain varid
+    // contains a vector of (weight, AND-node) pairs
+    // represent AND-nodes as a vector of MetaNode pointers
 };
 
 #endif
