@@ -113,7 +113,25 @@ int main(int argc, char **argv) {
         cout << " value=" << x_y->Evaluate(a2) << endl;
     } while(a2.Iterate());
 
+    boost::unordered_set<MetaNode*> uniqueTable;
 
+    cout << "Pointer values:" << endl;
+    cout << "Zero=" << MetaNode::GetZero() << endl;
+    cout << "One=" << MetaNode::GetOne() << endl;
+    cout << "x_y=" << x_y << endl;
+    cout << "x0_y=" << x0_y << endl;
+    cout << "x1_y=" << x1_y << endl;
+    uniqueTable.insert(MetaNode::GetZero());
+    uniqueTable.insert(MetaNode::GetOne());
+    uniqueTable.insert(x_y);
+    uniqueTable.insert(x0_y);
+    uniqueTable.insert(x1_y);
+
+    int count = 1;
+    BOOST_FOREACH(MetaNode *i, uniqueTable) {
+        cout << count++ << endl;
+        i->Save(cout); cout << endl;
+    }
 
 
 

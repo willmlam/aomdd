@@ -12,15 +12,16 @@ using namespace std;
 
 void PrintVector(const vector<int> &vec, ostream &out) {
     out << vec.size();
-    for (unsigned int i = 0; i < vec.size(); i++)
-        out << " " << vec[i];
+    BOOST_FOREACH(int i, vec) {
+        out << " " << i;
+    }
 }
 
 void PrintList(const list<int> &l, ostream &out) {
     out << l.size();
-    std::list<int>::const_iterator it = l.begin();
-    for (; it != l.end(); ++it)
-        out << " " << *it;
+    BOOST_FOREACH(int i, l) {
+        out << " " << i;
+    }
 }
 
 boost::mt19937 gen(time(0));

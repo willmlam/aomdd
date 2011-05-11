@@ -1,4 +1,4 @@
-#Tue Apr 12 17:32:36 PDT 2011
+#Tue May 10 15:27:23 PDT 2011
 eclipse.preferences.version=1
 org.eclipse.cdt.core.formatter.alignment_for_arguments_in_method_invocation=16
 org.eclipse.cdt.core.formatter.alignment_for_base_clause_in_type_declaration=80
@@ -35,9 +35,9 @@ org.eclipse.cdt.core.formatter.indentation.size=4
 org.eclipse.cdt.core.formatter.insert_new_line_after_opening_brace_in_array_initializer=do not insert
 org.eclipse.cdt.core.formatter.insert_new_line_after_template_declaration=do not insert
 org.eclipse.cdt.core.formatter.insert_new_line_at_end_of_file_if_missing=do not insert
-org.eclipse.cdt.core.formatter.insert_new_line_before_catch_in_try_statement=do not insert
+org.eclipse.cdt.core.formatter.insert_new_line_before_catch_in_try_statement=insert
 org.eclipse.cdt.core.formatter.insert_new_line_before_closing_brace_in_array_initializer=do not insert
-org.eclipse.cdt.core.formatter.insert_new_line_before_else_in_if_statement=do not insert
+org.eclipse.cdt.core.formatter.insert_new_line_before_else_in_if_statement=insert
 org.eclipse.cdt.core.formatter.insert_new_line_before_identifier_in_function_declaration=do not insert
 org.eclipse.cdt.core.formatter.insert_new_line_before_while_in_do_statement=do not insert
 org.eclipse.cdt.core.formatter.insert_new_line_in_empty_block=insert
