@@ -3,8 +3,9 @@
 #include "BucketTree.h"
 #include "utils.h"
 #include "base.h"
-#include <iostream>
 #include "Model.h"
+#include "MetaNode.h"
+#include <iostream>
 #include <fstream>
 using namespace aomdd;
 using namespace std;
@@ -26,7 +27,7 @@ list<int> parseOrder(string filename) {
     return ordering;
 }
 
-map<int,int> parseEvidence(string filename) {
+map<int, int> parseEvidence(string filename) {
     ifstream infile(filename.c_str());
 
     string buffer;
@@ -35,14 +36,14 @@ map<int,int> parseEvidence(string filename) {
 
     infile >> ne;
 
-    map<int,int> evidence;
+    map<int, int> evidence;
     for (int i = 0; i < ne; i++) {
         infile >> intBuffer;
         int var = intBuffer;
         infile >> intBuffer;
         int val = intBuffer;
         cout << var << " " << val << endl;
-        evidence.insert(make_pair<int,int>(var, val));
+        evidence.insert(make_pair<int, int> (var, val));
     }
     return evidence;
 }
@@ -65,52 +66,108 @@ void IterateTester(Assignment & a) {
 typedef boost::unordered_map<Assignment, double> FTable;
 
 int main(int argc, char **argv) {
-
-/*
     Scope s;
     s.AddVar(0, 2);
-    s.AddVar(1, 2);
 
-    TableFunction f(s);
+    vector<MetaNode*> ANDchildren;
+    ANDchildren.push_back(MetaNode::GetOne());
+
+    vector<MetaNode::ANDNode*> children;
+    children.resize(s.GetCard());
+    children[0] = new MetaNode::ANDNode(0.436, ANDchildren);
+    children[1] = new MetaNode::ANDNode(0.564, ANDchildren);
+
+    MetaNode* x = new MetaNode(s, children);
 
     Assignment a(s);
-    a.SetAllVal(0);
-    double count = 1;
-    do {
-        f.SetVal(a, count++ / 10);
+    a.SetVal(0, 0);
 
-    } while(a.Iterate());
-
-    f.Save(cout); cout << endl;
+    cout << x->Evaluate(a) << endl;
 
     Scope s2;
     s2.AddVar(1, 2);
-    s2.AddVar(2, 2);
 
-    TableFunction f2(s2);
+    children.clear();
+    children.resize(s2.GetCard());
+    children[0] = new MetaNode::ANDNode(0.128, ANDchildren);
+    children[1] = new MetaNode::ANDNode(0.872, ANDchildren);
+    MetaNode* x0_y = new MetaNode(s2, children);
 
-    Assignment a2(s2);
+    children.clear();
+    children.resize(s2.GetCard());
+    children[0] = new MetaNode::ANDNode(0.920, ANDchildren);
+    children[1] = new MetaNode::ANDNode(0.080, ANDchildren);
+    MetaNode* x1_y = new MetaNode(s2, children);
+
+    children.clear();
+    children.resize(s.GetCard());
+    children[0] = new MetaNode::ANDNode(1, vector<MetaNode*>(1, x0_y));
+    children[1] = new MetaNode::ANDNode(1, vector<MetaNode*>(1, x1_y));
+    MetaNode* x_y = new MetaNode(s, children);
+
+    Assignment a2(s+s2);
     a2.SetAllVal(0);
-    double count2 = 4;
-    do {
-        f2.SetVal(a2, count2-- / 10);
 
+    do {
+        a2.Save(cout);
+        cout << " value=" << x_y->Evaluate(a2) << endl;
     } while(a2.Iterate());
 
-    f2.Save(cout); cout << endl;
-
-    f.Multiply(f2);
-
-    f.Save(cout); cout << endl;
 
 
 
-    Scope marg;
-    marg.AddVar(0, 2);
-    f.Marginalize(marg);
-    f.Save(cout);
+
+
+
+
+
     return 0;
-*/
+
+    /*
+     Scope s;
+     s.AddVar(0, 2);
+     s.AddVar(1, 2);
+
+     TableFunction f(s);
+
+     Assignment a(s);
+     a.SetAllVal(0);
+     double count = 1;
+     do {
+     f.SetVal(a, count++ / 10);
+
+     } while(a.Iterate());
+
+     f.Save(cout); cout << endl;
+
+     Scope s2;
+     s2.AddVar(1, 2);
+     s2.AddVar(2, 2);
+
+     TableFunction f2(s2);
+
+     Assignment a2(s2);
+     a2.SetAllVal(0);
+     double count2 = 4;
+     do {
+     f2.SetVal(a2, count2-- / 10);
+
+     } while(a2.Iterate());
+
+     f2.Save(cout); cout << endl;
+
+     f.Multiply(f2);
+
+     f.Save(cout); cout << endl;
+
+
+
+     Scope marg;
+     marg.AddVar(0, 2);
+     f.Marginalize(marg);
+     f.Save(cout);
+     return 0;
+     */
 
     string inputFile(argv[1]);
     string orderFile(argv[2]);
@@ -123,7 +180,7 @@ int main(int argc, char **argv) {
         //m.Save(cout);
         cout << endl;
         list<int> ordering = parseOrder(orderFile);
-        map<int,int> evidence = parseEvidence(evidFile);
+        map<int, int> evidence = parseEvidence(evidFile);
         m.SetOrdering(ordering);
         BucketTree bt(m, ordering, evidence);
         bt.Save(cout);

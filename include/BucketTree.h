@@ -21,9 +21,10 @@ class BucketTree {
     std::vector<Bucket> buckets;
     std::vector<int> parents;
     std::list<int> ordering;
-    std::map<int,int> evidence;
+    std::map<int, int> evidence;
 public:
-    BucketTree(const Model &m, const std::list<int> &orderIn, const std::map<int, int> &evidIn);
+    BucketTree(const Model &m, const std::list<int> &orderIn,
+            const std::map<int, int> &evidIn);
 
     virtual ~BucketTree();
 

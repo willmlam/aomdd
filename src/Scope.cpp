@@ -15,11 +15,14 @@ Scope::Scope(const Scope &s) :
 Scope::Scope(const Scope &lhs, const Scope &rhs, oper op) {
     if (!lhs.HasConsistentCard(rhs)) {
         throw GenericException("Inconsistent scopes");
-    } else {
+    }
+    else {
         *this = lhs;
 
-        boost::unordered_map<int, unsigned int>::const_iterator it = rhs.varCard.begin();
-        boost::unordered_map<int, unsigned int>::const_iterator lit = lhs.varCard.begin();
+        boost::unordered_map<int, unsigned int>::const_iterator it =
+                rhs.varCard.begin();
+        boost::unordered_map<int, unsigned int>::const_iterator lit =
+                lhs.varCard.begin();
         switch (op) {
             case Scope::UNION:
                 for (; it != rhs.varCard.end(); ++it)
@@ -70,8 +73,13 @@ inline bool Scope::VarExists(int i) const {
     return varCard.find(i) != varCard.end();
 }
 
+inline unsigned int Scope::GetNumVars() const {
+    return varCard.size();
+}
+
 inline unsigned int Scope::GetVarCard(int i) const {
-    boost::unordered_map<int, unsigned int>::const_iterator it = varCard.find(i);
+    boost::unordered_map<int, unsigned int>::const_iterator it =
+            varCard.find(i);
     if (it != varCard.end())
         return it->second;
     return 0;
@@ -80,7 +88,8 @@ inline unsigned int Scope::GetVarCard(int i) const {
 inline unsigned int Scope::GetCard() const {
     unsigned int totalCard = 1;
 
-    boost::unordered_map<int, unsigned int>::const_iterator it = varCard.begin();
+    boost::unordered_map<int, unsigned int>::const_iterator it =
+            varCard.begin();
     for (; it != varCard.end(); ++it) {
         totalCard *= it->second;
     }
@@ -88,7 +97,8 @@ inline unsigned int Scope::GetCard() const {
 }
 
 bool Scope::HasConsistentCard(const Scope &rhs) const {
-    boost::unordered_map<int, unsigned int>::const_iterator it = varCard.begin();
+    boost::unordered_map<int, unsigned int>::const_iterator it =
+            varCard.begin();
     for (; it != varCard.end(); ++it) {
         int i = it->first;
         unsigned int card = it->second;
@@ -143,7 +153,8 @@ Scope& Scope::operator=(const Scope &s) {
 
 void Scope::Save(ostream &out) const {
     out << varCard.size();
-    boost::unordered_map<int, unsigned int>::const_iterator it = varCard.begin();
+    boost::unordered_map<int, unsigned int>::const_iterator it =
+            varCard.begin();
     for (; it != varCard.end(); ++it)
         out << " " << it->first << " " << it->second;
     out << "  " << ordering.size();
@@ -175,8 +186,10 @@ Assignment::Assignment(const Assignment &lhs, const Assignment &rhs, oper op) :
     for (; it != varCard.end(); it++)
         varAssigns.insert(make_pair<int, int> (it->first, -1));
 
-    boost::unordered_map<int, int>::const_iterator lhsit = lhs.varAssigns.begin();
-    boost::unordered_map<int, int>::const_iterator rhsit = rhs.varAssigns.begin();
+    boost::unordered_map<int, int>::const_iterator lhsit =
+            lhs.varAssigns.begin();
+    boost::unordered_map<int, int>::const_iterator rhsit =
+            rhs.varAssigns.begin();
 
     for (; lhsit != lhs.varAssigns.end(); ++lhsit)
         SetVal(lhsit->first, lhsit->second);
@@ -231,7 +244,7 @@ inline void Assignment::SetAllVal(unsigned int val) {
 }
 
 inline void Assignment::SetAssign(const Assignment &a) {
-    const boost::unordered_map<int, int> &rhsAssigns = a.varAssigns;
+//    const boost::unordered_map<int, int> &rhsAssigns = a.varAssigns;
     boost::unordered_map<int, int>::const_iterator it = varAssigns.begin();
     for (; it != varAssigns.end(); ++it) {
         int var = it->first;

@@ -13,7 +13,8 @@
 namespace aomdd {
 using namespace std;
 
-BucketTree::BucketTree(const Model &m, const list<int> &orderIn, const map<int, int> &evidIn) :
+BucketTree::BucketTree(const Model &m, const list<int> &orderIn,
+        const map<int, int> &evidIn) :
     ordering(orderIn), evidence(evidIn) {
     const vector<TableFunction> &functions = m.GetFunctions();
 
@@ -34,7 +35,8 @@ double BucketTree::Prob(bool logOut) {
     double pr;
     if (logOut) {
         pr = 0;
-    } else {
+    }
+    else {
         pr = 1;
     }
     Assignment empty;
@@ -48,7 +50,7 @@ double BucketTree::Prob(bool logOut) {
         Scope elim;
         elim.AddVar(*rit, message->GetScope().GetVarCard(*rit));
         map<int, int>::iterator eit = evidence.find(*rit);
-        if(eit != evidence.end()) {
+        if (eit != evidence.end()) {
             Assignment cond(elim);
             cond.SetVal(*rit, eit->second);
             cout << "Conditioning" << endl;
@@ -66,15 +68,18 @@ double BucketTree::Prob(bool logOut) {
                 //              cout << "with: " << val << endl;
 
                 pr += val;
-            } else {
+            }
+            else {
                 double val = message->GetVal(empty);
                 //                cout << "Updating p(e)" << endl;
                 //                cout << "with: " << val << endl;
                 pr *= val;
             }
-        } else {
+        }
+        else {
             int destBucket = message->GetScope().GetOrdering().back();
-            cout << "Sending message to " << destBucket << endl << endl;;
+            cout << "Sending message to " << destBucket << endl << endl;
+            ;
             buckets[destBucket].AddFunction(message);
         }
     }

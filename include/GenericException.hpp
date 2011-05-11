@@ -13,26 +13,25 @@
 #include <exception>
 
 namespace aomdd {
-    
-    class GenericException : public std::exception {
-    protected:
-        std::string msg;
-        
-    public:
-        GenericException(std::string reason) throw()
-        : msg(reason) {
-        }
-        
-        virtual ~GenericException() throw() {
-        }
-        
-        virtual const char *what() throw() {
-            return msg.c_str();
-        }
-        
-    };
-    
-}
 
+class GenericException: public std::exception {
+protected:
+    std::string msg;
+
+public:
+    GenericException(std::string reason) throw () :
+        msg(reason) {
+    }
+
+    virtual ~GenericException() throw () {
+    }
+
+    virtual const char *what() throw () {
+        return msg.c_str();
+    }
+
+};
+
+}
 
 #endif /* GENERICEXCEPCTION_HPP_*/

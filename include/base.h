@@ -19,11 +19,8 @@
 // Special Boost tools
 #include <boost/foreach.hpp>
 
-
 // Constants
 const int UNKNOWN_VAL = -1;
 const int ERROR_VAL = -10;
-
-
 
 #endif

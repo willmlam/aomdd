@@ -36,6 +36,9 @@ public:
         return varCard.empty();
     }
 
+    // Get the number of variables in the scope
+    virtual unsigned int GetNumVars() const;
+
     // Get the cardinality of a variable
     virtual unsigned int GetVarCard(int i) const;
 
