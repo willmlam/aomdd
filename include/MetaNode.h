@@ -1,5 +1,5 @@
 /*
- *  DDNode.h
+ *  MetaNode.h
  *  aomdd
  *
  *  Created by William Lam on 3/23/11.
@@ -12,6 +12,7 @@
 #ifndef _METANODE_H_
 #define _METANODE_H_
 
+
 #include "base.h"
 #include "Scope.h"
 
@@ -19,17 +20,23 @@ namespace aomdd {
 
 class MetaNode {
 
+public:
+    typedef boost::shared_ptr<MetaNode> MetaNodePtr;
+
     // Used to represent children of the metanode
     // Corresponds to weights of assignments
-public:
     class ANDNode {
         double weight;
-        std::vector<MetaNode*> children;
+        std::vector<MetaNodePtr> children;
     public:
         ANDNode();
         virtual ~ANDNode();
 
-        ANDNode(double w, const std::vector<MetaNode*> &ch);
+        ANDNode(double w, const std::vector<MetaNodePtr> &ch);
+
+        double GetWeight() const;
+
+        const std::vector<MetaNodePtr> &GetChildren() const;
 
         double Evaluate(const Assignment &a);
 
@@ -38,8 +45,10 @@ public:
         void Save(std::ostream &out);
     };
 
+typedef boost::shared_ptr<ANDNode> ANDNodePtr;
+
 private:
-    // ID: by pointer value
+    // IDs handled by shared_ptr wrappers
     // Scope should contain only one variable, or if scope is empty scope,
     // this node is a terminal
     // Pointer due to plan to use a set of common Scope objects for all nodes
@@ -47,33 +56,47 @@ private:
     const Scope *s;
 
     // children: ANDNodes
-    std::vector<ANDNode*> children;
+    std::vector<ANDNodePtr> children;
 
 
     // Used to make terminal nodes singletons
     static bool zeroInit;
     static bool oneInit;
-    static MetaNode* terminalZero;
-    static MetaNode* terminalOne;
+    static MetaNodePtr terminalZero;
+    static MetaNodePtr terminalOne;
+
+    static unsigned int idCount;
 
 public:
     MetaNode();
 
     virtual ~MetaNode();
 
-    MetaNode(const Scope &var, const std::vector<ANDNode*> &ch);
+    MetaNode(const Scope &var, const std::vector<ANDNodePtr> &ch);
 
     double Evaluate(const Assignment &a) const;
+
+    // Move these later.
+    const Scope *GetScopePtr() const {
+        return s;
+    }
+
+    const std::vector<ANDNodePtr> &GetChildren() const;
 
     bool operator==(const MetaNode &rhs) const;
     void Save(std::ostream &out);
 
     friend size_t hash_value(const MetaNode &node);
 
-    static MetaNode* GetZero();
-    static MetaNode* GetOne();
+    static const MetaNodePtr &GetZero();
+    static const MetaNodePtr &GetOne();
 
 };
+
+typedef MetaNode::MetaNodePtr MetaNodePtr;
+typedef MetaNode::ANDNodePtr ANDNodePtr;
+
+bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs);
 
 
 } // end of aomdd namespace

@@ -69,15 +69,15 @@ int main(int argc, char **argv) {
     Scope s;
     s.AddVar(0, 2);
 
-    vector<MetaNode*> ANDchildren;
+    vector<MetaNodePtr> ANDchildren;
     ANDchildren.push_back(MetaNode::GetOne());
 
-    vector<MetaNode::ANDNode*> children;
+    vector<ANDNodePtr> children;
     children.resize(s.GetCard());
-    children[0] = new MetaNode::ANDNode(0.436, ANDchildren);
-    children[1] = new MetaNode::ANDNode(0.564, ANDchildren);
+    children[0] = ANDNodePtr(new MetaNode::ANDNode(0.436, ANDchildren));
+    children[1] = ANDNodePtr(new MetaNode::ANDNode(0.564, ANDchildren));
 
-    MetaNode* x = new MetaNode(s, children);
+    MetaNodePtr x(new MetaNode(s, children));
 
     Assignment a(s);
     a.SetVal(0, 0);
@@ -89,21 +89,22 @@ int main(int argc, char **argv) {
 
     children.clear();
     children.resize(s2.GetCard());
-    children[0] = new MetaNode::ANDNode(0.128, ANDchildren);
-    children[1] = new MetaNode::ANDNode(0.872, ANDchildren);
-    MetaNode* x0_y = new MetaNode(s2, children);
+    children[0] = ANDNodePtr(new MetaNode::ANDNode(0.128, ANDchildren));
+    children[1] = ANDNodePtr(new MetaNode::ANDNode(0.872, ANDchildren));
+    MetaNodePtr x0_y(new MetaNode(s2, children));
 
     children.clear();
     children.resize(s2.GetCard());
-    children[0] = new MetaNode::ANDNode(0.920, ANDchildren);
-    children[1] = new MetaNode::ANDNode(0.080, ANDchildren);
-    MetaNode* x1_y = new MetaNode(s2, children);
+    children[0] = ANDNodePtr(new MetaNode::ANDNode(0.920, ANDchildren));
+    children[1] = ANDNodePtr(new MetaNode::ANDNode(0.080, ANDchildren));
+    MetaNodePtr x1_y(new MetaNode(s2, children));
 
     children.clear();
     children.resize(s.GetCard());
-    children[0] = new MetaNode::ANDNode(1, vector<MetaNode*>(1, x0_y));
-    children[1] = new MetaNode::ANDNode(1, vector<MetaNode*>(1, x1_y));
-    MetaNode* x_y = new MetaNode(s, children);
+    children[0] = ANDNodePtr(new MetaNode::ANDNode(1, vector<MetaNodePtr>(1, x0_y)));
+    children[1] = ANDNodePtr(new MetaNode::ANDNode(1, vector<MetaNodePtr>(1, x1_y)));
+    MetaNodePtr x_y(new MetaNode(s, children));
+    MetaNodePtr x_ydupe(new MetaNode(s, children));
 
     Assignment a2(s+s2);
     a2.SetAllVal(0);
@@ -113,22 +114,24 @@ int main(int argc, char **argv) {
         cout << " value=" << x_y->Evaluate(a2) << endl;
     } while(a2.Iterate());
 
-    boost::unordered_set<MetaNode*> uniqueTable;
+    boost::unordered_set<MetaNodePtr> uniqueTable;
 
     cout << "Pointer values:" << endl;
     cout << "Zero=" << MetaNode::GetZero() << endl;
     cout << "One=" << MetaNode::GetOne() << endl;
     cout << "x_y=" << x_y << endl;
+    cout << "x_ydupe=" << x_ydupe << endl;
     cout << "x0_y=" << x0_y << endl;
     cout << "x1_y=" << x1_y << endl;
     uniqueTable.insert(MetaNode::GetZero());
     uniqueTable.insert(MetaNode::GetOne());
     uniqueTable.insert(x_y);
+    uniqueTable.insert(x_ydupe);
     uniqueTable.insert(x0_y);
     uniqueTable.insert(x1_y);
 
     int count = 1;
-    BOOST_FOREACH(MetaNode *i, uniqueTable) {
+    BOOST_FOREACH(MetaNodePtr i, uniqueTable) {
         cout << count++ << endl;
         i->Save(cout); cout << endl;
     }
