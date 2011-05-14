@@ -12,7 +12,6 @@
 #ifndef _METANODE_H_
 #define _METANODE_H_
 
-
 #include "base.h"
 #include "Scope.h"
 
@@ -45,7 +44,7 @@ public:
         void Save(std::ostream &out);
     };
 
-typedef boost::shared_ptr<ANDNode> ANDNodePtr;
+    typedef boost::shared_ptr<ANDNode> ANDNodePtr;
 
 private:
     // IDs handled by shared_ptr wrappers
@@ -53,11 +52,10 @@ private:
     // this node is a terminal
     // Pointer due to plan to use a set of common Scope objects for all nodes
     // of the same variable
-    const Scope *s;
-
+    int varID;
+    unsigned int card;
     // children: ANDNodes
     std::vector<ANDNodePtr> children;
-
 
     // Used to make terminal nodes singletons
     static bool zeroInit;
@@ -74,12 +72,15 @@ public:
 
     MetaNode(const Scope &var, const std::vector<ANDNodePtr> &ch);
 
-    double Evaluate(const Assignment &a) const;
-
-    // Move these later.
-    const Scope *GetScopePtr() const {
-        return s;
+    int GetVarID() const {
+        return varID;
     }
+
+    unsigned int GetCard() const {
+        return card;
+    }
+
+    double Evaluate(const Assignment &a) const;
 
     const std::vector<ANDNodePtr> &GetChildren() const;
 
@@ -97,7 +98,6 @@ typedef MetaNode::MetaNodePtr MetaNodePtr;
 typedef MetaNode::ANDNodePtr ANDNodePtr;
 
 bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs);
-
 
 } // end of aomdd namespace
 

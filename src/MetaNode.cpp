@@ -42,8 +42,6 @@ const vector<MetaNodePtr> &MetaNode::ANDNode::GetChildren() const {
     return children;
 }
 
-// Used mainly to see if all ANDNodes in a vector are the same (to handle
-// redundancy)
 bool MetaNode::ANDNode::operator==(const ANDNode &rhs) const {
     if (weight != rhs.weight || children.size() != rhs.children.size()) {
         return false;
@@ -77,18 +75,33 @@ bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
         }
     }
     return true;
+}
+
+bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
+    if (lhs->GetWeight() != rhs->GetWeight() || lhs->GetChildren().size()
+            != rhs->GetChildren().size()) {
+        return true;
+    }
+    for (unsigned int i = 0; i < lhs->GetChildren().size(); i++) {
+        if (lhs->GetChildren()[i].get() != rhs->GetChildren()[i].get()) {
+            return true;
+        }
+    }
+    return false;
 
 }
 
 // ======================
 
-MetaNode::MetaNode() {
+MetaNode::MetaNode() : varID(-1), card(0) {
 }
 
 MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
-    s(&var), children(ch) {
+    children(ch) {
     // Scope must be over one variable
-    assert(s->GetNumVars() == 1);
+    assert(var.GetNumVars() == 1);
+    varID = var.GetOrdering().front();
+    card = var.GetVarCard(varID);
     // All assignments must be specified
     assert(var.GetCard() == children.size());
 }
@@ -104,7 +117,7 @@ double MetaNode::Evaluate(const Assignment &a) const {
         return 1;
     }
     else {
-        unsigned int idx = a.GetVal(s->GetOrdering().front());
+        unsigned int idx = a.GetVal(varID);
         return children[idx]->Evaluate(a);
     }
 }
@@ -117,7 +130,8 @@ const vector<ANDNodePtr> &MetaNode::GetChildren() const {
 bool MetaNode::operator==(const MetaNode &rhs) const {
     if (this == GetZero().get() || this == GetOne().get())
         return false;
-    if (s != rhs.s || children.size() != rhs.children.size())
+    if (varID != rhs.varID || card != rhs.card || children.size()
+            != rhs.children.size())
         return false;
     for (unsigned int i = 0; i < children.size(); i++) {
         if (children[i] != rhs.children[i])
@@ -162,7 +176,8 @@ const MetaNodePtr &MetaNode::GetOne() {
 
 size_t hash_value(const MetaNode &node) {
     size_t seed = 0;
-    boost::hash_combine(seed, node.s);
+    boost::hash_combine(seed, node.varID);
+    boost::hash_combine(seed, node.card);
     BOOST_FOREACH(ANDNodePtr i, node.children)
                 {
                     boost::hash_combine(seed, i.get());
@@ -173,7 +188,8 @@ size_t hash_value(const MetaNode &node) {
 
 size_t hash_value(const MetaNodePtr &node) {
     size_t seed = 0;
-    boost::hash_combine(seed, node->GetScopePtr());
+    boost::hash_combine(seed, node->GetVarID());
+    boost::hash_combine(seed, node->GetCard());
     BOOST_FOREACH(ANDNodePtr i, node->GetChildren())
                 {
                     boost::hash_combine(seed, i.get());
@@ -182,18 +198,18 @@ size_t hash_value(const MetaNodePtr &node) {
 }
 
 bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs) {
-    cout << "Equality Checker Called" << endl;
+//    cout << "Equality Checker Called" << endl;
     if (lhs.get() == MetaNode::GetZero().get() && rhs.get()
             == MetaNode::GetOne().get())
         return false;
     if (rhs.get() == MetaNode::GetZero().get() && lhs.get()
             == MetaNode::GetOne().get())
         return false;
-    if (lhs->GetScopePtr() != rhs->GetScopePtr() || lhs->GetChildren().size()
-            != rhs->GetChildren().size())
+    if (lhs->GetVarID() != rhs->GetVarID() || lhs->GetCard() != rhs->GetCard()
+            || lhs->GetChildren().size() != rhs->GetChildren().size())
         return false;
     for (unsigned int i = 0; i < lhs->GetChildren().size(); i++) {
-        if (lhs->GetChildren()[i].get() != rhs->GetChildren()[i].get())
+        if (lhs->GetChildren()[i] != rhs->GetChildren()[i])
             return false;
     }
     return true;
@@ -204,6 +220,5 @@ MetaNodePtr MetaNode::terminalZero;
 MetaNodePtr MetaNode::terminalOne;
 bool MetaNode::zeroInit = false;
 bool MetaNode::oneInit = false;
-
 
 } // end of aomdd namespace

@@ -5,6 +5,7 @@
 #include "base.h"
 #include "Model.h"
 #include "MetaNode.h"
+#include "NodeManager.h"
 #include <iostream>
 #include <fstream>
 using namespace aomdd;
@@ -68,76 +69,44 @@ typedef boost::unordered_map<Assignment, double> FTable;
 int main(int argc, char **argv) {
     Scope s;
     s.AddVar(0, 2);
+    s.AddVar(1, 2);
+    vector<double> vals;
+    vals.push_back(0.128);
+    vals.push_back(0.872);
+    vals.push_back(0.128);
+    vals.push_back(0.872);
+//    vals.push_back(0.920);
+//    vals.push_back(0.080);
 
-    vector<MetaNodePtr> ANDchildren;
-    ANDchildren.push_back(MetaNode::GetOne());
-
-    vector<ANDNodePtr> children;
-    children.resize(s.GetCard());
-    children[0] = ANDNodePtr(new MetaNode::ANDNode(0.436, ANDchildren));
-    children[1] = ANDNodePtr(new MetaNode::ANDNode(0.564, ANDchildren));
-
-    MetaNodePtr x(new MetaNode(s, children));
-
+    NodeManager *mgr = NodeManager::GetNodeManager();
+    MetaNodePtr f = mgr->CreateMetaNode(s, vals);
     Assignment a(s);
-    a.SetVal(0, 0);
-
-    cout << x->Evaluate(a) << endl;
-
-    Scope s2;
-    s2.AddVar(1, 2);
-
-    children.clear();
-    children.resize(s2.GetCard());
-    children[0] = ANDNodePtr(new MetaNode::ANDNode(0.128, ANDchildren));
-    children[1] = ANDNodePtr(new MetaNode::ANDNode(0.872, ANDchildren));
-    MetaNodePtr x0_y(new MetaNode(s2, children));
-
-    children.clear();
-    children.resize(s2.GetCard());
-    children[0] = ANDNodePtr(new MetaNode::ANDNode(0.920, ANDchildren));
-    children[1] = ANDNodePtr(new MetaNode::ANDNode(0.080, ANDchildren));
-    MetaNodePtr x1_y(new MetaNode(s2, children));
-
-    children.clear();
-    children.resize(s.GetCard());
-    children[0] = ANDNodePtr(new MetaNode::ANDNode(1, vector<MetaNodePtr>(1, x0_y)));
-    children[1] = ANDNodePtr(new MetaNode::ANDNode(1, vector<MetaNodePtr>(1, x1_y)));
-    MetaNodePtr x_y(new MetaNode(s, children));
-    MetaNodePtr x_ydupe(new MetaNode(s, children));
-
-    Assignment a2(s+s2);
-    a2.SetAllVal(0);
-
+    a.SetAllVal(0);
     do {
-        a2.Save(cout);
-        cout << " value=" << x_y->Evaluate(a2) << endl;
-    } while(a2.Iterate());
+       a.Save(cout); cout << " value=" << f->Evaluate(a) << endl;
+    } while(a.Iterate());
 
-    boost::unordered_set<MetaNodePtr> uniqueTable;
+    vals.pop_back();
+    vals.pop_back();
+    vals.push_back(0.920);
+    vals.push_back(0.080);
 
-    cout << "Pointer values:" << endl;
-    cout << "Zero=" << MetaNode::GetZero() << endl;
-    cout << "One=" << MetaNode::GetOne() << endl;
-    cout << "x_y=" << x_y << endl;
-    cout << "x_ydupe=" << x_ydupe << endl;
-    cout << "x0_y=" << x0_y << endl;
-    cout << "x1_y=" << x1_y << endl;
-    uniqueTable.insert(MetaNode::GetZero());
-    uniqueTable.insert(MetaNode::GetOne());
-    uniqueTable.insert(x_y);
-    uniqueTable.insert(x_ydupe);
-    uniqueTable.insert(x0_y);
-    uniqueTable.insert(x1_y);
+    MetaNodePtr f_dupe = mgr->CreateMetaNode(s, vals);
+    do {
+       a.Save(cout); cout << " value=" << f_dupe->Evaluate(a) << endl;
+    } while(a.Iterate());
 
-    int count = 1;
-    BOOST_FOREACH(MetaNodePtr i, uniqueTable) {
-        cout << count++ << endl;
-        i->Save(cout); cout << endl;
-    }
+    cout << "MetaNode count=" << mgr->GetNumberOfNodes() << endl;
 
+    MetaNodePtr g = f->GetChildren()[0]->GetChildren()[0];
+    MetaNodePtr h = f->GetChildren()[1]->GetChildren()[0];
+    g->Save(cout); cout << endl;
+    h->Save(cout); cout << endl;
 
-
+    g = f_dupe->GetChildren()[0]->GetChildren()[0];
+    h = f_dupe->GetChildren()[1]->GetChildren()[0];
+    g->Save(cout); cout << endl;
+    h->Save(cout); cout << endl;
 
 
 

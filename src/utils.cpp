@@ -24,6 +24,17 @@ void PrintList(const list<int> &l, ostream &out) {
     }
 }
 
+vector<vector<double> > SplitVector(const vector<double> &vec, int k) {
+    vector<vector<double> > ret;
+    vector<double>::const_iterator it = vec.begin();
+    int offset = (double)vec.size() / k;
+    for (int i = 0; i < k; ++i) {
+        ret.push_back(vector<double>(it, it + offset));
+        it += offset;
+    }
+    return ret;
+}
+
 boost::mt19937 gen(time(0));
 
 double UniformSample(double max) {

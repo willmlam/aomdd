@@ -10,6 +10,10 @@ void PrintVector(const std::vector<int> &vec, std::ostream &out);
 
 void PrintList(const std::list<int> &l, std::ostream &out);
 
+// Splits a vector into k equally sized vectors. Truncates trailing elements.
+std::vector<std::vector<double> > SplitVector(const std::vector<double> &vec,
+        int k);
+
 // Returns a real number on the interval from 0 to max.
 double UniformSample(double max = 1);
 
