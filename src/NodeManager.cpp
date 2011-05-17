@@ -57,6 +57,13 @@ MetaNodePtr NodeManager::CreateMetaNode(const Scope &var,
     }
 }
 
+MetaNodePtr NodeManager::CreateMetaNode(int varid, unsigned int card,
+        const vector<ANDNodePtr> &ch) {
+    Scope var;
+    var.AddVar(varid, card);
+    return CreateMetaNode(var, ch);
+}
+
 MetaNodePtr NodeManager::CreateMetaNode(const Scope &vars,
         const vector<double> &vals) {
     assert(vars.GetCard() == vals.size());
@@ -93,8 +100,64 @@ MetaNodePtr NodeManager::CreateMetaNode(const Scope &vars,
     return ret;
 }
 
+vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
+    // terminal check
+    if (node.get() == MetaNode::GetZero().get() || node.get()
+            == MetaNode::GetOne().get()) {
+        return vector<MetaNodePtr> (1, node);
+    }
+    bool redundant = true;
+    const vector<ANDNodePtr> &ch = node->GetChildren();
+    ANDNodePtr temp = ch[0];
+    for (unsigned int i = 1; i < ch.size(); ++i) {
+        if (temp != ch[i]) {
+            redundant = false;
+            break;
+        }
+    }
+
+    if (redundant) {
+        ut.erase(node);
+        vector<MetaNodePtr> andCh = temp->GetChildren();
+        vector<MetaNodePtr> ret;
+        for (unsigned int i = 0; i < andCh.size(); ++i) {
+            vector<MetaNodePtr> reduceSet = FullReduce(andCh[i], w);
+            ret.insert(ret.begin(), reduceSet.begin(), reduceSet.end());
+        }
+        w = temp->GetWeight();
+        return ret;
+    }
+    else {
+        ut.erase(node);
+        vector<ANDNodePtr> newMetaCh;
+        for (unsigned int i = 0; i < ch.size(); ++i) {
+            vector<MetaNodePtr> andCh = ch[i]->GetChildren();
+            vector<MetaNodePtr> newandCh;
+            for (unsigned int j = 0; j < andCh.size(); ++j) {
+                vector<MetaNodePtr> reduceSet = FullReduce(andCh[j], w);
+                newandCh.insert(newandCh.begin(), reduceSet.begin(),
+                        reduceSet.end());
+            }
+            ANDNodePtr
+                    rAND(new MetaNode::ANDNode(w * ch[i]->GetWeight(), newandCh));
+            newMetaCh.push_back(rAND);
+            w = 1.0;
+        }
+        MetaNodePtr newMeta = CreateMetaNode(node->GetVarID(), node->GetCard(),
+                newMetaCh);
+        return vector<MetaNodePtr>(1, newMeta);
+    }
+
+}
+
 unsigned int NodeManager::GetNumberOfNodes() const {
     return ut.size();
+}
+
+void NodeManager::PrintUniqueTable(ostream &out) const {
+    BOOST_FOREACH (MetaNodePtr i, ut) {
+        i->Save(out); out << endl;
+    }
 }
 
 bool NodeManager::initialized = false;

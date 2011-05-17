@@ -75,13 +75,22 @@ public:
     MetaNodePtr CreateMetaNode(const Scope &var,
             const std::vector<ANDNodePtr> &ch);
 
+    MetaNodePtr CreateMetaNode(int varid, unsigned int card,
+            const std::vector<ANDNodePtr> &ch);
+
     // Create a metanode based on a tabular form of the function
     // Variable ordering is defined by the scope
     MetaNodePtr CreateMetaNode(const Scope &vars,
             const std::vector<double> &vals);
 
+    // Be sure the input node is a root!
+    // Returns a vector of pointers since ANDNodes can have multiple
+    // MetaNode children
+    std::vector<MetaNodePtr> FullReduce(MetaNodePtr node, double &w);
+
     unsigned int GetNumberOfNodes() const;
 
+    void PrintUniqueTable(std::ostream &out) const;
 
 };
 

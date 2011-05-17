@@ -18,7 +18,7 @@
 namespace aomdd {
 
 class MetaNode {
-
+friend class NodeManager;
 public:
     typedef boost::shared_ptr<MetaNode> MetaNodePtr;
 
@@ -42,6 +42,7 @@ public:
         bool operator==(const ANDNode &rhs) const;
 
         void Save(std::ostream &out);
+        void RecursivePrint(std::ostream &out);
     };
 
     typedef boost::shared_ptr<ANDNode> ANDNodePtr;
@@ -80,12 +81,13 @@ public:
         return card;
     }
 
-    double Evaluate(const Assignment &a) const;
-
     const std::vector<ANDNodePtr> &GetChildren() const;
+
+    double Evaluate(const Assignment &a) const;
 
     bool operator==(const MetaNode &rhs) const;
     void Save(std::ostream &out);
+    void RecursivePrint(std::ostream &out);
 
     friend size_t hash_value(const MetaNode &node);
 
@@ -98,6 +100,8 @@ typedef MetaNode::MetaNodePtr MetaNodePtr;
 typedef MetaNode::ANDNodePtr ANDNodePtr;
 
 bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs);
+bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs);
+bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs);
 
 } // end of aomdd namespace
 

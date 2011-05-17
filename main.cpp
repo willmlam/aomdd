@@ -71,45 +71,34 @@ int main(int argc, char **argv) {
     s.AddVar(0, 2);
     s.AddVar(1, 2);
     vector<double> vals;
-    vals.push_back(0.128);
-    vals.push_back(0.872);
-    vals.push_back(0.128);
-    vals.push_back(0.872);
-//    vals.push_back(0.920);
-//    vals.push_back(0.080);
+    vals.push_back(0.6);
+    vals.push_back(0.6);
+    vals.push_back(0.3);
+    vals.push_back(0.3);
 
     NodeManager *mgr = NodeManager::GetNodeManager();
     MetaNodePtr f = mgr->CreateMetaNode(s, vals);
+
     Assignment a(s);
     a.SetAllVal(0);
     do {
-       a.Save(cout); cout << " value=" << f->Evaluate(a) << endl;
-    } while(a.Iterate());
+        a.Save(cout);
+        cout << "  value = "<< f->Evaluate(a) << endl;
+    } while (a.Iterate());
 
-    vals.pop_back();
-    vals.pop_back();
-    vals.push_back(0.920);
-    vals.push_back(0.080);
+    f->RecursivePrint(cout);
 
-    MetaNodePtr f_dupe = mgr->CreateMetaNode(s, vals);
+    cout << "Number of nodes: " << mgr->GetNumberOfNodes() << endl;
+    double w = 1;
+    f = mgr->FullReduce(f, w)[0];
     do {
-       a.Save(cout); cout << " value=" << f_dupe->Evaluate(a) << endl;
-    } while(a.Iterate());
+        a.Save(cout);
+        cout << "  value = "<< f->Evaluate(a) << endl;
+    } while (a.Iterate());
+    f->RecursivePrint(cout);
+    cout << "Number of nodes: " << mgr->GetNumberOfNodes() << endl;
 
-    cout << "MetaNode count=" << mgr->GetNumberOfNodes() << endl;
-
-    MetaNodePtr g = f->GetChildren()[0]->GetChildren()[0];
-    MetaNodePtr h = f->GetChildren()[1]->GetChildren()[0];
-    g->Save(cout); cout << endl;
-    h->Save(cout); cout << endl;
-
-    g = f_dupe->GetChildren()[0]->GetChildren()[0];
-    h = f_dupe->GetChildren()[1]->GetChildren()[0];
-    g->Save(cout); cout << endl;
-    h->Save(cout); cout << endl;
-
-
-
+    mgr->PrintUniqueTable(cout); cout << endl;
 
     return 0;
 

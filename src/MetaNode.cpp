@@ -55,13 +55,20 @@ bool MetaNode::ANDNode::operator==(const ANDNode &rhs) const {
 }
 
 void MetaNode::ANDNode::Save(ostream &out) {
-    out << "id: " << this << endl;
+    out << "and-id: " << this << endl;
     out << "weight: " << weight << endl;
     out << "children: ";
     BOOST_FOREACH(MetaNodePtr i, children)
                 {
                     out << " " << i;
                 }
+}
+
+void MetaNode::ANDNode::RecursivePrint(ostream &out) {
+    Save(out); out << endl;
+    BOOST_FOREACH(MetaNodePtr i, children) {
+        i->RecursivePrint(out);
+    }
 }
 
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
@@ -109,6 +116,10 @@ MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
 MetaNode::~MetaNode() {
 }
 
+const vector<ANDNodePtr> &MetaNode::GetChildren() const {
+    return children;
+}
+
 double MetaNode::Evaluate(const Assignment &a) const {
     if (this == GetZero().get()) {
         return 0;
@@ -120,10 +131,6 @@ double MetaNode::Evaluate(const Assignment &a) const {
         unsigned int idx = a.GetVal(varID);
         return children[idx]->Evaluate(a);
     }
-}
-
-const vector<ANDNodePtr> &MetaNode::GetChildren() const {
-    return children;
 }
 
 // Considered equal if the scope and children pointers are the same
@@ -141,6 +148,7 @@ bool MetaNode::operator==(const MetaNode &rhs) const {
 }
 
 void MetaNode::Save(ostream &out) {
+    out << "varID: " << varID << endl;
     out << "id: " << this << endl;
     out << "children: ";
     BOOST_FOREACH(ANDNodePtr i, children)
@@ -150,6 +158,14 @@ void MetaNode::Save(ostream &out) {
     if (children.empty()) {
         out << "None";
     }
+}
+
+void MetaNode::RecursivePrint(ostream &out) {
+    Save(out); out << endl;
+    BOOST_FOREACH(ANDNodePtr i, children) {
+        i->RecursivePrint(out);
+    }
+    out << endl;
 }
 
 const MetaNodePtr &MetaNode::GetZero() {
