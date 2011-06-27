@@ -36,6 +36,9 @@ public:
         return functions;
     }
 
+    std::vector<Scope> GetScopes() const;
+
+
     void SetOrdering(const std::list<int> &orderIn);
 
     // parsers

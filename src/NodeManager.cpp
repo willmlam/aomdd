@@ -128,7 +128,6 @@ vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
         return ret;
     }
     else {
-        ut.erase(node);
         vector<ANDNodePtr> newMetaCh;
         for (unsigned int i = 0; i < ch.size(); ++i) {
             vector<MetaNodePtr> andCh = ch[i]->GetChildren();
@@ -143,11 +142,216 @@ vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
             newMetaCh.push_back(rAND);
             w = 1.0;
         }
-        MetaNodePtr newMeta = CreateMetaNode(node->GetVarID(), node->GetCard(),
-                newMetaCh);
-        return vector<MetaNodePtr>(1, newMeta);
+        node->SetChildren(newMetaCh);
+        return vector<MetaNodePtr>(1, node);
     }
 
+}
+
+MetaNodePtr NodeManager::Apply(MetaNodePtr lhs, const vector<MetaNodePtr> &rhs, Operator op,
+        const DirectedGraph &embeddedPT) {
+    Operation ocEntry(op, lhs, rhs);
+    OperationCache::iterator ocit = opCache.find(ocEntry);
+    if ( ocit != opCache.end() ) {
+        //Found result in cache
+        return ocit->second;
+    }
+
+    // Base cases
+    switch(op) {
+        case PROD:
+            if ( lhs.get() == MetaNode::GetZero().get() ) {
+                return MetaNode::GetZero();
+            }
+            else if ( rhs.size() == 0 ) {
+                return lhs;
+            }
+            else {
+                for (unsigned int i = 0; i < rhs.size(); ++i) {
+                    if ( rhs[i].get() == MetaNode::GetZero().get() ) {
+                        return MetaNode::GetZero();
+                    }
+                }
+            }
+            if ( lhs.get() == MetaNode::GetOne().get() ) {
+                return MetaNode::GetOne();
+            }
+            break;
+        case SUM:
+            if ( rhs.size() == 0 ) {
+                return lhs;
+            }
+            if ( lhs.get() == MetaNode::GetOne().get() ) {
+                return MetaNode::GetOne();
+            }
+            break;
+        default:
+            assert(false);
+    }
+
+    int varid = lhs->GetVarID();
+    int card = lhs->GetCard();
+
+    vector<ANDNodePtr> children;
+
+    // For each value of lhs
+    for (int k = 0; k < card; ++k) {
+        // Get original weight
+        vector<MetaNodePtr> newChildren;
+        double weight = lhs->GetChildren()[k]->GetWeight();
+        const vector<MetaNodePtr> &lhsChildren = lhs->GetChildren()[k]->GetChildren();
+        vector<MetaNodePtr> tempChildren;
+
+        if ( rhs.size() == 1 && varid == rhs[0]->GetVarID() ) {
+            // Same variable, single roots case
+            tempChildren = rhs[0]->GetChildren()[k]->GetChildren();
+            switch(op) {
+                case PROD:
+                    weight *= rhs[0]->GetChildren()[k]->GetWeight();
+                    break;
+                case SUM:
+                    weight += rhs[0]->GetChildren()[k]->GetWeight();
+                    break;
+                default:
+                    assert(false);
+            }
+        }
+        else {
+            // Not the same variable, prepare to push rhs down
+            tempChildren = rhs;
+        }
+
+        // Group nodes into parameter sets for recursive applys
+        unordered_set<int> lhsSet;
+        unordered_set<int> tempSet;
+
+        // Create maps from the ancestor node to varids.
+        unordered_map<int, vector<int> > ancestorMap;
+
+        // Create map from integers to MetaNodes for quick access later
+        unordered_map<int, MetaNodePtr> metaNodeMap;
+
+        for (unsigned int i = 0; i < lhsChildren.size(); ++i) {
+            lhsSet.insert(lhsChildren[i]->GetVarID());
+            metaNodeMap.insert(make_pair<int, MetaNodePtr>(lhsChildren[i]->GetVarID(), lhsChildren[i]));
+        }
+        for (unsigned int i = 0; i < tempChildren.size(); ++i) {
+            tempSet.insert(tempChildren[i]->GetVarID());
+            metaNodeMap.insert(make_pair<int, MetaNodePtr>(tempChildren[i]->GetVarID(), tempChildren[i]));
+        }
+
+        // Find highest ancestor within the other set
+        unordered_set<int>::iterator lhsIt = lhsSet.begin();
+        for (; lhsIt != lhsSet.end(); ++lhsIt) {
+            int chvarid = *lhsIt;
+
+            // No need to traverse if determined to be an ancestor
+            if (ancestorMap.find(chvarid) != ancestorMap.end()) continue;
+
+            // Check pseudo tree
+            DInEdge ei, ei_end;
+            tie(ei, ei_end) = in_edges(chvarid, embeddedPT);
+            while (ei != ei_end) {
+                cout << *ei << endl;
+                ++ei;
+            }
+            tie(ei, ei_end) = in_edges(chvarid, embeddedPT);
+
+            int highestAncestor = chvarid;
+            int count = 0; // Debugging use
+            while (ei != ei_end) {
+                assert(++count <= 1);
+                int parent = source(*ei, embeddedPT);
+                if ( tempSet.find(parent) != tempSet.end() ) {
+                    highestAncestor = parent;
+                    tie(ei, ei_end) = in_edges(parent, embeddedPT);
+                    count = 0;
+                }
+                ++ei;
+            }
+            ancestorMap[highestAncestor].push_back(chvarid);
+        }
+
+        // Repeat from other side
+        unordered_set<int>::iterator tempIt = tempSet.begin();
+        for (; tempIt != tempSet.end(); ++tempIt) {
+            int chvarid = *tempIt;
+
+            // No need to traverse if determined to be an ancestor
+            if (ancestorMap.find(chvarid) != ancestorMap.end()) continue;
+
+            // Check pseudo tree
+            DInEdge ei, ei_end;
+            tie(ei, ei_end) = in_edges(chvarid, embeddedPT);
+            while (ei != ei_end) {
+                cout << *ei << endl;
+                ++ei;
+            }
+            tie(ei, ei_end) = in_edges(chvarid, embeddedPT);
+            int highestAncestor = chvarid;
+            int count = 0; // Debugging use
+            while (ei != ei_end) {
+                assert(++count <= 1);
+                int parent = source(*ei, embeddedPT);
+                if ( tempSet.find(parent) != tempSet.end() ) {
+                    highestAncestor = parent;
+                    tie(ei, ei_end) = in_edges(parent, embeddedPT);
+                    count = 0;
+                }
+                ++ei;
+            }
+            ancestorMap[highestAncestor].push_back(chvarid);
+        }
+
+        vector< pair<MetaNodePtr, vector<MetaNodePtr> > > paramSets;
+        unordered_map<int, vector<int> >::iterator ait = ancestorMap.begin();
+        unordered_map<int,MetaNodePtr>::iterator mit;
+        for (; ait != ancestorMap.end(); ++ait) {
+            vector<MetaNodePtr> paramRHS;
+            const vector<int> &descendants = ait->second;
+            for (unsigned int i = 0; i < descendants.size(); ++i) {
+                mit = metaNodeMap.find(descendants[i]);
+                assert(mit != metaNodeMap.end());
+                if (ait->first != descendants[i]) {
+                    paramRHS.push_back(mit->second);
+                }
+            }
+            mit = metaNodeMap.find(ait->first);
+            assert(mit != metaNodeMap.end());
+            paramSets.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(
+                    mit->second, paramRHS));
+        }
+
+        // For each parameter set
+        for (unsigned int i = 0; i < paramSets.size(); ++i) {
+            cout << "ParamSet size:" << paramSets.size() << endl;
+            cout << "lhs: " << endl;
+            paramSets[i].first->Save(cout); cout << endl;
+            cout << "rhs: " << endl;
+            for (unsigned int j = 0; j < paramSets[i].second.size(); ++j) {
+                paramSets[i].second[j]->Save(cout); cout << endl;
+            }
+            cout << "End of param set" << endl;
+            MetaNodePtr subDD = Apply(paramSets[i].first, paramSets[i].second, op, embeddedPT);
+            if ( subDD == MetaNode::GetZero() ) {
+                newChildren.push_back(MetaNode::GetZero());
+                break;
+            }
+            else {
+                newChildren.push_back(subDD);
+            }
+        }
+        ANDNodePtr newNode(new MetaNode::ANDNode(weight, newChildren));
+        children.push_back(newNode);
+
+    }
+    // Redundancy can be resolved outside
+    Scope var;
+    var.AddVar(varid, card);
+    MetaNodePtr u = CreateMetaNode(var, children);
+    Operation entryKey(op, lhs, rhs);
+    opCache.insert(make_pair<Operation, MetaNodePtr>(entryKey, u));
+    return u;
 }
 
 unsigned int NodeManager::GetNumberOfNodes() const {

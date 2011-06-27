@@ -11,6 +11,7 @@
 #define NODEMANAGER_H_
 
 #include "base.h"
+#include "graphbase.h"
 #include "MetaNode.h"
 
 namespace aomdd {
@@ -27,6 +28,8 @@ typedef boost::unordered_set<MetaNodePtr> ParamSet;
 class Operation {
     Operator op;
     ParamSet params;
+    MetaNodePtr result;
+
 public:
     Operation() :
         op(NONE) {
@@ -35,10 +38,12 @@ public:
         op(o) {
         params.insert(arg);
     }
-    Operation(Operator o, MetaNodePtr arg1, MetaNodePtr arg2) :
+    Operation(Operator o, MetaNodePtr arg1, const std::vector<MetaNodePtr> &arg2) :
         op(o) {
         params.insert(arg1);
-        params.insert(arg2);
+        for (unsigned int i = 0; i < arg2.size(); ++i) {
+            params.insert(arg2[i]);
+        }
     }
 
     const Operator &GetOperator() const {
@@ -87,6 +92,9 @@ public:
     // Returns a vector of pointers since ANDNodes can have multiple
     // MetaNode children
     std::vector<MetaNodePtr> FullReduce(MetaNodePtr node, double &w);
+
+    MetaNodePtr Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
+            const DirectedGraph &embeddedPT);
 
     unsigned int GetNumberOfNodes() const;
 

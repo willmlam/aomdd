@@ -54,5 +54,48 @@ int CategoricalSample(const vector<double> &vec) {
             sample()) - cumulative.begin();
 }
 
+vector<int> GetConnectedComponentSizes(int numComponents, const vector<int> &componentMap) {
+    vector<int> componentSizes(numComponents, 0);
+    for (unsigned int i = 0; i < componentMap.size(); ++i) {
+        componentSizes[componentMap[i]]++;
+    }
+    return componentSizes;
+}
+
+void Print(const DirectedGraph &dg, std::ostream &os) {
+    DEdge out, out_end;
+    DVertex v_s, v_end;
+    tie(v_s, v_end) = vertices(dg);
+    for (; v_s != v_end; ++v_s) {
+        os << *v_s << " : ";
+        tie(out, out_end) = out_edges(*v_s, dg);
+        for(; out != out_end; ++out) {
+            os << *out;
+        }
+        os << std::endl;
+    }
+}
+
+void Print(const UndirectedGraph &g, std::ostream &os) {
+    Edge out, out_end;
+    Vertex v_s, v_end;
+    tie(v_s, v_end) = vertices(g);
+    for (; v_s != v_end; ++v_s) {
+        os << *v_s << " : ";
+        tie(out, out_end) = out_edges(*v_s, g);
+        for(; out != out_end; ++out) {
+            os << *out;
+        }
+        os << std::endl;
+    }
+}
+
+void WriteDot(const DirectedGraph &g, std::string filename) {
+    std::ofstream outfile(filename.c_str());
+    write_graphviz(outfile, g);
+}
+
+
+
 } // end of aomdd namespace
 

@@ -8,6 +8,7 @@
  */
 
 #include "MetaNode.h"
+#include <sstream>
 
 namespace aomdd {
 using namespace std;
@@ -42,6 +43,7 @@ const vector<MetaNodePtr> &MetaNode::ANDNode::GetChildren() const {
     return children;
 }
 
+
 bool MetaNode::ANDNode::operator==(const ANDNode &rhs) const {
     if (weight != rhs.weight || children.size() != rhs.children.size()) {
         return false;
@@ -68,6 +70,18 @@ void MetaNode::ANDNode::RecursivePrint(ostream &out) {
     Save(out); out << endl;
     BOOST_FOREACH(MetaNodePtr i, children) {
         i->RecursivePrint(out);
+    }
+}
+
+void MetaNode::ANDNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const {
+    stringstream ss;
+    ss << this;
+    string cur = ss.str();
+    ss.clear();
+    DVertexDesc current = add_vertex(cur, diagram);
+    add_edge(parent, current, diagram);
+    BOOST_FOREACH(MetaNodePtr i, children) {
+        i->GenerateDiagram(diagram, current);
     }
 }
 
@@ -120,6 +134,10 @@ const vector<ANDNodePtr> &MetaNode::GetChildren() const {
     return children;
 }
 
+void MetaNode::SetChildren(const std::vector<ANDNodePtr> &ch) {
+    children = ch;
+}
+
 double MetaNode::Evaluate(const Assignment &a) const {
     if (this == GetZero().get()) {
         return 0;
@@ -148,7 +166,15 @@ bool MetaNode::operator==(const MetaNode &rhs) const {
 }
 
 void MetaNode::Save(ostream &out) {
-    out << "varID: " << varID << endl;
+    if(this == MetaNode::GetZero().get()) {
+        out << "TERMINAL ZERO" << endl;
+    }
+    else if(this == MetaNode::GetOne().get()) {
+        out << "TERMINAL ONE" << endl;
+    }
+    else {
+        out << "varID: " << varID << endl;
+    }
     out << "id: " << this << endl;
     out << "children: ";
     BOOST_FOREACH(ANDNodePtr i, children)
@@ -166,6 +192,25 @@ void MetaNode::RecursivePrint(ostream &out) {
         i->RecursivePrint(out);
     }
     out << endl;
+}
+
+DirectedGraph MetaNode::GenerateDiagram() const {
+    DirectedGraph diagram;
+    DVertexDesc dummy(VertexDesc(0));
+    GenerateDiagram(diagram, dummy);
+    return diagram;
+}
+
+void MetaNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const {
+    stringstream ss;
+    ss << this;
+    string cur = ss.str();
+    ss.clear();
+    DVertexDesc current = add_vertex(cur, diagram);
+    add_edge(parent, current, diagram);
+    BOOST_FOREACH(ANDNodePtr i, children) {
+        i->GenerateDiagram(diagram, current);
+    }
 }
 
 const MetaNodePtr &MetaNode::GetZero() {
