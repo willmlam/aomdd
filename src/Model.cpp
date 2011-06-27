@@ -25,6 +25,14 @@ Model::Model(const vector<int> &domainsIn, const vector<TableFunction> &funcsIn)
     domains(domainsIn), functions(funcsIn) {
 }
 
+vector<Scope> Model::GetScopes() const {
+    vector<Scope> ret;
+    for (unsigned int i = 0; i < functions.size(); ++i) {
+        ret.push_back(functions[i].GetScope());
+    }
+    return ret;
+}
+
 void Model::SetOrdering(const list<int> &orderIn) {
     ordering = orderIn;
     for (unsigned int i = 0; i < functions.size(); ++i) {

@@ -4,6 +4,8 @@
 #include "utils.h"
 #include "base.h"
 #include "Model.h"
+#include "Graph.h"
+#include "PseudoTree.h"
 #include "MetaNode.h"
 #include "NodeManager.h"
 #include <iostream>
@@ -67,6 +69,9 @@ void IterateTester(Assignment & a) {
 typedef boost::unordered_map<Assignment, double> FTable;
 
 int main(int argc, char **argv) {
+
+
+    /*
     Scope s;
     s.AddVar(0, 2);
     s.AddVar(1, 2);
@@ -101,6 +106,7 @@ int main(int argc, char **argv) {
     mgr->PrintUniqueTable(cout); cout << endl;
 
     return 0;
+    */
 
     /*
      Scope s;
@@ -161,10 +167,81 @@ int main(int argc, char **argv) {
         list<int> ordering = parseOrder(orderFile);
         map<int, int> evidence = parseEvidence(evidFile);
         m.SetOrdering(ordering);
+
+        Graph g(m.GetScopes());
+        Print(g.GetGraph(), cout);
+        cout << endl;
+
+        cout << "InducedGraph" << endl;
+        g.InduceEdges(ordering);
+        Print(g.GetGraph(), cout);
+        cout << endl;
+        cout << "w=" << g.GetInducedWidth() << endl;
+        cout << endl;
+
+        cout << "PseudoTree" << endl;
+        PseudoTree pt(g);
+        Print(pt.GetTree(), cout);
+        cout << endl;
+        cout << "w=" << pt.GetInducedWidth() << endl;
+        cout << "h=" << pt.GetHeight() << endl;
+        cout << endl;
+        string fname = "276hw5p4.dot";
+        WriteDot(pt.GetTree(), fname);
+
+        cout << "Number of Nodes: " << pt.GetNumberOfNodes() << endl;
+
+        NodeManager *mgr = NodeManager::GetNodeManager();
+        MetaNodePtr f3 = mgr->CreateMetaNode(m.GetFunctions()[3].GetScope(),
+                m.GetFunctions()[3].GetValues());
+        MetaNodePtr f6 = mgr->CreateMetaNode(m.GetFunctions()[6].GetScope(),
+                m.GetFunctions()[6].GetValues());
+
+        DirectedGraph embedpt;
+        int embedptroot;
+        Scope s = m.GetScopes()[3] + m.GetScopes()[6];
+        tie(embedpt, embedptroot) = pt.GenerateEmbeddable(s);
+
+        vector<MetaNodePtr> rhs(1, f6);
+        double w = 1.0;
+        MetaNodePtr h = mgr->FullReduce(mgr->Apply(f3, rhs, PROD, embedpt), w)[0];
+        cout << "This is f3" << endl;
+        cout << "==========" << endl;
+        f3->RecursivePrint(cout); cout << endl;
+        cout << "This is f6" << endl;
+        cout << "==========" << endl;
+        f6->RecursivePrint(cout); cout << endl;
+        cout << "This is h" << endl;
+        cout << "=========" << endl;
+        h->RecursivePrint(cout); cout << endl;
+        cout << "Number of nodes: " << mgr->GetNumberOfNodes() << endl;
+        Assignment a(s);
+        a.SetAllVal(0);
+        do {
+            a.Save(cout);
+            cout << "  value = "<< h->Evaluate(a) << endl;
+        } while (a.Iterate());
+
+        cout << "Result from table representation" << endl;
+        TableFunction ht = m.GetFunctions()[3];
+        TableFunction f6t = m.GetFunctions()[6];
+        ht.Multiply(f6t);
+        do {
+            a.Save(cout);
+            cout << "  value = "<< ht.GetVal(a) << endl;
+        } while (a.Iterate());
+
+        DirectedGraph ddgraph = h->GenerateDiagram();
+        string ddfilename = "ddgraph.dot";
+        WriteDot(ddgraph, ddfilename);
+
+
+                /*
         BucketTree bt(m, ordering, evidence);
         bt.Save(cout);
         cout << endl;
         cout << "Pr= " << bt.Prob();
+        */
 
     } catch (GenericException & e) {
         cout << e.what();

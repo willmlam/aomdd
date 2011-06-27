@@ -13,6 +13,7 @@
 #define _METANODE_H_
 
 #include "base.h"
+#include "graphbase.h"
 #include "Scope.h"
 
 namespace aomdd {
@@ -43,6 +44,7 @@ public:
 
         void Save(std::ostream &out);
         void RecursivePrint(std::ostream &out);
+        void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
     };
 
     typedef boost::shared_ptr<ANDNode> ANDNodePtr;
@@ -82,12 +84,16 @@ public:
     }
 
     const std::vector<ANDNodePtr> &GetChildren() const;
+    void SetChildren(const std::vector<ANDNodePtr> &ch);
 
     double Evaluate(const Assignment &a) const;
 
     bool operator==(const MetaNode &rhs) const;
     void Save(std::ostream &out);
     void RecursivePrint(std::ostream &out);
+    DirectedGraph GenerateDiagram() const;
+
+    void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
 
     friend size_t hash_value(const MetaNode &node);
 

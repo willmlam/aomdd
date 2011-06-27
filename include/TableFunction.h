@@ -28,6 +28,8 @@ public:
 
     virtual double GetVal(const Assignment &a, bool logOut = false) const;
 
+    const std::vector<double> &GetValues() const { return values; }
+
     virtual bool SetVal(const Assignment &a, double val);
 
     virtual void SetOrdering(const std::list<int> &ordering)
