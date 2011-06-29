@@ -35,9 +35,12 @@ public:
         ANDNode(double w, const std::vector<MetaNodePtr> &ch);
 
         double GetWeight() const;
+        void SetWeight(double w);
 
         const std::vector<MetaNodePtr> &GetChildren() const;
 
+        // Normalizes all the children MetaNodes and updates the weight
+        double Normalize();
         double Evaluate(const Assignment &a);
 
         bool operator==(const ANDNode &rhs) const;
@@ -59,6 +62,7 @@ private:
     unsigned int card;
     // children: ANDNodes
     std::vector<ANDNodePtr> children;
+    double weight;
 
     // Used to make terminal nodes singletons
     static bool zeroInit;
@@ -75,16 +79,19 @@ public:
 
     MetaNode(const Scope &var, const std::vector<ANDNodePtr> &ch);
 
-    int GetVarID() const {
-        return varID;
-    }
+    inline int GetVarID() const;
 
-    unsigned int GetCard() const {
-        return card;
-    }
+    inline unsigned int GetCard();
 
-    const std::vector<ANDNodePtr> &GetChildren() const;
-    void SetChildren(const std::vector<ANDNodePtr> &ch);
+    inline double GetWeight();
+
+    inline void SetWeight();
+
+    inline const std::vector<ANDNodePtr> &GetChildren() const;
+    inline void SetChildren(const std::vector<ANDNodePtr> &ch);
+
+    // Normalizes below, sets weight and returns normalization constant
+    double Normalize();
 
     double Evaluate(const Assignment &a) const;
 

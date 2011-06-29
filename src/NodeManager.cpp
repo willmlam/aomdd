@@ -47,6 +47,7 @@ NodeManager *NodeManager::GetNodeManager() {
 MetaNodePtr NodeManager::CreateMetaNode(const Scope &var,
         const vector<ANDNodePtr> &ch) {
     MetaNodePtr temp(new MetaNode(var, ch));
+    temp->Normalize();
     UniqueTable::iterator it = ut.find(temp);
     if (it != ut.end()) {
         return *it;
@@ -354,6 +355,35 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs, const vector<MetaNodePtr> &rhs, 
     return u;
 }
 
+// Sets each AND node of variables to marginalize to be the result of summing
+// the respective MetaNode children of each AND node. Redundancy can be
+// resolved outside.
+MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
+        const DirectedGraph &embeddedpt) {
+    int varid = root->GetVarID();
+    int card = root->GetCard();
+    const vector<ANDNodePtr> &children = root->GetChildren();
+    vector<MetaNodePtr> andChildren(children[0]->GetChildren());
+    double totalWeight = children[0]->GetWeight();
+    if (s.VarExists(varid)) {
+        for (int i = 1; i < children.size(); ++i) {
+            totalWeight += children[i]->GetWeight();
+            const vector<MetaNodePtr> &curANDChildren = children[i]->GetChildren();
+            for (int j = 0; j < andChildren.size(); ++j) {
+                andChildren[j] = Apply(andChildren[j],
+                        vector<MetaNodePtr>(1, curANDChildren),
+                        Operator::SUM, embeddedpt);
+            }
+        }
+    }
+    vector<ANDNodePtr> andNodes;
+    for (int i = 0; i < children.size(); ++i) {
+        ANDNodePtr node(new MetaNode::ANDNode(totalWeight, andChildren));
+        andNodes.push_back(node);
+    }
+    MetaNodePtr ret = CreateMetaNode(varid, card, andNodes);
+    return ret;
+}
 unsigned int NodeManager::GetNumberOfNodes() const {
     return ut.size();
 }

@@ -17,7 +17,7 @@
 namespace aomdd {
 
 enum Operator {
-    PROD, SUM, REDUCE, NONE
+    PROD, SUM, REDUCE, MARGINALIZE, NONE
 };
 
 // Note: set comparison will use overridden version of == for MetaNodePtr
@@ -95,6 +95,8 @@ public:
 
     MetaNodePtr Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
             const DirectedGraph &embeddedPT);
+
+    MetaNodePtr Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
 
     unsigned int GetNumberOfNodes() const;
 

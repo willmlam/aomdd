@@ -24,6 +24,14 @@ MetaNode::ANDNode::ANDNode(double w, const vector<MetaNodePtr> &ch) :
 MetaNode::ANDNode::~ANDNode() {
 }
 
+double MetaNode::ANDNode::Normalize() {
+    BOOST_FOREACH(MetaNodePtr i, children) {
+        weight *= i->Normalize();
+        i->SetWeight(1);
+    }
+    return weight;
+}
+
 double MetaNode::ANDNode::Evaluate(const Assignment &a) {
     double ret = weight;
     BOOST_FOREACH(MetaNodePtr i, children)
@@ -37,6 +45,10 @@ double MetaNode::ANDNode::Evaluate(const Assignment &a) {
 
 double MetaNode::ANDNode::GetWeight() const {
     return weight;
+}
+
+void MetaNode::ANDNode::SetWeight(double w) {
+    weight = w;
 }
 
 const vector<MetaNodePtr> &MetaNode::ANDNode::GetChildren() const {
@@ -114,7 +126,7 @@ bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
 
 // ======================
 
-MetaNode::MetaNode() : varID(-1), card(0) {
+MetaNode::MetaNode() : varID(-1), card(0), weight(1) {
 }
 
 MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
@@ -130,12 +142,40 @@ MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
 MetaNode::~MetaNode() {
 }
 
+
+int MetaNode::GetVarID() const {
+    return varID;
+}
+
+unsigned int MetaNode::GetCard() const {
+    return card;
+}
+
+double MetaNode::GetWeight() const {
+    return weight;
+}
+
+void MetaNode::SetWeight(double w) {
+    weight = w;
+}
+
 const vector<ANDNodePtr> &MetaNode::GetChildren() const {
     return children;
 }
 
 void MetaNode::SetChildren(const std::vector<ANDNodePtr> &ch) {
     children = ch;
+}
+
+double MetaNode::Normalize() {
+    double normConstant;
+    BOOST_FOREACH(ANDNodePtr i, children) {
+        normConstant += i->Normalize();
+    }
+    BOOST_FOREACH(ANDNodePtr i, children) {
+        i->SetWeight(i->GetWeight() / normConstant);
+    }
+    return weight = normConstant;
 }
 
 double MetaNode::Evaluate(const Assignment &a) const {
@@ -147,7 +187,7 @@ double MetaNode::Evaluate(const Assignment &a) const {
     }
     else {
         unsigned int idx = a.GetVal(varID);
-        return children[idx]->Evaluate(a);
+        return weight * children[idx]->Evaluate(a);
     }
 }
 
@@ -239,10 +279,13 @@ size_t hash_value(const MetaNode &node) {
     size_t seed = 0;
     boost::hash_combine(seed, node.varID);
     boost::hash_combine(seed, node.card);
-    BOOST_FOREACH(ANDNodePtr i, node.children)
-                {
-                    boost::hash_combine(seed, i.get());
-                }
+    boost::hash_combine(seed, node.weight);
+    BOOST_FOREACH(ANDNodePtr i, node.children) {
+        boost::hash_combine(seed, i.get());
+        BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
+            boost::hash_combine(seed, j.get());
+        }
+    }
     return seed;
 
 }
@@ -251,10 +294,13 @@ size_t hash_value(const MetaNodePtr &node) {
     size_t seed = 0;
     boost::hash_combine(seed, node->GetVarID());
     boost::hash_combine(seed, node->GetCard());
-    BOOST_FOREACH(ANDNodePtr i, node->GetChildren())
-                {
-                    boost::hash_combine(seed, i.get());
-                }
+    boost::hash_combine(seed, node->GetWeight());
+    BOOST_FOREACH(ANDNodePtr i, node->GetChildren()) {
+        boost::hash_combine(seed, i->GetWeight());
+        BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
+            boost::hash_combine(seed, j.get());
+        }
+    }
     return seed;
 }
 
