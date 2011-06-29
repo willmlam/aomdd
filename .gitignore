@@ -14,3 +14,13 @@
 *.d
 .DS_Store
 aomdd
+daooptW
+*.out
+*.uai*
+*.gif
+*.mk
+*.pdf
+*.dot
+*.swp
+*.ps
+Makefile
