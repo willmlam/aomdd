@@ -194,6 +194,9 @@ int main(int argc, char **argv) {
         NodeManager *mgr = NodeManager::GetNodeManager();
         MetaNodePtr f3 = mgr->CreateMetaNode(m.GetFunctions()[3].GetScope(),
                 m.GetFunctions()[3].GetValues());
+
+        cout << "Building f6 DD" << endl;
+        cout << "==============" << endl;
         MetaNodePtr f6 = mgr->CreateMetaNode(m.GetFunctions()[6].GetScope(),
                 m.GetFunctions()[6].GetValues());
 
@@ -205,21 +208,26 @@ int main(int argc, char **argv) {
         vector<MetaNodePtr> rhs(1, f6);
         double w = 1.0;
         MetaNodePtr h = mgr->FullReduce(mgr->Apply(f3, rhs, PROD, embedpt), w)[0];
+        /*
         cout << "This is f3" << endl;
         cout << "==========" << endl;
         f3->RecursivePrint(cout); cout << endl;
+        */
+        f6->Normalize();
         cout << "This is f6" << endl;
         cout << "==========" << endl;
         f6->RecursivePrint(cout); cout << endl;
+        /*
         cout << "This is h" << endl;
         cout << "=========" << endl;
         h->RecursivePrint(cout); cout << endl;
+        */
         cout << "Number of nodes: " << mgr->GetNumberOfNodes() << endl;
-        Assignment a(s);
+        Assignment a(m.GetScopes()[6]);
         a.SetAllVal(0);
         do {
             a.Save(cout);
-            cout << "  value = "<< h->Evaluate(a) << endl;
+            cout << "  value = "<< f6->Evaluate(a) << endl;
         } while (a.Iterate());
 
         cout << "Result from table representation" << endl;
@@ -228,7 +236,7 @@ int main(int argc, char **argv) {
         ht.Multiply(f6t);
         do {
             a.Save(cout);
-            cout << "  value = "<< ht.GetVal(a) << endl;
+            cout << "  value = "<< f6t.GetVal(a) << endl;
         } while (a.Iterate());
 
         DirectedGraph ddgraph = h->GenerateDiagram();

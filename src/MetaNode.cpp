@@ -14,7 +14,7 @@ namespace aomdd {
 using namespace std;
 
 MetaNode::ANDNode::ANDNode() :
-    weight(0) {
+    weight(1) {
 }
 
 MetaNode::ANDNode::ANDNode(double w, const vector<MetaNodePtr> &ch) :
@@ -34,12 +34,11 @@ double MetaNode::ANDNode::Normalize() {
 
 double MetaNode::ANDNode::Evaluate(const Assignment &a) {
     double ret = weight;
-    BOOST_FOREACH(MetaNodePtr i, children)
-                {
-                    ret *= i->Evaluate(a);
-                    if (ret == 0)
-                        return ret;
-                }
+    BOOST_FOREACH(MetaNodePtr i, children) {
+        ret *= i->Evaluate(a);
+        if (ret == 0)
+            return ret;
+    }
     return ret;
 }
 
@@ -130,7 +129,7 @@ MetaNode::MetaNode() : varID(-1), card(0), weight(1) {
 }
 
 MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
-    children(ch) {
+    children(ch), weight(1) {
     // Scope must be over one variable
     assert(var.GetNumVars() == 1);
     varID = var.GetOrdering().front();
@@ -145,14 +144,22 @@ MetaNode::~MetaNode() {
 
 
 double MetaNode::Normalize() {
-    double normConstant;
+    if (this == GetZero().get() || this == GetOne().get()) {
+        return 1;
+    }
+    double normConstant = 0;
+    Save(cout); cout << endl;
     BOOST_FOREACH(ANDNodePtr i, children) {
         normConstant += i->Normalize();
     }
     BOOST_FOREACH(ANDNodePtr i, children) {
+        cout << "Old weight:" << i->GetWeight() << endl;
         i->SetWeight(i->GetWeight() / normConstant);
+        cout << "Normalized weight:" << i->GetWeight() << endl;
     }
-    return weight = normConstant;
+    cout << "Normalizer: "<< normConstant << endl << endl;
+    weight = normConstant;
+    return weight;
 }
 
 double MetaNode::Evaluate(const Assignment &a) const {
@@ -193,6 +200,7 @@ void MetaNode::Save(ostream &out) {
         out << "varID: " << varID << endl;
     }
     out << "id: " << this << endl;
+    out << "weight: " << weight << endl;
     out << "children: ";
     BOOST_FOREACH(ANDNodePtr i, children)
                 {

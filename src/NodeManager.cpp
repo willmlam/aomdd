@@ -47,7 +47,7 @@ NodeManager *NodeManager::GetNodeManager() {
 MetaNodePtr NodeManager::CreateMetaNode(const Scope &var,
         const vector<ANDNodePtr> &ch) {
     MetaNodePtr temp(new MetaNode(var, ch));
-    temp->Normalize();
+//    temp->Normalize();
     UniqueTable::iterator it = ut.find(temp);
     if (it != ut.end()) {
         return *it;
