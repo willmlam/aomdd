@@ -79,16 +79,16 @@ public:
 
     MetaNode(const Scope &var, const std::vector<ANDNodePtr> &ch);
 
-    inline int GetVarID() const;
+    inline int GetVarID() const { return varID; }
 
-    inline unsigned int GetCard();
+    inline unsigned int GetCard() const { return card; }
 
-    inline double GetWeight();
+    inline double GetWeight() const { return weight; }
 
-    inline void SetWeight();
+    inline void SetWeight(double w) { weight = w; }
 
-    inline const std::vector<ANDNodePtr> &GetChildren() const;
-    inline void SetChildren(const std::vector<ANDNodePtr> &ch);
+    inline const std::vector<ANDNodePtr> &GetChildren() const { return children; }
+    inline void SetChildren(const std::vector<ANDNodePtr> &ch) { children = ch; }
 
     // Normalizes below, sets weight and returns normalization constant
     double Normalize();

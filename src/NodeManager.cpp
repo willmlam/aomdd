@@ -366,18 +366,18 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     vector<MetaNodePtr> andChildren(children[0]->GetChildren());
     double totalWeight = children[0]->GetWeight();
     if (s.VarExists(varid)) {
-        for (int i = 1; i < children.size(); ++i) {
+        for (unsigned int i = 1; i < children.size(); ++i) {
             totalWeight += children[i]->GetWeight();
             const vector<MetaNodePtr> &curANDChildren = children[i]->GetChildren();
-            for (int j = 0; j < andChildren.size(); ++j) {
-                andChildren[j] = Apply(andChildren[j],
-                        vector<MetaNodePtr>(1, curANDChildren),
-                        Operator::SUM, embeddedpt);
+            for (unsigned int j = 0; j < andChildren.size(); ++j) {
+                vector<MetaNodePtr> rhsParam(1, curANDChildren[j]);
+                andChildren[j] = Apply(andChildren[j], rhsParam,
+                        SUM, embeddedpt);
             }
         }
     }
     vector<ANDNodePtr> andNodes;
-    for (int i = 0; i < children.size(); ++i) {
+    for (unsigned int i = 0; i < children.size(); ++i) {
         ANDNodePtr node(new MetaNode::ANDNode(totalWeight, andChildren));
         andNodes.push_back(node);
     }

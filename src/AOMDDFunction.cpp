@@ -10,7 +10,7 @@
 #include "AOMDDFunction.h"
 
 namespace aomdd {
-
+/*
 AOMDDFunction::AOMDDFunction() {
     // TODO Auto-generated constructor stub
 
@@ -26,5 +26,6 @@ AOMDDFunction::AOMDDFunction(const Scope &domainIn, const std::vector<double> &v
 AOMDDFunction::~AOMDDFunction() {
     // TODO Auto-generated destructor stub
 }
+*/
 
 }

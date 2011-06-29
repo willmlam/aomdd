@@ -143,29 +143,6 @@ MetaNode::~MetaNode() {
 }
 
 
-int MetaNode::GetVarID() const {
-    return varID;
-}
-
-unsigned int MetaNode::GetCard() const {
-    return card;
-}
-
-double MetaNode::GetWeight() const {
-    return weight;
-}
-
-void MetaNode::SetWeight(double w) {
-    weight = w;
-}
-
-const vector<ANDNodePtr> &MetaNode::GetChildren() const {
-    return children;
-}
-
-void MetaNode::SetChildren(const std::vector<ANDNodePtr> &ch) {
-    children = ch;
-}
 
 double MetaNode::Normalize() {
     double normConstant;
