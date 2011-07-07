@@ -74,19 +74,23 @@ class NodeManager {
 
     static bool initialized;
     static NodeManager *singleton;
+
+    // Reweigh nodes by multiplying in w to the MetaNode, unless it's a terminal
+    std::vector<MetaNodePtr> ReweighNodes(
+            const std::vector<MetaNodePtr> &nodes, double w);
 public:
     static NodeManager *GetNodeManager();
     // Create a metanode from a variable with a children list
     MetaNodePtr CreateMetaNode(const Scope &var,
-            const std::vector<ANDNodePtr> &ch);
+            const std::vector<ANDNodePtr> &ch, double weight = 1);
 
     MetaNodePtr CreateMetaNode(int varid, unsigned int card,
-            const std::vector<ANDNodePtr> &ch);
+            const std::vector<ANDNodePtr> &ch, double weight = 1);
 
     // Create a metanode based on a tabular form of the function
     // Variable ordering is defined by the scope
     MetaNodePtr CreateMetaNode(const Scope &vars,
-            const std::vector<double> &vals);
+            const std::vector<double> &vals, double weight = 1);
 
     // Be sure the input node is a root!
     // Returns a vector of pointers since ANDNodes can have multiple
@@ -94,7 +98,7 @@ public:
     std::vector<MetaNodePtr> FullReduce(MetaNodePtr node, double &w);
 
     MetaNodePtr Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
-            const DirectedGraph &embeddedPT);
+            const DirectedGraph &embeddedPT, double w = 1);
 
     MetaNodePtr Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
 

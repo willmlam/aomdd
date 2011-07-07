@@ -158,7 +158,7 @@ double MetaNode::Normalize() {
         cout << "Normalized weight:" << i->GetWeight() << endl;
     }
     cout << "Normalizer: "<< normConstant << endl << endl;
-    weight = normConstant;
+    weight *= normConstant;
     return weight;
 }
 
@@ -170,7 +170,8 @@ double MetaNode::Evaluate(const Assignment &a) const {
         return 1;
     }
     else {
-        unsigned int idx = a.GetVal(varID);
+        int idx = a.GetVal(varID);
+        assert(idx >= 0);
         return weight * children[idx]->Evaluate(a);
     }
 }

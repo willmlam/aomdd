@@ -205,18 +205,22 @@ int main(int argc, char **argv) {
         Scope s = m.GetScopes()[3] + m.GetScopes()[6];
         tie(embedpt, embedptroot) = pt.GenerateEmbeddable(s);
 
+        f6->Normalize();
         vector<MetaNodePtr> rhs(1, f6);
         double w = 1.0;
-        MetaNodePtr h = mgr->FullReduce(mgr->Apply(f3, rhs, PROD, embedpt), w)[0];
+//        MetaNodePtr h = mgr->FullReduce(mgr->Apply(f6, rhs, SUM, embedpt), w)[0];
+//        h = mgr->FullReduce(mgr->Apply(h, rhs, SUM, embedpt), w)[0];
         /*
         cout << "This is f3" << endl;
         cout << "==========" << endl;
         f3->RecursivePrint(cout); cout << endl;
         */
-        f6->Normalize();
+//        f6->Normalize();
+        /*
         cout << "This is f6" << endl;
         cout << "==========" << endl;
         f6->RecursivePrint(cout); cout << endl;
+        */
         /*
         cout << "This is h" << endl;
         cout << "=========" << endl;
@@ -239,9 +243,34 @@ int main(int argc, char **argv) {
             cout << "  value = "<< f6t.GetVal(a) << endl;
         } while (a.Iterate());
 
-        DirectedGraph ddgraph = h->GenerateDiagram();
-        string ddfilename = "ddgraph.dot";
-        WriteDot(ddgraph, ddfilename);
+        Scope v3;
+        v3.AddVar(2,2);
+        MetaNodePtr f6m3 = mgr->Marginalize(f6, v3, embedpt);
+//        f6m3 = mgr->FullReduce(f6m3, w)[0];
+        f6m3->Normalize();
+        cout << "Before marginalizing the diagram" << endl;
+        do {
+            a.Save(cout);
+            cout << "  value = "<< f6->Evaluate(a) << endl;
+        } while (a.Iterate());
+        cout << "Marginalize diagram result" << endl;
+        do {
+            a.Save(cout);
+            cout << "  value = "<< f6m3->Evaluate(a) << endl;
+        } while (a.Iterate());
+        cout << endl;
+        f6m3->RecursivePrint(cout);
+        cout << endl;
+        a.RemoveVar(2);
+        a.SetAllVal(0);
+
+        f6t.Marginalize(v3);
+        cout << "Result from table representation" << endl;
+        do {
+            a.Save(cout);
+            cout << "  value = "<< f6t.GetVal(a) << endl;
+        } while (a.Iterate());
+        cout << "Number of Nodes: " << pt.GetNumberOfNodes() << endl;
 
 
                 /*
