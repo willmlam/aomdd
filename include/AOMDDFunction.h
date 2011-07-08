@@ -13,11 +13,14 @@
 #include "Function.h"
 #include "MetaNode.h"
 #include "graphbase.h"
+#include "NodeManager.h"
 
 namespace aomdd {
 
 class AOMDDFunction: public Function {
 private:
+    static NodeManager *mgr;
+
     MetaNodePtr root;
     DirectedGraph pseudoTree;
 

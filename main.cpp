@@ -205,7 +205,13 @@ int main(int argc, char **argv) {
         Scope s = m.GetScopes()[3] + m.GetScopes()[6];
         tie(embedpt, embedptroot) = pt.GenerateEmbeddable(s);
 
-        f6->Normalize();
+        cout << "Before normalize" << endl;
+        cout << "================" << endl << endl;
+        f6->RecursivePrint(cout);
+        f6 = mgr->Normalize(f6);
+        cout << "After normalize" << endl;
+        cout << "================" << endl << endl;
+        f6->RecursivePrint(cout);
         vector<MetaNodePtr> rhs(1, f6);
         double w = 1.0;
 //        MetaNodePtr h = mgr->FullReduce(mgr->Apply(f6, rhs, SUM, embedpt), w)[0];
@@ -246,13 +252,15 @@ int main(int argc, char **argv) {
         Scope v3;
         v3.AddVar(2,2);
         MetaNodePtr f6m3 = mgr->Marginalize(f6, v3, embedpt);
-//        f6m3 = mgr->FullReduce(f6m3, w)[0];
+        f6m3 = mgr->FullReduce(f6m3, w)[0];
         f6m3->Normalize();
         cout << "Before marginalizing the diagram" << endl;
         do {
             a.Save(cout);
             cout << "  value = "<< f6->Evaluate(a) << endl;
         } while (a.Iterate());
+        a.RemoveVar(2);
+        a.SetAllVal(0);
         cout << "Marginalize diagram result" << endl;
         do {
             a.Save(cout);
@@ -261,16 +269,16 @@ int main(int argc, char **argv) {
         cout << endl;
         f6m3->RecursivePrint(cout);
         cout << endl;
+
         a.RemoveVar(2);
         a.SetAllVal(0);
-
         f6t.Marginalize(v3);
         cout << "Result from table representation" << endl;
         do {
             a.Save(cout);
             cout << "  value = "<< f6t.GetVal(a) << endl;
         } while (a.Iterate());
-        cout << "Number of Nodes: " << pt.GetNumberOfNodes() << endl;
+        cout << "Number of Nodes: " << mgr->GetNumberOfNodes() << endl;
 
 
                 /*

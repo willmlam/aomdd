@@ -59,11 +59,34 @@ vector<MetaNodePtr> NodeManager::ReweighNodes(const vector<MetaNodePtr> &nodes, 
     return ret;
 }
 
+vector<MetaNodePtr> NodeManager::CopyMetaNodes(const vector<MetaNodePtr> &nodes) {
+    vector<MetaNodePtr> ret;
+    BOOST_FOREACH(MetaNodePtr i, nodes) {
+        if (i.get() != MetaNode::GetZero().get() &&
+                i.get() != MetaNode::GetOne().get()) {
+            MetaNodePtr newNode(new MetaNode(*i));
+            ret.push_back(newNode);
+        }
+        else {
+            ret.push_back(i);
+        }
+    }
+    return ret;
+}
+
+vector<ANDNodePtr> NodeManager::CopyANDNodes(const vector<ANDNodePtr> &nodes) {
+    vector<ANDNodePtr> ret;
+    BOOST_FOREACH(ANDNodePtr i, nodes) {
+        ANDNodePtr newNode(new MetaNode::ANDNode(*i));
+        ret.push_back(newNode);
+    }
+    return ret;
+}
+
 MetaNodePtr NodeManager::CreateMetaNode(const Scope &var,
         const vector<ANDNodePtr> &ch, double weight) {
     MetaNodePtr temp(new MetaNode(var, ch));
     temp->SetWeight(weight);
-//    temp->Normalize();
     UniqueTable::iterator it = ut.find(temp);
     if (it != ut.end()) {
         return *it;
@@ -245,8 +268,6 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
                             lhs->GetChildren()[k]->GetWeight() * lhs->GetWeight());
                     tempChildren = ReweighNodes(tempChildren,
                             rhs[0]->GetChildren()[k]->GetWeight() * lhs->GetWeight());
-                    cout << "After adding in APPLY" << endl;
-                    cout << weight << endl << endl;
                     break;
                 default:
                     assert(false);
@@ -398,15 +419,6 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
 
         // For each parameter set
         for (unsigned int i = 0; i < paramSets.size(); ++i) {
-            cout << endl;
-            cout << "ParamSet size:" << paramSets.size() << endl;
-            cout << "lhs: " << endl;
-            paramSets[i].first->Save(cout); cout << endl << endl;
-            cout << "rhs: " << endl;
-            for (unsigned int j = 0; j < paramSets[i].second.size(); ++j) {
-                paramSets[i].second[j]->Save(cout); cout << endl << endl;
-            }
-            cout << "End of param set" << endl << endl;
             MetaNodePtr subDD = Apply(paramSets[i].first, paramSets[i].second, op, embeddedPT, w);
             if ( subDD == MetaNode::GetZero() ) {
                 newChildren.push_back(MetaNode::GetZero());
@@ -464,49 +476,19 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     if (s.VarExists(varid)) {
         // Make a copy for the first value
         const vector<MetaNodePtr> &firstMetaNodes = newANDNodes[0]->GetChildren();
-        vector<MetaNodePtr> newMetaNodes;
-        // Propagate the and weight downward
-        BOOST_FOREACH(MetaNodePtr i, firstMetaNodes) {
-            MetaNodePtr reweightedNode(new MetaNode(*i));
-            reweightedNode->SetWeight(i->GetWeight() * newANDNodes[0]->GetWeight());
-            newMetaNodes.push_back(reweightedNode);
-        }
+
+        // Propagate the AND weight downward
+        vector<MetaNodePtr> newMetaNodes = ReweighNodes(firstMetaNodes, newANDNodes[0]->GetWeight());
 
         for (unsigned int i = 1; i < newANDNodes.size(); ++i) {
-            assert(i<2);
             const vector<MetaNodePtr> &curMetaNodes = newANDNodes[i]->GetChildren();
-            vector<MetaNodePtr> tempMetaNodes;
-            // Propagate the and weight downward
-            BOOST_FOREACH(MetaNodePtr m, curMetaNodes) {
-                MetaNodePtr reweightedNode(new MetaNode(*m));
-                reweightedNode->SetWeight(m->GetWeight() * newANDNodes[i]->GetWeight());
-                tempMetaNodes.push_back(reweightedNode);
-            }
+            vector<MetaNodePtr> tempMetaNodes = ReweighNodes(curMetaNodes, newANDNodes[i]->GetWeight());
 
             // "+=" on newMetaNodes
-            Scope s;
-            s.AddVar(3,2);
-            s.AddVar(6,2);
-            Assignment a(s);
-            a.SetAllVal(0);
             for (unsigned int j = 0; j < newMetaNodes.size(); ++j) {
                 assert(j < 1);
                 vector<MetaNodePtr> rhsParam(1, tempMetaNodes[j]);
-                cout << "LHS:" << endl;
-                do {
-                    a.Save(cout); cout << " value = " << newMetaNodes[j]->Evaluate(a) << endl;
-                } while (a.Iterate());
-                cout << "RHS:" << endl;
-                do {
-                    a.Save(cout); cout << " value = " << rhsParam[0]->Evaluate(a) << endl;
-                } while (a.Iterate());
                 MetaNodePtr newMeta = Apply(newMetaNodes[j], rhsParam, SUM, embeddedpt);
-//                cout << "Intermediate step:" << endl;
-//                newMeta->RecursivePrint(cout); cout << endl;
-                cout << "Summed" << endl;
-                do {
-                    a.Save(cout); cout << " value = " << newMeta->Evaluate(a) << endl;
-                } while (a.Iterate());
                 newMetaNodes[j] = newMeta;
             }
         }
@@ -521,6 +503,46 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     MetaNodePtr ret = CreateMetaNode(var, newANDNodes, root->GetWeight());
     return ret;
 }
+
+MetaNodePtr NodeManager::Normalize(MetaNodePtr root) {
+    MetaNodePtr ret = NormalizeHelper(root);
+    ut.insert(ret);
+    return ret;
+}
+
+MetaNodePtr NodeManager::NormalizeHelper(MetaNodePtr root) {
+    if (root.get() == MetaNode::GetZero().get() ||
+            root.get() == MetaNode::GetOne().get()) {
+        return root;
+    }
+    double normConstant = 0;
+    vector<ANDNodePtr> children;
+    BOOST_FOREACH(ANDNodePtr i, root->GetChildren()) {
+        const vector<MetaNodePtr> &achildren = i->GetChildren();
+        vector<MetaNodePtr> newANDChildren;
+        double w = i->GetWeight();
+        BOOST_FOREACH(MetaNodePtr j, achildren) {
+            MetaNodePtr newMeta = NormalizeHelper(j);
+            w *= newMeta->GetWeight();
+            newMeta->SetWeight(1);
+            newANDChildren.push_back(newMeta);
+            ut.insert(newMeta);
+        }
+        normConstant += w;
+        ANDNodePtr newANDNode(new MetaNode::ANDNode(w, newANDChildren));
+        children.push_back(newANDNode);
+    }
+
+    BOOST_FOREACH(ANDNodePtr i, children) {
+        i->SetWeight(i->GetWeight() / normConstant);
+    }
+    double newMetaWeight = root->GetWeight() * normConstant;
+    MetaNodePtr ret(new MetaNode(root->GetVarID(), root->GetCard(),
+            children));
+    ret->SetWeight(newMetaWeight);
+    return ret;
+}
+
 unsigned int NodeManager::GetNumberOfNodes() const {
     return ut.size();
 }

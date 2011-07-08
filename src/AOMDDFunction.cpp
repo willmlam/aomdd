@@ -28,4 +28,6 @@ AOMDDFunction::~AOMDDFunction() {
 }
 */
 
+NodeManager *AOMDDFunction::mgr = NodeManager::GetNodeManager();
+
 }

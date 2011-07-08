@@ -37,6 +37,8 @@ public:
         double GetWeight() const;
         void SetWeight(double w);
 
+        void SetChildren(const std::vector<MetaNodePtr> &ch);
+
         const std::vector<MetaNodePtr> &GetChildren() const;
 
         // Normalizes all the children MetaNodes and updates the weight
@@ -78,6 +80,7 @@ public:
     virtual ~MetaNode();
 
     MetaNode(const Scope &var, const std::vector<ANDNodePtr> &ch);
+    MetaNode(int varidIn, int cardIn, const std::vector<ANDNodePtr> &ch);
 
     inline int GetVarID() const { return varID; }
 

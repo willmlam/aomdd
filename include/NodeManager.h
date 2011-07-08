@@ -78,6 +78,12 @@ class NodeManager {
     // Reweigh nodes by multiplying in w to the MetaNode, unless it's a terminal
     std::vector<MetaNodePtr> ReweighNodes(
             const std::vector<MetaNodePtr> &nodes, double w);
+    MetaNodePtr NormalizeHelper(MetaNodePtr root);
+
+    std::vector<MetaNodePtr> CopyMetaNodes(
+            const std::vector<MetaNodePtr> &nodes);
+    std::vector<ANDNodePtr> CopyANDNodes(
+            const std::vector<ANDNodePtr> &nodes);
 public:
     static NodeManager *GetNodeManager();
     // Create a metanode from a variable with a children list
@@ -101,6 +107,7 @@ public:
             const DirectedGraph &embeddedPT, double w = 1);
 
     MetaNodePtr Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    MetaNodePtr Normalize(MetaNodePtr root);
 
     unsigned int GetNumberOfNodes() const;
 

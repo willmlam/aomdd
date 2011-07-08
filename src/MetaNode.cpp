@@ -50,6 +50,10 @@ void MetaNode::ANDNode::SetWeight(double w) {
     weight = w;
 }
 
+void MetaNode::ANDNode::SetChildren(const std::vector<MetaNodePtr> &ch) {
+    children = ch;
+}
+
 const vector<MetaNodePtr> &MetaNode::ANDNode::GetChildren() const {
     return children;
 }
@@ -138,6 +142,13 @@ MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
     assert(var.GetCard() == children.size());
 }
 
+MetaNode::MetaNode(int varidIn, int cardIn, const vector<ANDNodePtr> &ch) :
+    varID(varidIn), card(cardIn), children(ch), weight(1) {
+    // Scope must be over one variable
+    // All assignments must be specified
+    assert(card == children.size());
+}
+
 MetaNode::~MetaNode() {
 }
 
@@ -153,11 +164,8 @@ double MetaNode::Normalize() {
         normConstant += i->Normalize();
     }
     BOOST_FOREACH(ANDNodePtr i, children) {
-        cout << "Old weight:" << i->GetWeight() << endl;
         i->SetWeight(i->GetWeight() / normConstant);
-        cout << "Normalized weight:" << i->GetWeight() << endl;
     }
-    cout << "Normalizer: "<< normConstant << endl << endl;
     weight *= normConstant;
     return weight;
 }
