@@ -1,5 +1,6 @@
 #include "Scope.h"
 #include "TableFunction.h"
+#include "AOMDDFunction.h"
 #include "BucketTree.h"
 #include "utils.h"
 #include "base.h"
@@ -10,6 +11,7 @@
 #include "NodeManager.h"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 using namespace aomdd;
 using namespace std;
 
@@ -169,124 +171,88 @@ int main(int argc, char **argv) {
         m.SetOrdering(ordering);
 
         Graph g(m.GetScopes());
-        Print(g.GetGraph(), cout);
-        cout << endl;
-
-        cout << "InducedGraph" << endl;
         g.InduceEdges(ordering);
-        Print(g.GetGraph(), cout);
-        cout << endl;
-        cout << "w=" << g.GetInducedWidth() << endl;
-        cout << endl;
-
-        cout << "PseudoTree" << endl;
         PseudoTree pt(g);
-        Print(pt.GetTree(), cout);
+        string dotfilename = "276pt.dot";
+        WriteDot(pt.GetTree(), dotfilename);
+
+        vector<AOMDDFunction> ddf;
+        int nvars = m.GetScopes().size();
+        for (int i = 0; i < nvars; ++i) {
+            AOMDDFunction f(m.GetScopes()[i], pt, m.GetFunctions()[i].GetValues());
+            ddf.push_back(f);
+        }
+
+        AOMDDFunction tddf(ddf[3]);
+        tddf.Multiply(ddf[0]);
+        tddf.Multiply(ddf[1]);
+        tddf.Normalize();
+        tddf.Save(cout);
+        return 0;
+
+        BOOST_FOREACH(AOMDDFunction i, ddf) {
+            Assignment a(i.GetScope());
+            a.SetAllVal(0);
+            do {
+                a.Save(cout); cout << " value = " << i.GetVal(a) << endl;
+            } while (a.Iterate());
+            cout << endl;
+        }
+
+        AOMDDFunction combined(ddf[nvars-1]);
+        TableFunction combinedt(m.GetFunctions()[nvars-1]);
+        for (int i = nvars - 2; i >= 0; --i) {
+            cout << "Multiplying in function " << i << endl;
+            combined.Multiply(ddf[i]);
+            combinedt.Multiply(m.GetFunctions()[i]);
+//            combined.Save(cout);
+            /*
+            Scope cs(combined.GetScope());
+
+            DirectedGraph embedpt;
+            int eroot;
+            tie(embedpt, eroot) = pt.GenerateEmbeddable(cs);
+            stringstream ss;
+            ss << "276-" << i << ".dot";
+            WriteDot(embedpt, ss.str())
+            */
+
+            Assignment a(combined.GetScope());
+            a.SetAllVal(0);
+            do {
+                a.Save(cout); cout << " dv=" << combined.GetVal(a)
+                << ", tv=" << combinedt.GetVal(a) << endl;
+            } while (a.Iterate());
+            cout << endl;
+        }
         cout << endl;
-        cout << "w=" << pt.GetInducedWidth() << endl;
-        cout << "h=" << pt.GetHeight() << endl;
-        cout << endl;
-        string fname = "276hw5p4.dot";
-        WriteDot(pt.GetTree(), fname);
 
-        cout << "Number of Nodes: " << pt.GetNumberOfNodes() << endl;
-
-        NodeManager *mgr = NodeManager::GetNodeManager();
-        MetaNodePtr f3 = mgr->CreateMetaNode(m.GetFunctions()[3].GetScope(),
-                m.GetFunctions()[3].GetValues());
-
-        cout << "Building f6 DD" << endl;
-        cout << "==============" << endl;
-        MetaNodePtr f6 = mgr->CreateMetaNode(m.GetFunctions()[6].GetScope(),
-                m.GetFunctions()[6].GetValues());
-
-        DirectedGraph embedpt;
-        int embedptroot;
-        Scope s = m.GetScopes()[3] + m.GetScopes()[6];
-        tie(embedpt, embedptroot) = pt.GenerateEmbeddable(s);
-
-        cout << "Before normalize" << endl;
-        cout << "================" << endl << endl;
-        f6->RecursivePrint(cout);
-        f6 = mgr->Normalize(f6);
-        cout << "After normalize" << endl;
-        cout << "================" << endl << endl;
-        f6->RecursivePrint(cout);
-        vector<MetaNodePtr> rhs(1, f6);
-        double w = 1.0;
-//        MetaNodePtr h = mgr->FullReduce(mgr->Apply(f6, rhs, SUM, embedpt), w)[0];
-//        h = mgr->FullReduce(mgr->Apply(h, rhs, SUM, embedpt), w)[0];
-        /*
-        cout << "This is f3" << endl;
-        cout << "==========" << endl;
-        f3->RecursivePrint(cout); cout << endl;
-        */
-//        f6->Normalize();
-        /*
-        cout << "This is f6" << endl;
-        cout << "==========" << endl;
-        f6->RecursivePrint(cout); cout << endl;
-        */
-        /*
-        cout << "This is h" << endl;
-        cout << "=========" << endl;
-        h->RecursivePrint(cout); cout << endl;
-        */
-        cout << "Number of nodes: " << mgr->GetNumberOfNodes() << endl;
-        Assignment a(m.GetScopes()[6]);
+        Assignment a(combined.GetScope());
         a.SetAllVal(0);
+        double total = 0;
         do {
-            a.Save(cout);
-            cout << "  value = "<< f6->Evaluate(a) << endl;
-        } while (a.Iterate());
-
-        cout << "Result from table representation" << endl;
-        TableFunction ht = m.GetFunctions()[3];
-        TableFunction f6t = m.GetFunctions()[6];
-        ht.Multiply(f6t);
-        do {
-            a.Save(cout);
-            cout << "  value = "<< f6t.GetVal(a) << endl;
-        } while (a.Iterate());
-
-        Scope v3;
-        v3.AddVar(2,2);
-        MetaNodePtr f6m3 = mgr->Marginalize(f6, v3, embedpt);
-        f6m3 = mgr->FullReduce(f6m3, w)[0];
-        f6m3->Normalize();
-        cout << "Before marginalizing the diagram" << endl;
-        do {
-            a.Save(cout);
-            cout << "  value = "<< f6->Evaluate(a) << endl;
-        } while (a.Iterate());
-        a.RemoveVar(2);
-        a.SetAllVal(0);
-        cout << "Marginalize diagram result" << endl;
-        do {
-            a.Save(cout);
-            cout << "  value = "<< f6m3->Evaluate(a) << endl;
+            a.Save(cout); cout << " value = " << combined.GetVal(a) << endl;
+            total += combined.GetVal(a);
         } while (a.Iterate());
         cout << endl;
-        f6m3->RecursivePrint(cout);
-        cout << endl;
-
-        a.RemoveVar(2);
-        a.SetAllVal(0);
-        f6t.Marginalize(v3);
-        cout << "Result from table representation" << endl;
-        do {
-            a.Save(cout);
-            cout << "  value = "<< f6t.GetVal(a) << endl;
-        } while (a.Iterate());
-        cout << "Number of Nodes: " << mgr->GetNumberOfNodes() << endl;
+        cout << "Total: " << total << endl;
 
 
-                /*
-        BucketTree bt(m, ordering, evidence);
-        bt.Save(cout);
-        cout << endl;
-        cout << "Pr= " << bt.Prob();
-        */
+        for (int i = 1; i < 5; ++i) {
+            cout << "Marginalizing variable " << i << endl;
+            Scope margVar;
+            margVar.AddVar(i, 2);
+            combined.Marginalize(margVar);
+            combinedt.Marginalize(margVar);
+            Assignment a(combined.GetScope());
+            a.SetAllVal(0);
+            do {
+                a.Save(cout); cout << " dv=" << combined.GetVal(a)
+                << ", tv=" << combinedt.GetVal(a) << endl;
+            } while (a.Iterate());
+            cout << endl;
+        }
+
 
     } catch (GenericException & e) {
         cout << e.what();

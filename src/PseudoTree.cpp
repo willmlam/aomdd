@@ -14,6 +14,9 @@
 namespace aomdd {
 using namespace std;
 
+PseudoTree::PseudoTree() {
+}
+
 PseudoTree::PseudoTree(const Graph &inducedGraph)
 : inducedWidth(inducedGraph.GetInducedWidth()), hasDummy(false) {
     DFSGenerator(inducedGraph);

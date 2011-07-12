@@ -93,6 +93,8 @@ public:
     inline const std::vector<ANDNodePtr> &GetChildren() const { return children; }
     inline void SetChildren(const std::vector<ANDNodePtr> &ch) { children = ch; }
 
+    inline bool IsDummy() const { return card == 1; }
+
     // Normalizes below, sets weight and returns normalization constant
     double Normalize();
 

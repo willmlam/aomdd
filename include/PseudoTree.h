@@ -45,7 +45,7 @@ struct EmbedTreeGenerator : public boost::dfs_visitor<> {
     template <class Edge, class Graph>
     void tree_edge(Edge e, const Graph &g) {
         int targetNode = target(e, g);
-        if ( sRef.VarExists(targetNode) ) {
+        if ( root != -1 && sRef.VarExists(targetNode) ) {
             assert(!unfinished.empty());
             add_edge(unfinished.top(), targetNode, treeRef);
         }
@@ -62,7 +62,7 @@ struct EmbedTreeGenerator : public boost::dfs_visitor<> {
 
     template <class Vertex, class Graph>
     void finish_vertex(Vertex v, const Graph &g) {
-        if (unfinished.top() == int(v))
+        if ( sRef.VarExists(v) && unfinished.top() == int(v))
             unfinished.pop();
     }
 };
@@ -72,8 +72,8 @@ class PseudoTree {
     int root;
     int inducedWidth;
     bool hasDummy;
-    PseudoTree();
 public:
+    PseudoTree();
     // Assumes graph is an induced graph...
     PseudoTree(const Graph &inducedGraph);
     virtual ~PseudoTree();
@@ -82,6 +82,8 @@ public:
     int GetNumberOfNodes() const;
     int GetInducedWidth() const;
     unsigned int GetHeight() const;
+    int GetRoot() const { return root; }
+    bool HasDummy() const { return hasDummy; }
 
     // Generates an embeddable pseudo tree to use as a backbone tree
     std::pair<DirectedGraph, int> GenerateEmbeddable(const Scope &s) const;

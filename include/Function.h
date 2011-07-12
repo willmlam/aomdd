@@ -30,8 +30,6 @@ public:
 
     virtual bool SetVal(const Assignment &a, double val) = 0;
 
-    virtual void Project(const Scope &s) = 0;
-
 };
 
 } // end of aomdd namespace

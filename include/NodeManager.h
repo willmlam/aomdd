@@ -107,6 +107,7 @@ public:
             const DirectedGraph &embeddedPT, double w = 1);
 
     MetaNodePtr Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    MetaNodePtr Condition(MetaNodePtr root, const Assignment &cond);
     MetaNodePtr Normalize(MetaNodePtr root);
 
     unsigned int GetNumberOfNodes() const;
