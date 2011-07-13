@@ -83,6 +83,102 @@ vector<ANDNodePtr> NodeManager::CopyANDNodes(const vector<ANDNodePtr> &nodes) {
     return ret;
 }
 
+vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
+        const vector<MetaNodePtr> &lhs, const vector<MetaNodePtr> &rhs) const {
+    vector<ApplyParamSet> ret;
+
+    unordered_map<int, MetaNodePtr> lhsMap;
+    unordered_map<int, MetaNodePtr> rhsMap;
+
+    BOOST_FOREACH(MetaNodePtr i, lhs) {
+        lhsMap[i->GetVarID()] = i;
+    }
+    BOOST_FOREACH(MetaNodePtr i, rhs) {
+        rhsMap[i->GetVarID()] = i;
+    }
+
+    unordered_map<int, int> hiAncestor;
+    BOOST_FOREACH(MetaNodePtr i, lhs) {
+        int varid = i->GetVarID();
+        hiAncestor[varid] = varid;
+        if (varid == -1) continue;
+
+        int parent = varid;
+        DInEdge ei, ei_end;
+        tie(ei, ei_end) = in_edges(parent, tree);
+        while (ei != ei_end) {
+            parent = source(*ei, tree);
+            if (rhsMap.find(parent) != rhsMap.end()) {
+                hiAncestor[varid] = parent;
+            }
+            tie(ei, ei_end) = in_edges(parent, tree);
+        }
+    }
+
+    BOOST_FOREACH(MetaNodePtr i, rhs) {
+        int varid = i->GetVarID();
+        hiAncestor[varid] = varid;
+        if (varid == -1) continue;
+
+        int parent = varid;
+        DInEdge ei, ei_end;
+        tie(ei, ei_end) = in_edges(parent, tree);
+        while (ei != ei_end) {
+            parent = source(*ei, tree);
+            if (lhsMap.find(parent) != lhsMap.end()) {
+                hiAncestor[varid] = parent;
+            }
+            tie(ei, ei_end) = in_edges(parent, tree);
+        }
+    }
+
+    unordered_map<int, vector<int> > descendants;
+    unordered_map<int, int>::iterator it = hiAncestor.begin();
+
+    for (; it != hiAncestor.end(); ++it) {
+        descendants[it->second].push_back(it->first);
+    }
+
+    unordered_map<int, vector<int> >::iterator dit = descendants.begin();
+    for (; dit != descendants.end(); ++dit) {
+        MetaNodePtr paramLHS;
+        vector<MetaNodePtr> paramRHS;
+        int anc = dit->first;
+        const vector<int> &dList = dit->second;
+        bool fromLHS = false;
+        unordered_map<int, MetaNodePtr>::iterator mit;
+        if ( (mit = lhsMap.find(anc)) != lhsMap.end() ) {
+            paramLHS = mit->second;
+            fromLHS = true;
+            lhsMap.erase(mit);
+        }
+        else if ( (mit = rhsMap.find(anc)) != rhsMap.end() ) {
+            paramLHS = mit->second;
+            rhsMap.erase(mit);
+        }
+        else {
+            // Problem if it gets here
+            assert(false);
+        }
+        BOOST_FOREACH(int i, dList) {
+            if ( fromLHS && (mit = rhsMap.find(i)) != rhsMap.end() ) {
+                paramRHS.push_back(mit->second);
+                rhsMap.erase(mit);
+            }
+            else if ( (mit = lhsMap.find(i)) != lhsMap.end() ) {
+                paramRHS.push_back(mit->second);
+                lhsMap.erase(mit);
+            }
+        }
+        ret.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(paramLHS, paramRHS));
+    }
+    return ret;
+
+}
+
+
+// Public functions below here
+
 MetaNodePtr NodeManager::CreateMetaNode(const Scope &var,
         const vector<ANDNodePtr> &ch, double weight) {
     MetaNodePtr temp(new MetaNode(var, ch));
@@ -302,6 +398,7 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
             }
         }
 
+        /*
 
         // Group nodes into parameter sets for recursive applys
         unordered_set<int> lhsSet;
@@ -431,19 +528,22 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
             paramSets.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(
                     temp, paramRHS));
         }
+        */
+        vector<ApplyParamSet> paramSets = GetParamSets(embeddedPT, lhsChildren, tempChildren);
 
-//        cout << endl << "Start param sets" << endl;
+
+        cout << endl << "Start param sets" << endl;
         // For each parameter set
         for (unsigned int i = 0; i < paramSets.size(); ++i) {
-            /*
             cout << "lhs: ";
-            cout << paramSets[i].first->GetVarID();
-            cout << ", rhs:";
+            cout << paramSets[i].first->GetVarID() << endl;
+//            paramSets[i].first->Save(cout); cout << endl << endl;
+            cout << "rhs:";
             BOOST_FOREACH(MetaNodePtr mn, paramSets[i].second) {
                 cout << " " << mn->GetVarID();
+//              cout << endl;  mn->Save(cout); cout << endl;
             }
             cout << endl;
-            */
             MetaNodePtr subDD = Apply(paramSets[i].first, paramSets[i].second, op, embeddedPT, w);
             if ( subDD.get() == MetaNode::GetZero().get() ) {
                 newChildren.push_back(MetaNode::GetZero());
@@ -458,6 +558,7 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
             if (op == SUM &&
                     subDD.get() != MetaNode::GetZero().get() &&
                     subDD.get() != MetaNode::GetOne().get()) {
+                cout << "Not at leaves, weight was "<< weight << endl;
                 weight = 1;
             }
         }
@@ -513,24 +614,30 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     if (s.VarExists(varid)) {
         // Make a copy for the first value
         const vector<MetaNodePtr> &firstMetaNodes = newANDNodes[0]->GetChildren();
+        double weight = 0;
 
         // Propagate the AND weight downward
         vector<MetaNodePtr> newMetaNodes = ReweighNodes(firstMetaNodes, newANDNodes[0]->GetWeight());
+        weight += newANDNodes[0]->GetWeight();
 
         for (unsigned int i = 1; i < newANDNodes.size(); ++i) {
             const vector<MetaNodePtr> &curMetaNodes = newANDNodes[i]->GetChildren();
             vector<MetaNodePtr> tempMetaNodes = ReweighNodes(curMetaNodes, newANDNodes[i]->GetWeight());
+            weight += newANDNodes[i]->GetWeight();
 
-            // "+=" on newMetaNodes
-            for (unsigned int j = 0; j < newMetaNodes.size(); ++j) {
-//                assert(j < 1);
-                vector<MetaNodePtr> rhsParam(1, tempMetaNodes[j]);
-                MetaNodePtr newMeta = Apply(newMetaNodes[j], rhsParam, SUM, embeddedpt);
-                newMetaNodes[j] = newMeta;
+            // "+=" on newMetaNodes...might need to apply in the correct ancestor order. The
+            // grouping algorithm can be used here, but perhaps a simpler version can be used?
+            vector<ApplyParamSet> paramSet = GetParamSets(embeddedpt, newMetaNodes, tempMetaNodes);
+            newMetaNodes.clear();
+            for (unsigned int j = 0; j < paramSet.size(); ++j) {
+                MetaNodePtr newMeta = Apply(paramSet[j].first, paramSet[j].second, SUM, embeddedpt);
+                newMetaNodes.push_back(newMeta);
             }
         }
         newANDNodes.clear();
-        ANDNodePtr newAND(new MetaNode::ANDNode(1, newMetaNodes));
+        if (newMetaNodes.size() > 1 || newMetaNodes[0].get() != MetaNode::GetOne().get())
+            weight = 1;
+        ANDNodePtr newAND(new MetaNode::ANDNode(weight, newMetaNodes));
         for (unsigned int i = 0; i < andNodes.size(); ++i) {
             newANDNodes.push_back(newAND);
         }

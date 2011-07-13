@@ -60,6 +60,7 @@ bool operator==(const Operation &lhs, const Operation &rhs);
 
 typedef boost::unordered_set<MetaNodePtr> UniqueTable;
 typedef boost::unordered_map<Operation, MetaNodePtr> OperationCache;
+typedef std::pair<MetaNodePtr, std::vector<MetaNodePtr> > ApplyParamSet;
 
 class NodeManager {
     UniqueTable ut;
@@ -84,6 +85,11 @@ class NodeManager {
             const std::vector<MetaNodePtr> &nodes);
     std::vector<ANDNodePtr> CopyANDNodes(
             const std::vector<ANDNodePtr> &nodes);
+
+    std::vector<ApplyParamSet> GetParamSets(const DirectedGraph &tree,
+            const std::vector<MetaNodePtr> &lhs,
+            const std::vector<MetaNodePtr> &rhs) const;
+
 public:
     static NodeManager *GetNodeManager();
     // Create a metanode from a variable with a children list

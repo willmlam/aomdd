@@ -185,10 +185,38 @@ int main(int argc, char **argv) {
 
         AOMDDFunction tddf(ddf[3]);
         tddf.Multiply(ddf[0]);
+        cout << "Finished first multiply" << endl;
         tddf.Multiply(ddf[1]);
-        tddf.Normalize();
+        cout << "Finished second multiply" << endl;
+//        tddf.Normalize();
         tddf.Save(cout);
-        return 0;
+        {
+            Assignment tddfa(tddf.GetScope());
+            tddfa.SetAllVal(0);
+            do {
+                tddfa.Save(cout); cout << " value=" << tddf.GetVal(tddfa) << endl;
+            } while (tddfa.Iterate());
+        }
+
+        {
+            Scope tddfm;
+            tddfm.AddVar(3, 2);
+            tddf.Marginalize(tddfm);
+            tddf.Save(cout); cout << endl;
+            tddfm.RemoveVar(3);
+            tddfm.AddVar(1, 2);
+            cout << "Begin second marginalize" << endl;
+            tddf.Marginalize(tddfm);
+//            tddf.Normalize();
+            cout << "After second marginalize" << endl;
+            tddf.Save(cout); cout << endl;
+            Assignment tddfa(tddf.GetScope());
+            tddfa.SetAllVal(0);
+            do {
+                tddfa.Save(cout); cout << " value=" << tddf.GetVal(tddfa) << endl;
+            } while (tddfa.Iterate());
+        }
+//        return 0;
 
         BOOST_FOREACH(AOMDDFunction i, ddf) {
             Assignment a(i.GetScope());
