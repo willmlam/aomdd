@@ -266,7 +266,21 @@ int main(int argc, char **argv) {
         cout << "Total: " << total << endl;
 
 
-        for (int i = 1; i < 5; ++i) {
+        vector<int> margOrder;
+        margOrder.push_back(1);
+        margOrder.push_back(4);
+        margOrder.push_back(5);
+        margOrder.push_back(0);
+        margOrder.push_back(2);
+        margOrder.push_back(3);
+//        margOrder.push_back(6);
+//        margOrder.push_back(5);
+//        margOrder.push_back(0);
+
+        for (int k = 0; k < int(margOrder.size()); ++k) {
+            int i = margOrder[k];
+                cout << "DD before marginalizing variable " << i << endl;
+                combined.Save(cout); cout << endl;
             cout << "Marginalizing variable " << i << endl;
             Scope margVar;
             margVar.AddVar(i, 2);
@@ -279,6 +293,8 @@ int main(int argc, char **argv) {
                 << ", tv=" << combinedt.GetVal(a) << endl;
             } while (a.Iterate());
             cout << endl;
+                cout << "DD after marginalizing variable " << i << endl;
+                combined.Save(cout); cout << endl;
         }
 
 
