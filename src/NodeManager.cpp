@@ -417,7 +417,139 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
             }
         }
 
+        /*
+
+        // Group nodes into parameter sets for recursive applys
+        unordered_set<int> lhsSet;
+        unordered_set<int> tempSet;
+
+        // Create maps from the ancestor node to varids.
+        unordered_map<int, vector<int> > ancestorMap;
+
+        // Create map from integers to MetaNodes for quick access later
+        unordered_map<int, MetaNodePtr> metaNodeMapLeft;
+        unordered_map<int, MetaNodePtr> metaNodeMapRight;
+
+        for (unsigned int i = 0; i < lhsChildren.size(); ++i) {
+                lhsSet.insert(lhsChildren[i]->GetVarID());
+                metaNodeMapLeft.insert(make_pair<int, MetaNodePtr>(
+                        lhsChildren[i]->GetVarID(), lhsChildren[i]));
+        }
+        for (unsigned int i = 0; i < tempChildren.size(); ++i) {
+            tempSet.insert(tempChildren[i]->GetVarID());
+            metaNodeMapRight.insert(make_pair<int, MetaNodePtr>(
+                    tempChildren[i]->GetVarID(), tempChildren[i]));
+        }
+
+        // Find highest ancestor within the other set
+        unordered_set<int>::iterator lhsIt = lhsSet.begin();
+        for (; lhsIt != lhsSet.end(); ++lhsIt) {
+            int chvarid = *lhsIt;
+
+            // No need to traverse if determined to be an ancestor
+            if (ancestorMap.find(chvarid) != ancestorMap.end()) {
+                continue;
+            }
+
+            if (chvarid == -1) {
+                ancestorMap[-1].push_back(-1);
+                continue;
+            }
+
+            // Check pseudo tree
+            DInEdge ei, ei_end;
+            tie(ei, ei_end) = in_edges(chvarid, embeddedPT);
+
+            int highestAncestor = chvarid;
+            int count = 0; // Debugging use
+            while (ei != ei_end) {
+                assert(++count <= 1);
+                int parent = source(*ei, embeddedPT);
+                if ( lhsSet.find(parent) != tempSet.end() || tempSet.find(parent) != tempSet.end() ) {
+                    highestAncestor = parent;
+                    tie(ei, ei_end) = in_edges(parent, embeddedPT);
+                    count = 0;
+                }
+                ++ei;
+            }
+            ancestorMap[highestAncestor].push_back(chvarid);
+        }
+
+        // Repeat from other side
+        unordered_set<int>::iterator tempIt = tempSet.begin();
+        for (; tempIt != tempSet.end(); ++tempIt) {
+            int chvarid = *tempIt;
+
+            // No need to traverse if determined to be an ancestor
+            if (ancestorMap.find(chvarid) != ancestorMap.end()) {
+                continue;
+            }
+
+            if (chvarid == -1) {
+                ancestorMap[-1].push_back(-1);
+                continue;
+            }
+
+            // Check pseudo tree
+            DInEdge ei, ei_end;
+            tie(ei, ei_end) = in_edges(chvarid, embeddedPT);
+            int highestAncestor = chvarid;
+            while (ei != ei_end) {
+                int parent = source(*ei, embeddedPT);
+                if ( lhsSet.find(parent) != lhsSet.end() || tempSet.find(parent) != tempSet.end() ) {
+                    highestAncestor = parent;
+                    tie(ei, ei_end) = in_edges(parent, embeddedPT);
+                }
+                ++ei;
+            }
+            ancestorMap[highestAncestor].push_back(chvarid);
+        }
+
+        vector< pair<MetaNodePtr, vector<MetaNodePtr> > > paramSets;
+        unordered_map<int, vector<int> >::iterator ait = ancestorMap.begin();
+
+        ait = ancestorMap.begin();
+        unordered_map<int,MetaNodePtr>::iterator mit;
+        for (; ait != ancestorMap.end(); ++ait) {
+            vector<MetaNodePtr> paramRHS;
+            const vector<int> &descendants = ait->second;
+
+            // Find a suitable left hand parameter
+            mit = metaNodeMapLeft.find(ait->first);
+            MetaNodePtr temp;
+            if (mit == metaNodeMapLeft.end()) {
+                mit = metaNodeMapRight.find(ait->first);
+                temp = mit->second;
+                metaNodeMapRight.erase(mit);
+            }
+            else {
+                temp = mit->second;
+                metaNodeMapLeft.erase(mit);
+            }
+
+            // Build up right hand parameter
+            for (unsigned int i = 0; i < descendants.size(); ++i) {
+                mit = metaNodeMapRight.find(descendants[i]);
+                if (mit == metaNodeMapRight.end()) {
+                    mit = metaNodeMapLeft.find(descendants[i]);
+                    if (mit != metaNodeMapLeft.end()) {
+                        paramRHS.push_back(mit->second);
+                        metaNodeMapLeft.erase(mit);
+                    }
+                }
+                else {
+                    paramRHS.push_back(mit->second);
+                    metaNodeMapRight.erase(mit);
+                }
+//                if (ait->first != descendants[i]) {
+//                }
+            }
+            paramSets.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(
+                    temp, paramRHS));
+        }
+        */
         vector<ApplyParamSet> paramSets = GetParamSets(embeddedPT, lhsChildren, tempChildren);
+
 
         cout << endl << "Start param sets" << endl;
         // For each parameter set
