@@ -74,6 +74,8 @@ private:
 
     static unsigned int idCount;
 
+    void NumOfNodes(boost::unordered_set<size_t> &nodeSet) const;
+
 public:
     MetaNode();
 
@@ -95,6 +97,8 @@ public:
 
     inline bool IsDummy() const { return card == 1; }
 
+    inline bool IsTerminal() const { return this == GetZero().get() || this == GetOne().get(); }
+
     // Normalizes below, sets weight and returns normalization constant
     double Normalize();
 
@@ -103,6 +107,7 @@ public:
     bool operator==(const MetaNode &rhs) const;
     void Save(std::ostream &out);
     void RecursivePrint(std::ostream &out);
+    int NumOfNodes() const;
     DirectedGraph GenerateDiagram() const;
 
     void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;

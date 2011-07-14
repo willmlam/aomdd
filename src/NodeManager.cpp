@@ -101,7 +101,7 @@ vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
     BOOST_FOREACH(MetaNodePtr i, lhs) {
         int varid = i->GetVarID();
         hiAncestor[varid] = varid;
-        if (varid == -1) continue;
+        if (varid < 0) continue;
 
         int parent = varid;
         DInEdge ei, ei_end;
@@ -118,7 +118,7 @@ vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
     BOOST_FOREACH(MetaNodePtr i, rhs) {
         int varid = i->GetVarID();
         hiAncestor[varid] = varid;
-        if (varid == -1) continue;
+        if (varid < 0) continue;
 
         int parent = varid;
         DInEdge ei, ei_end;
@@ -333,12 +333,20 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
     // Base cases
     switch(op) {
         case PROD:
+            // If its a terminal the rhs must be same terminals
+            if ( lhs->IsTerminal() ) {
+                return lhs;
+            }
+            /*
             if ( lhs.get() == MetaNode::GetZero().get() ) {
                 return MetaNode::GetZero();
             }
+            */
+            // No rhs, so result is just lhs
             else if ( rhs.size() == 0 ) {
                 return lhs;
             }
+            // Look for any zeros on the rhs. Result is zero if found
             else {
                 for (unsigned int i = 0; i < rhs.size(); ++i) {
                     if ( rhs[i].get() == MetaNode::GetZero().get() ) {
@@ -346,16 +354,16 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
                     }
                 }
             }
+
+            /*
             if ( lhs.get() == MetaNode::GetOne().get() ) {
                 return MetaNode::GetOne();
             }
+            */
             break;
         case SUM:
-            if ( rhs.size() == 0 ) {
+            if ( rhs.size() == 0 || lhs->IsTerminal() ) {
                 return lhs;
-            }
-            if ( lhs.get() == MetaNode::GetOne().get() ) {
-                return MetaNode::GetOne();
             }
             break;
         default:
@@ -363,6 +371,7 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
     }
 
     int varid = lhs->GetVarID();
+    assert(varid >= 0);
     int card = lhs->GetCard();
 
     vector<ANDNodePtr> children;
@@ -432,22 +441,21 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
             }
             cout << endl;
             MetaNodePtr subDD = Apply(paramSets[i].first, paramSets[i].second, op, embeddedPT, w);
-            if ( subDD.get() == MetaNode::GetZero().get() ) {
+            if ( op == PROD && subDD.get() == MetaNode::GetZero().get() ) {
+                newChildren.clear();
                 newChildren.push_back(MetaNode::GetZero());
                 break;
             }
             else {
-                if( !newChildren.empty() && newChildren.back().get() == MetaNode::GetOne().get() ) {
+                if( !newChildren.empty() && newChildren.back()->IsTerminal() ) {
                     newChildren.pop_back();
                 }
-                else if ( !newChildren.empty() && subDD.get() == MetaNode::GetOne().get() ) {
+                else if ( !newChildren.empty() && subDD->IsTerminal() ) {
                     continue;
                 }
                 newChildren.push_back(subDD);
             }
-            if (op == SUM &&
-                    subDD.get() != MetaNode::GetZero().get() &&
-                    subDD.get() != MetaNode::GetOne().get()) {
+            if (op == SUM && !subDD->IsTerminal()) {
                 cout << "Not at leaves, weight was "<< weight << endl;
                 weight = 1;
             }
@@ -641,6 +649,12 @@ unsigned int NodeManager::GetNumberOfNodes() const {
 void NodeManager::PrintUniqueTable(ostream &out) const {
     BOOST_FOREACH (MetaNodePtr i, ut) {
         i->Save(out); out << endl;
+    }
+}
+
+void NodeManager::PrintReferenceCount(ostream &out) const {
+    BOOST_FOREACH (MetaNodePtr i, ut) {
+        out << i.get() << ":" << i.use_count() << endl;
     }
 }
 

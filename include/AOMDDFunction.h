@@ -43,6 +43,9 @@ public:
     void Marginalize(const Scope &elimVars);
 
     void Normalize();
+
+    inline int Size() const { return root->NumOfNodes(); }
+
     virtual ~AOMDDFunction();
 
     virtual void Save(std::ostream &out) const;

@@ -119,6 +119,7 @@ public:
     unsigned int GetNumberOfNodes() const;
 
     void PrintUniqueTable(std::ostream &out) const;
+    void PrintReferenceCount(std::ostream &out) const;
 
 };
 

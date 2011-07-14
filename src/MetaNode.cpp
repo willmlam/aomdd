@@ -254,6 +254,8 @@ void MetaNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent
 const MetaNodePtr &MetaNode::GetZero() {
     if (!zeroInit) {
         terminalZero = MetaNodePtr(new MetaNode());
+        terminalZero->varID = -2;
+        terminalZero->weight = 0;
         zeroInit = true;
         return terminalZero;
     }
@@ -270,6 +272,29 @@ const MetaNodePtr &MetaNode::GetOne() {
     }
     else {
         return terminalOne;
+    }
+}
+
+int MetaNode::NumOfNodes() const {
+    boost::unordered_set<size_t> nodeSet;
+    NumOfNodes(nodeSet);
+    return nodeSet.size();
+}
+
+void MetaNode::NumOfNodes(boost::unordered_set<size_t> &nodeSet) const {
+    if (IsTerminal()) return;
+    unsigned int oldSize = nodeSet.size();
+    nodeSet.insert(size_t(this));
+
+    // Check if this has already been visited
+    if (nodeSet.size() == oldSize) {
+//        cout << "Found something isomorphic! (at var " << varID << ")" << endl;
+        return;
+    }
+    BOOST_FOREACH(ANDNodePtr i, children) {
+        BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
+            j->NumOfNodes(nodeSet);
+        }
     }
 }
 

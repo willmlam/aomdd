@@ -176,47 +176,13 @@ int main(int argc, char **argv) {
         string dotfilename = "276pt.dot";
         WriteDot(pt.GetTree(), dotfilename);
 
+        // Construct individual AOMDDs
         vector<AOMDDFunction> ddf;
         int nvars = m.GetScopes().size();
         for (int i = 0; i < nvars; ++i) {
             AOMDDFunction f(m.GetScopes()[i], pt, m.GetFunctions()[i].GetValues());
             ddf.push_back(f);
         }
-
-        AOMDDFunction tddf(ddf[3]);
-        tddf.Multiply(ddf[0]);
-        cout << "Finished first multiply" << endl;
-        tddf.Multiply(ddf[1]);
-        cout << "Finished second multiply" << endl;
-//        tddf.Normalize();
-        tddf.Save(cout);
-        {
-            Assignment tddfa(tddf.GetScope());
-            tddfa.SetAllVal(0);
-            do {
-                tddfa.Save(cout); cout << " value=" << tddf.GetVal(tddfa) << endl;
-            } while (tddfa.Iterate());
-        }
-
-        {
-            Scope tddfm;
-            tddfm.AddVar(3, 2);
-            tddf.Marginalize(tddfm);
-            tddf.Save(cout); cout << endl;
-            tddfm.RemoveVar(3);
-            tddfm.AddVar(1, 2);
-            cout << "Begin second marginalize" << endl;
-            tddf.Marginalize(tddfm);
-//            tddf.Normalize();
-            cout << "After second marginalize" << endl;
-            tddf.Save(cout); cout << endl;
-            Assignment tddfa(tddf.GetScope());
-            tddfa.SetAllVal(0);
-            do {
-                tddfa.Save(cout); cout << " value=" << tddf.GetVal(tddfa) << endl;
-            } while (tddfa.Iterate());
-        }
-//        return 0;
 
         BOOST_FOREACH(AOMDDFunction i, ddf) {
             Assignment a(i.GetScope());
@@ -265,37 +231,15 @@ int main(int argc, char **argv) {
         cout << endl;
         cout << "Total: " << total << endl;
 
+        cout << "Number of nodes in manager: "
+                << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl;
+        cout << "Reference counts: ";
+        NodeManager::GetNodeManager()->PrintReferenceCount(cout);
+        cout << endl;
 
-        vector<int> margOrder;
-        margOrder.push_back(1);
-        margOrder.push_back(4);
-        margOrder.push_back(5);
-        margOrder.push_back(0);
-        margOrder.push_back(2);
-        margOrder.push_back(3);
-//        margOrder.push_back(6);
-//        margOrder.push_back(5);
-//        margOrder.push_back(0);
+//        combined.Save(cout);
+        cout << "Combined AOMDD size: " << combined.Size() << endl;
 
-        for (int k = 0; k < int(margOrder.size()); ++k) {
-            int i = margOrder[k];
-                cout << "DD before marginalizing variable " << i << endl;
-                combined.Save(cout); cout << endl;
-            cout << "Marginalizing variable " << i << endl;
-            Scope margVar;
-            margVar.AddVar(i, 2);
-            combined.Marginalize(margVar);
-            combinedt.Marginalize(margVar);
-            Assignment a(combined.GetScope());
-            a.SetAllVal(0);
-            do {
-                a.Save(cout); cout << " dv=" << combined.GetVal(a)
-                << ", tv=" << combinedt.GetVal(a) << endl;
-            } while (a.Iterate());
-            cout << endl;
-                cout << "DD after marginalizing variable " << i << endl;
-                combined.Save(cout); cout << endl;
-        }
 
 
     } catch (GenericException & e) {
