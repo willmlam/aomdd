@@ -23,7 +23,9 @@ private:
     static NodeManager *mgr;
 
     MetaNodePtr root;
-    PseudoTree pt;
+    const PseudoTree *pt;
+
+    bool fullReduce;
 
 public:
     AOMDDFunction();
@@ -31,8 +33,8 @@ public:
 
     AOMDDFunction(const Scope &domainIn, const std::vector<double> &valsIn);
     // The pseudo tree is preferably one for the entire problem instance
-    AOMDDFunction(const Scope &domainIn, const PseudoTree &pseudoTree,
-            const std::vector<double> &valsIn);
+    AOMDDFunction(const Scope &domainIn, const PseudoTree *pseudoTree,
+            const std::vector<double> &valsIn, bool fr = true);
 
     virtual double GetVal(const Assignment &a, bool logOut = false) const;
 
@@ -45,10 +47,14 @@ public:
     void Normalize();
 
     inline int Size() const { return root->NumOfNodes(); }
+    inline int RootRefCount() const { return root.use_count(); }
+
+    inline void SetScopeOrdering(const std::list<int> &ordering) { domain.SetOrdering(ordering); }
 
     virtual ~AOMDDFunction();
 
     virtual void Save(std::ostream &out) const;
+    void PrintAsTable(std::ostream &out) const;
 };
 
 } // end of aomdd namespace

@@ -35,19 +35,27 @@ struct EmbedTreeGenerator : public boost::dfs_visitor<> {
     DirectedGraph &treeRef;
     const Scope &sRef;
     int &root;
+
+    int numScopeUnfinished;
+
     // Unfinished vertices that are in the scope
     std::stack<int> unfinished;
+    std::stack<int> candidateConnectors;
+    std::vector<int> disconnectedRoots;
 
     EmbedTreeGenerator(DirectedGraph &treeIn, const Scope &s, int &rootIn)
     : treeRef(treeIn), sRef(s), root(rootIn) {
+        numScopeUnfinished = sRef.GetNumVars();
     }
 
     template <class Edge, class Graph>
     void tree_edge(Edge e, const Graph &g) {
         int targetNode = target(e, g);
         if ( root != -1 && sRef.VarExists(targetNode) ) {
-            assert(!unfinished.empty());
-            add_edge(unfinished.top(), targetNode, treeRef);
+            assert(!unfinished.empty() || !disconnectedRoots.empty() );
+            if (!unfinished.empty()) {
+                add_edge(unfinished.top(), targetNode, treeRef);
+            }
         }
 
     }
@@ -62,8 +70,38 @@ struct EmbedTreeGenerator : public boost::dfs_visitor<> {
 
     template <class Vertex, class Graph>
     void finish_vertex(Vertex v, const Graph &g) {
-        if ( sRef.VarExists(v) && unfinished.top() == int(v))
+        if ( sRef.VarExists(v) && unfinished.top() == int(v)) {
+            numScopeUnfinished--;
+            add_edge(v,v,treeRef);
+            remove_edge(v,v,treeRef);
+            if (degree(int(v), treeRef) == 0) {
+                disconnectedRoots.push_back(v);
+                DInEdge ei, ei_end;
+                tie(ei, ei_end) = in_edges(v, g);
+                int candidate = source(*ei, g);
+                if (candidateConnectors.empty() || candidateConnectors.top() != candidate) {
+                    candidateConnectors.push(candidate);
+                }
+            }
             unfinished.pop();
+        }
+        else if ( !candidateConnectors.empty() && candidateConnectors.top() == int(v) ) {
+            candidateConnectors.pop();
+            if (candidateConnectors.size() == 0 && numScopeUnfinished == 0) {
+                BOOST_FOREACH(int dv, disconnectedRoots) {
+                    add_edge(v, dv, treeRef);
+                }
+                root = v;
+            }
+            else {
+                DInEdge ei, ei_end;
+                tie(ei, ei_end) = in_edges(v, g);
+                int candidate = source(*ei, g);
+                if (candidateConnectors.empty() || candidateConnectors.top() != candidate) {
+                    candidateConnectors.push(candidate);
+                }
+            }
+        }
     }
 };
 

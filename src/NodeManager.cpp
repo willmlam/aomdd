@@ -243,11 +243,11 @@ MetaNodePtr NodeManager::CreateMetaNode(const Scope &vars,
             children.push_back(newNode);
         }
     }
-    MetaNodePtr ret(CreateMetaNode(rootVar, children, weight));
-    return ret;
+    return CreateMetaNode(rootVar, children, weight);
 }
 
 vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
+    cout << "FullReduce was used!" << endl;
     // terminal check
     if (node.get() == MetaNode::GetZero().get() || node.get()
             == MetaNode::GetOne().get()) {
@@ -263,7 +263,7 @@ vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
         }
     }
 
-    if (redundant) {
+    if ( redundant && !node->IsDummy() ) {
         ut.erase(node);
         vector<MetaNodePtr> andCh = temp->GetChildren();
         vector<MetaNodePtr> ret;
@@ -280,9 +280,6 @@ vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
                 }
                 ret.push_back(mn);
             }
-        }
-        BOOST_FOREACH(MetaNodePtr i, ret) {
-            ut.insert(i);
         }
         w = temp->GetWeight();
         return ret;
@@ -318,11 +315,31 @@ vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
 
 }
 
+MetaNodePtr NodeManager::FullReduce(MetaNodePtr root) {
+    double w = 1.0;
+    vector<MetaNodePtr> nodes = FullReduce(root, w);
+    return nodes[0];
+}
+
 MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
         const vector<MetaNodePtr> &rhs,
         Operator op,
         const DirectedGraph &embeddedPT,
         double w) {
+    int varid = lhs->GetVarID();
+    assert(varid >= 0);
+    int card = lhs->GetCard();
+
+    // Handle if lhs is dummy and rhs is not the dummy version
+    if ( lhs->IsDummy() &&
+            (!rhs.empty()) &&
+            lhs->GetVarID() == rhs[0]->GetVarID() &&
+            !(rhs[0]->IsDummy()) ) {
+        vector<MetaNodePtr> newrhs(lhs->GetChildren()[0]->GetChildren());
+        return Apply(rhs[0], newrhs, op, embeddedPT, w);
+    }
+
+
     Operation ocEntry(op, lhs, rhs);
     OperationCache::iterator ocit = opCache.find(ocEntry);
     if ( ocit != opCache.end() ) {
@@ -370,9 +387,6 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
             assert(false);
     }
 
-    int varid = lhs->GetVarID();
-    assert(varid >= 0);
-    int card = lhs->GetCard();
 
     vector<ANDNodePtr> children;
 
@@ -428,9 +442,10 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
 
         vector<ApplyParamSet> paramSets = GetParamSets(embeddedPT, lhsChildren, tempChildren);
 
-        cout << endl << "Start param sets" << endl;
+//        cout << endl << "Start param sets" << endl;
         // For each parameter set
         for (unsigned int i = 0; i < paramSets.size(); ++i) {
+            /*
             cout << "lhs: ";
             cout << paramSets[i].first->GetVarID() << endl;
 //            paramSets[i].first->Save(cout); cout << endl << endl;
@@ -440,6 +455,7 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
 //              cout << endl;  mn->Save(cout); cout << endl;
             }
             cout << endl;
+            */
             MetaNodePtr subDD = Apply(paramSets[i].first, paramSets[i].second, op, embeddedPT, w);
             if ( op == PROD && subDD.get() == MetaNode::GetZero().get() ) {
                 newChildren.clear();
@@ -654,7 +670,7 @@ void NodeManager::PrintUniqueTable(ostream &out) const {
 
 void NodeManager::PrintReferenceCount(ostream &out) const {
     BOOST_FOREACH (MetaNodePtr i, ut) {
-        out << i.get() << ":" << i.use_count() << endl;
+        out << i.get() << ":" << i.use_count() - 1 << endl;
     }
 }
 

@@ -2,6 +2,7 @@
 #include "TableFunction.h"
 #include "AOMDDFunction.h"
 #include "BucketTree.h"
+#include "CompileBucketTree.h"
 #include "utils.h"
 #include "base.h"
 #include "Model.h"
@@ -176,69 +177,57 @@ int main(int argc, char **argv) {
         string dotfilename = "276pt.dot";
         WriteDot(pt.GetTree(), dotfilename);
 
-        // Construct individual AOMDDs
-        vector<AOMDDFunction> ddf;
-        int nvars = m.GetScopes().size();
-        for (int i = 0; i < nvars; ++i) {
-            AOMDDFunction f(m.GetScopes()[i], pt, m.GetFunctions()[i].GetValues());
-            ddf.push_back(f);
-        }
+        BucketTree bt(m, ordering, evidence);
+        cout << "P(e) = "<< bt.Prob() << endl;
 
-        BOOST_FOREACH(AOMDDFunction i, ddf) {
-            Assignment a(i.GetScope());
-            a.SetAllVal(0);
-            do {
-                a.Save(cout); cout << " value = " << i.GetVal(a) << endl;
-            } while (a.Iterate());
-            cout << endl;
-        }
+        AOMDDFunction f0(m.GetScopes()[0], &pt, m.GetFunctions()[0].GetValues());
+        AOMDDFunction f4(m.GetScopes()[4], &pt, m.GetFunctions()[4].GetValues());
 
-        AOMDDFunction combined(ddf[nvars-1]);
+        f0.PrintAsTable(cout); cout << endl;
+        f4.PrintAsTable(cout); cout << endl;
+
+        f0.Multiply(f4);
+        f0.PrintAsTable(cout); cout << endl;
+        f0.Save(cout); cout << endl;
+        return 0;
+
+        CompileBucketTree cbt(m, &pt, ordering, false);
+        cbt.PrintBucketFunctionScopes(cout);
+        AOMDDFunction combined = cbt.Compile();
+
+        int nvars = ordering.size();
+
         TableFunction combinedt(m.GetFunctions()[nvars-1]);
         for (int i = nvars - 2; i >= 0; --i) {
-            cout << "Multiplying in function " << i << endl;
-            combined.Multiply(ddf[i]);
             combinedt.Multiply(m.GetFunctions()[i]);
-//            combined.Save(cout);
-            /*
-            Scope cs(combined.GetScope());
-
-            DirectedGraph embedpt;
-            int eroot;
-            tie(embedpt, eroot) = pt.GenerateEmbeddable(cs);
-            stringstream ss;
-            ss << "276-" << i << ".dot";
-            WriteDot(embedpt, ss.str())
-            */
-
-            Assignment a(combined.GetScope());
-            a.SetAllVal(0);
-            do {
-                a.Save(cout); cout << " dv=" << combined.GetVal(a)
-                << ", tv=" << combinedt.GetVal(a) << endl;
-            } while (a.Iterate());
-            cout << endl;
         }
-        cout << endl;
 
         Assignment a(combined.GetScope());
         a.SetAllVal(0);
         double total = 0;
+        double ttotal = 0;
         do {
-            a.Save(cout); cout << " value = " << combined.GetVal(a) << endl;
-            total += combined.GetVal(a);
+            double dv = combined.GetVal(a);
+            double tv = combinedt.GetVal(a);
+            a.Save(cout); cout << " dv = " << dv
+            << ", tv = " << tv << endl;
+            assert(fabs(dv - tv) < 1e-10);
+            total += dv;
+            ttotal += tv;
         } while (a.Iterate());
         cout << endl;
-        cout << "Total: " << total << endl;
+        cout << "Total(d): " << total << endl;
+        cout << "Total(t): " << ttotal << endl;
 
         cout << "Number of nodes in manager: "
                 << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl;
-        cout << "Reference counts: ";
-        NodeManager::GetNodeManager()->PrintReferenceCount(cout);
-        cout << endl;
+//        cout << "Reference counts: " << endl;
+//        NodeManager::GetNodeManager()->PrintReferenceCount(cout);
+//        cout << endl;
 
-//        combined.Save(cout);
+        combined.Save(cout);
         cout << "Combined AOMDD size: " << combined.Size() << endl;
+
 
 
 

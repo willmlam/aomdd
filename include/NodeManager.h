@@ -86,10 +86,6 @@ class NodeManager {
     std::vector<ANDNodePtr> CopyANDNodes(
             const std::vector<ANDNodePtr> &nodes);
 
-    std::vector<ApplyParamSet> GetParamSets(const DirectedGraph &tree,
-            const std::vector<MetaNodePtr> &lhs,
-            const std::vector<MetaNodePtr> &rhs) const;
-
 public:
     static NodeManager *GetNodeManager();
     // Create a metanode from a variable with a children list
@@ -109,12 +105,22 @@ public:
     // MetaNode children
     std::vector<MetaNodePtr> FullReduce(MetaNodePtr node, double &w);
 
+    // Driver function that returns a dummy root if needed (to combine
+    // multiple MetaNodes as a single output
+    MetaNodePtr FullReduce(MetaNodePtr node);
+
+
     MetaNodePtr Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
             const DirectedGraph &embeddedPT, double w = 1);
+
+    std::vector<ApplyParamSet> GetParamSets(const DirectedGraph &tree,
+            const std::vector<MetaNodePtr> &lhs,
+            const std::vector<MetaNodePtr> &rhs) const;
 
     MetaNodePtr Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
     MetaNodePtr Condition(MetaNodePtr root, const Assignment &cond);
     MetaNodePtr Normalize(MetaNodePtr root);
+
 
     unsigned int GetNumberOfNodes() const;
 

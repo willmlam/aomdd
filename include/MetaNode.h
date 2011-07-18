@@ -47,7 +47,8 @@ public:
 
         bool operator==(const ANDNode &rhs) const;
 
-        void Save(std::ostream &out);
+        void Save(std::ostream &out, std::string prefix = "");
+        void RecursivePrint(std::ostream &out, std::string prefix);
         void RecursivePrint(std::ostream &out);
         void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
     };
@@ -105,7 +106,8 @@ public:
     double Evaluate(const Assignment &a) const;
 
     bool operator==(const MetaNode &rhs) const;
-    void Save(std::ostream &out);
+    void Save(std::ostream &out, std::string prefix = "");
+    void RecursivePrint(std::ostream &out, std::string prefix);
     void RecursivePrint(std::ostream &out);
     int NumOfNodes() const;
     DirectedGraph GenerateDiagram() const;

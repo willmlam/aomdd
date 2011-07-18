@@ -71,20 +71,21 @@ bool MetaNode::ANDNode::operator==(const ANDNode &rhs) const {
     return true;
 }
 
-void MetaNode::ANDNode::Save(ostream &out) {
-    out << "and-id: " << this << endl;
-    out << "weight: " << weight << endl;
-    out << "children: ";
+void MetaNode::ANDNode::Save(ostream &out, string prefix) {
+    out << prefix << "and-id: " << this << endl;
+    out << prefix << "weight: " << weight << endl;
+    out << prefix << "children: ";
     BOOST_FOREACH(MetaNodePtr i, children)
                 {
                     out << " " << i;
                 }
 }
 
-void MetaNode::ANDNode::RecursivePrint(ostream &out) {
-    Save(out); out << endl;
+void MetaNode::ANDNode::RecursivePrint(ostream &out, string prefix) {
+    Save(out, prefix); out << endl;
     BOOST_FOREACH(MetaNodePtr i, children) {
-        i->RecursivePrint(out);
+        i->RecursivePrint(out, prefix + "    ");
+        out << endl;
     }
 }
 
@@ -202,19 +203,23 @@ bool MetaNode::operator==(const MetaNode &rhs) const {
     return true;
 }
 
-void MetaNode::Save(ostream &out) {
+void MetaNode::Save(ostream &out, string prefix) {
     if(this == MetaNode::GetZero().get()) {
-        out << "TERMINAL ZERO" << endl;
+        out << prefix << "TERMINAL ZERO" << endl;
     }
     else if(this == MetaNode::GetOne().get()) {
-        out << "TERMINAL ONE" << endl;
+        out << prefix << "TERMINAL ONE" << endl;
     }
     else {
-        out << "varID: " << varID << endl;
+        out << prefix << "varID: " << varID;
+        if (IsDummy()) {
+            out << " (dummy)";
+        }
     }
-    out << "id: " << this << endl;
-    out << "weight: " << weight << endl;
-    out << "children: ";
+    out << endl;
+    out << prefix << "id: " << this << endl;
+    out << prefix << "weight: " << weight << endl;
+    out << prefix << "children: ";
     BOOST_FOREACH(ANDNodePtr i, children)
                 {
                     out << " " << i;
@@ -224,12 +229,16 @@ void MetaNode::Save(ostream &out) {
     }
 }
 
-void MetaNode::RecursivePrint(ostream &out) {
-    Save(out); out << endl;
+void MetaNode::RecursivePrint(ostream &out, string prefix) {
+    Save(out, prefix); out << endl;
     BOOST_FOREACH(ANDNodePtr i, children) {
-        i->RecursivePrint(out);
+        i->RecursivePrint(out, prefix + "    ");
+        out << endl;
     }
-    out << endl;
+}
+
+void MetaNode::RecursivePrint(ostream &out) {
+    RecursivePrint(out, "");
 }
 
 DirectedGraph MetaNode::GenerateDiagram() const {

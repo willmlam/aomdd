@@ -29,6 +29,17 @@ TableFunction::~TableFunction() {
 }
 
 double TableFunction::GetVal(const Assignment &a, bool logOut) const {
+    Assignment at(domain);
+    at.SetAssign(a);
+    int idx = at.GetIndex();
+    if (idx == UNKNOWN_VAL || idx >= (int) values.size()) {
+        cout << idx << ", Max is: " << values.size() << std::endl;
+        throw GenericException("Invalid indexing of function: " + idx);
+    }
+    return !logOut ? values[idx] : log(values[idx]);
+}
+
+double TableFunction::GetValForceOldOrder(const Assignment &a, bool logOut) const {
     int idx = a.GetIndex();
     if (idx == UNKNOWN_VAL || idx >= (int) values.size()) {
         cout << idx << ", Max is: " << values.size() << std::endl;
@@ -61,7 +72,7 @@ void TableFunction::SetOrdering(const std::list<int> &ordering)
     std::vector<double> newValues(values.size(), 0);
     a.SetAllVal(0);
     do {
-        newValues[a.GetIndex(domain.GetOrdering())] = GetVal(a);
+        newValues[a.GetIndex(domain.GetOrdering())] = GetValForceOldOrder(a);
     } while (a.Iterate());
     values = newValues;
 }

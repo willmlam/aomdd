@@ -27,6 +27,7 @@ public:
     virtual ~TableFunction();
 
     virtual double GetVal(const Assignment &a, bool logOut = false) const;
+    virtual double GetValForceOldOrder(const Assignment &a, bool logOut = false) const;
 
     const std::vector<double> &GetValues() const { return values; }
 
