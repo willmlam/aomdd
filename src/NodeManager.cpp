@@ -247,7 +247,6 @@ MetaNodePtr NodeManager::CreateMetaNode(const Scope &vars,
 }
 
 vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
-    cout << "FullReduce was used!" << endl;
     // terminal check
     if (node.get() == MetaNode::GetZero().get() || node.get()
             == MetaNode::GetOne().get()) {
@@ -327,7 +326,6 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
         const DirectedGraph &embeddedPT,
         double w) {
     int varid = lhs->GetVarID();
-    assert(varid >= 0);
     int card = lhs->GetCard();
 
     // Handle if lhs is dummy and rhs is not the dummy version
@@ -386,6 +384,9 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
         default:
             assert(false);
     }
+
+    // Should have detected terminals
+    assert(varid >= 0);
 
 
     vector<ANDNodePtr> children;

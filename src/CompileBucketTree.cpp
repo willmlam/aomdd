@@ -21,7 +21,11 @@ CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
         fullReduce(fr), compiled(false) {
     const vector<TableFunction> &functions = m.GetFunctions();
 
-    buckets.resize(ordering.size());
+    int numBuckets = ordering.size();
+    if (pt->HasDummy()) {
+        ordering.push_front(numBuckets++);
+    }
+    buckets.resize(numBuckets);
     for (unsigned int i = 0; i < functions.size(); i++) {
         int idx = functions[i].GetScope().GetOrdering().back();
         AOMDDFunction *f = new AOMDDFunction(functions[i].GetScope(), pt, functions[i].GetValues(), fr);

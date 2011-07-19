@@ -88,11 +88,6 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
             aps = apsVec[0];
         }
     }
-    cout << "lhs: " << aps.first->GetVarID() << ", rhs:";
-    BOOST_FOREACH(MetaNodePtr i, aps.second) {
-        cout << " " << i->GetVarID();
-    }
-    cout << endl;
     if (fullReduce) {
         double w = 1.0;
         root = mgr->FullReduce(mgr->Apply(aps.first, aps.second, PROD, embedpt), w)[0];
