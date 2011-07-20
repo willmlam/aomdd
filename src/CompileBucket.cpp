@@ -41,6 +41,20 @@ void CompileBucket::PrintFunctionScopes(ostream &out) const {
     out << endl;
 }
 
+void CompileBucket::PrintFunctionTables(ostream &out) const {
+    BOOST_FOREACH(const AOMDDFunction *f, functions) {
+        f->PrintAsTable(out); out << endl;
+    }
+    out << endl;
+}
+
+void CompileBucket::PrintDiagrams(ostream &out) const {
+    BOOST_FOREACH(const AOMDDFunction *f, functions) {
+        f->Save(out); out << endl;
+    }
+    out << endl;
+}
+
 CompileBucket::~CompileBucket() {
 }
 

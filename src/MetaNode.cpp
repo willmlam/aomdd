@@ -180,7 +180,7 @@ double MetaNode::Evaluate(const Assignment &a) const {
     }
     // Handle dummy variable case
     else if (card == 1) {
-        return weight * children[0] ->Evaluate(a);
+        return weight * children[0]->Evaluate(a);
     }
     else {
         int idx = a.GetVal(varID);

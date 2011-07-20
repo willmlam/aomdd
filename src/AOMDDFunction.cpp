@@ -25,6 +25,7 @@ AOMDDFunction::AOMDDFunction(const Scope &domainIn, const std::vector<double> &v
 AOMDDFunction::AOMDDFunction(const Scope &domainIn,
         const PseudoTree *pseudoTree, const std::vector<double> &valsIn, bool fr) :
     Function(domainIn), pt(pseudoTree), fullReduce(fr) {
+    /*
     if (pt->HasDummy()) {
         Scope s(domain);
         s.AddVar(pt->GetRoot(), 1);
@@ -37,6 +38,8 @@ AOMDDFunction::AOMDDFunction(const Scope &domainIn,
     else {
         root = mgr->CreateMetaNode(domain, valsIn);
     }
+    */
+    root = mgr->CreateMetaNode(domain, valsIn);
 }
 
 double AOMDDFunction::GetVal(const Assignment &a, bool logOut) const {
@@ -51,6 +54,15 @@ bool AOMDDFunction::SetVal(const Assignment &a, double val) {
 
 void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     Scope s = domain + rhs.GetScope();
+    if (root.get() == MetaNode::GetZero().get()) {
+        domain = s;
+        return;
+    }
+    else if (root.get() == MetaNode::GetOne().get()) {
+        root = rhs.root;
+        domain = s;
+        return;
+    }
     /*
     if (pt->HasDummy()) {
         s.AddVar(pt->GetRoot(), 1);
@@ -63,9 +75,16 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     DirectedGraph embedpt;
     int embedroot;
     tie(embedpt, embedroot) = pt->GenerateEmbeddable(s);
+    s.Save(cout); cout << endl;
+    string debugDot = "debug.dot";
+    WriteDot(embedpt, debugDot);
 
     vector<MetaNodePtr> lhsParam(1, root);
     vector<MetaNodePtr> rhsParam(1, rhs.root);
+    /*
+    cout << "original lhs: " << root->GetVarID()
+            << ", original rhs: " << rhs.root->GetVarID() << endl;
+            */
     vector<ApplyParamSet> apsVec = mgr->GetParamSets(embedpt, lhsParam, rhsParam);
     ApplyParamSet aps;
     if (apsVec.size() == 1) {
@@ -75,7 +94,7 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
         DInEdge ei, ei_end;
         tie(ei, ei_end) = in_edges(root->GetVarID(), embedpt);
         if (ei != ei_end) {
-            cout << "Generating dummy for apply (in AOMDD Multiply)" << endl;
+//            cout << "Generating dummy for apply (in AOMDD Multiply)" << endl;
             int dummyID = source(*ei, embedpt);
             vector<MetaNodePtr> mCh;
             mCh.push_back(root);
@@ -88,6 +107,14 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
             aps = apsVec[0];
         }
     }
+    /*
+    cout << "lhs: " << aps.first->GetVarID() << ", "
+    cout << "rhs:";
+    BOOST_FOREACH(MetaNodePtr r, aps.second) {
+        cout << " " << r->GetVarID();
+    }
+    cout << endl;
+    */
     if (fullReduce) {
         double w = 1.0;
         root = mgr->FullReduce(mgr->Apply(aps.first, aps.second, PROD, embedpt), w)[0];
@@ -98,15 +125,41 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     domain = s;
 }
 
-void AOMDDFunction::Marginalize(const Scope &elimVars) {
+void AOMDDFunction::Marginalize(const Scope &elimVars, bool forceReduceOff) {
+    /*
+    domain.Save(cout); cout << endl;
+    elimVars.Save(cout); cout << endl;
+    */
+    int varid = root->GetVarID();
+    if (varid < 0) {
+        domain = domain - elimVars;
+        return;
+    }
     if (fullReduce) {
         double w = 1.0;
         root = mgr->FullReduce(mgr->Marginalize(root, elimVars, pt->GetTree()), w)[0];
+        if (root->IsTerminal()) {
+            cout << "varid (became terminal): " << varid << endl;
+            int dummy = varid;
+            DInEdge ei, ei_end;
+            tie(ei, ei_end) = in_edges(dummy, pt->GetTree());
+            if (ei != ei_end) {
+                dummy = source(*ei, pt->GetTree());
+            }
+            ANDNodePtr singleAND(new MetaNode::ANDNode(w, vector<MetaNodePtr>(1, root)));
+            root = mgr->CreateMetaNode(dummy, 1, vector<ANDNodePtr>(1, singleAND));
+            Scope s;
+            s.AddVar(dummy, pt->GetScope().GetVarCard(dummy));
+            domain = s;
+        }
+        else {
+            domain = domain - elimVars;
+        }
     }
     else {
         root = mgr->Marginalize(root, elimVars, pt->GetTree());
+        domain = domain - elimVars;
     }
-    domain = domain - elimVars;
 }
 
 void AOMDDFunction::Normalize() {
@@ -114,7 +167,6 @@ void AOMDDFunction::Normalize() {
 }
 
 AOMDDFunction::~AOMDDFunction() {
-    // TODO Auto-generated destructor stub
 }
 
 void AOMDDFunction::Save(ostream &out) const {

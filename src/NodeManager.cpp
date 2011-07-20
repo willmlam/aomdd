@@ -86,6 +86,11 @@ vector<ANDNodePtr> NodeManager::CopyANDNodes(const vector<ANDNodePtr> &nodes) {
 vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
         const vector<MetaNodePtr> &lhs, const vector<MetaNodePtr> &rhs) const {
     vector<ApplyParamSet> ret;
+    // First check if rhs is terminal and lhs is size 1
+    if (lhs.size() == 1 && rhs.size() == 1 && rhs[0]->IsTerminal()) {
+        ret.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(lhs[0], rhs));
+        return ret;
+    }
 
     unordered_map<int, MetaNodePtr> lhsMap;
     unordered_map<int, MetaNodePtr> rhsMap;
@@ -403,21 +408,27 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
 
         if ( rhs.size() == 1 && varid == rhs[0]->GetVarID() ) {
             // Same variable, single roots case
-            tempChildren = rhs[0]->GetChildren()[k]->GetChildren();
+            int chid = k;
+            if (rhs[0]->IsDummy()) {
+                chid = 0;
+            }
+            tempChildren = rhs[0]->GetChildren()[chid]->GetChildren();
             switch(op) {
                 case PROD:
-                    weight *= rhs[0]->GetChildren()[k]->GetWeight() *
+                    weight *= rhs[0]->GetChildren()[chid]->GetWeight() *
 	                    rhs[0]->GetWeight();
                     break;
                 case SUM:
-                    weight += rhs[0]->GetChildren()[k]->GetWeight() *
+                    weight += rhs[0]->GetChildren()[chid]->GetWeight() *
 	                    rhs[0]->GetWeight();
 
+                    /*
                     // push weights down
                     lhsChildren = ReweighNodes(lhsChildren,
                             lhs->GetChildren()[k]->GetWeight() * lhs->GetWeight());
                     tempChildren = ReweighNodes(tempChildren,
-                            rhs[0]->GetChildren()[k]->GetWeight() * rhs[0]->GetWeight());
+                            rhs[0]->GetChildren()[chid]->GetWeight() * rhs[0]->GetWeight());
+                            */
                     break;
                 default:
                     assert(false);
@@ -427,18 +438,18 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
             // Not the same variable, prepare to push rhs down
             tempChildren = rhs;
 
+            /*
             // Still need to reweight lhs regardless
             if (op == SUM) {
 //                tempChildren.clear();
                 lhsChildren = ReweighNodes(lhsChildren,
                         lhs->GetChildren()[k]->GetWeight() * lhs->GetWeight());
-                /*
                 BOOST_FOREACH(MetaNodePtr rmn, rhs) {
                     vector<MetaNodePtr> tCh = rmn->GetChildren()[k]->GetChildren();
                     tCh = ReweighNodes(tCh)
                 }
-                */
             }
+            */
         }
 
         vector<ApplyParamSet> paramSets = GetParamSets(embeddedPT, lhsChildren, tempChildren);
@@ -549,6 +560,7 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
 
             // "+=" on newMetaNodes
             vector<ApplyParamSet> paramSet = GetParamSets(embeddedpt, newMetaNodes, tempMetaNodes);
+            /*
             cout << "Marginalize paramsets" << endl;
             BOOST_FOREACH(ApplyParamSet aps, paramSet) {
                 cout << "lhs: " << aps.first->GetVarID() << "(" << aps.first.get() << "), ";
@@ -558,9 +570,11 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
                 }
                 cout << endl;
             }
+            */
             newMetaNodes.clear();
             for (unsigned int j = 0; j < paramSet.size(); ++j) {
                 MetaNodePtr newMeta = Apply(paramSet[j].first, paramSet[j].second, SUM, embeddedpt);
+                /*
                 cout << "Original input DDs" << endl;
                 paramSet[j].first->RecursivePrint(cout); cout << endl;
                 paramSet[j].second[0]->RecursivePrint(cout); cout << endl;
@@ -572,6 +586,7 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
                 }
                 cout << endl;
                 newMeta->RecursivePrint(cout); cout << endl << endl;
+                */
                 newMetaNodes.push_back(newMeta);
             }
         }

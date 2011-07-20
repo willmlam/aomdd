@@ -17,9 +17,12 @@ using namespace std;
 PseudoTree::PseudoTree() {
 }
 
-PseudoTree::PseudoTree(const Graph &inducedGraph)
-: inducedWidth(inducedGraph.GetInducedWidth()), hasDummy(false) {
+PseudoTree::PseudoTree(const Graph &inducedGraph, const Scope &sIn)
+: inducedWidth(inducedGraph.GetInducedWidth()), s(sIn), hasDummy(false) {
     DFSGenerator(inducedGraph);
+    if (hasDummy) {
+        s.AddVar(root, 1);
+    }
 }
 
 int PseudoTree::GetNumberOfNodes() const {

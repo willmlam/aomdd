@@ -36,10 +36,14 @@ CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
 AOMDDFunction CompileBucketTree::Compile() {
     if (!compiled) {
         list<int>::reverse_iterator rit = ordering.rbegin();
+        int numBuckets = ordering.size();
+        int count = 1;
 
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
+            cout << "Combining functions in bucket " << *rit;
+            cout << " (" << count++ << " of " << numBuckets << ")" << endl;
             AOMDDFunction *message = buckets[*rit].Flatten();
             message->SetScopeOrdering(ordering);
             DInEdge ei, ei_end;
@@ -47,6 +51,7 @@ AOMDDFunction CompileBucketTree::Compile() {
             // Not at root
             if (ei != ei_end) {
                 int parent = source(*ei, tree);
+                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
                 buckets[parent].AddFunction(message);
             }
             // At root
@@ -55,7 +60,78 @@ AOMDDFunction CompileBucketTree::Compile() {
             }
         }
     }
+    compiled = true;
     return compiledDD;
+}
+
+double CompileBucketTree::Prob(bool logOut) {
+    double pr = logOut ? 0 : 1;
+
+    // If it's already been compiled, we can just eliminate from the large DD
+    if (compiled) {
+        AOMDDFunction probFunction(compiledDD);
+        const DirectedGraph &tree = pt->GetTree();
+
+        list<int>::reverse_iterator rit = ordering.rbegin();
+        int numBuckets = ordering.size();
+        int count = 1;
+
+        for (; rit != ordering.rend(); ++rit) {
+            DInEdge ei, ei_end;
+            tie(ei, ei_end) = in_edges(*rit, tree);
+            Scope s;
+            int card = probFunction.GetScope().GetVarCard(*rit);
+            s.AddVar(*rit, card);
+            cout << "Eliminating <" << *rit
+                    << "> (" << count++ << " of " << numBuckets << ")" << endl;
+            probFunction.Marginalize(s);
+            // At root
+            if (ei == ei_end) {
+                Assignment a;
+                pr = probFunction.GetVal(a, logOut);
+            }
+        }
+    }
+
+    // Otherwise, compile, but eliminate variables along the way
+    else {
+        list<int>::reverse_iterator rit = ordering.rbegin();
+        int numBuckets = ordering.size();
+        int count = 1;
+
+        const DirectedGraph &tree = pt->GetTree();
+
+        for (; rit != ordering.rend(); ++rit) {
+            cout << "Combining functions in bucket " << *rit;
+            cout << " (" << count++ << " of " << numBuckets << ")" << endl;
+            buckets[*rit].PrintFunctionTables(cout); cout << endl;
+            AOMDDFunction *message = buckets[*rit].Flatten();
+            message->SetScopeOrdering(ordering);
+            cout << "After flattening" << endl;
+            message->PrintAsTable(cout); cout << endl;
+            DInEdge ei, ei_end;
+            tie(ei, ei_end) = in_edges(*rit, tree);
+            Scope s;
+            int card = message->GetScope().GetVarCard(*rit);
+            s.AddVar(*rit, card);
+            message->Marginalize(s);
+            cout << "After eliminating " << *rit << endl;
+            message->PrintAsTable(cout); cout << endl;
+            message->Save(cout); cout << endl;
+            // Not at root
+            if (ei != ei_end) {
+                int parent = source(*ei, tree);
+                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
+                buckets[parent].AddFunction(message);
+            }
+            // At root
+            else {
+                Assignment a;
+                pr = message->GetVal(a, logOut);
+            }
+        }
+    }
+    return pr;
 }
 
 void CompileBucketTree::PrintBucketFunctionScopes(ostream &out) const {

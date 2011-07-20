@@ -109,11 +109,12 @@ class PseudoTree {
     DirectedGraph g;
     int root;
     int inducedWidth;
+    Scope s;
     bool hasDummy;
 public:
     PseudoTree();
     // Assumes graph is an induced graph...
-    PseudoTree(const Graph &inducedGraph);
+    PseudoTree(const Graph &inducedGraph, const Scope &sIn);
     virtual ~PseudoTree();
 
     const DirectedGraph &GetTree() const { return g; }
@@ -122,6 +123,7 @@ public:
     unsigned int GetHeight() const;
     int GetRoot() const { return root; }
     bool HasDummy() const { return hasDummy; }
+    inline const Scope &GetScope() const { return s; }
 
     // Generates an embeddable pseudo tree to use as a backbone tree
     std::pair<DirectedGraph, int> GenerateEmbeddable(const Scope &s) const;

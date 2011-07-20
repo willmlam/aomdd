@@ -31,6 +31,8 @@ public:
 
     AOMDDFunction Compile();
 
+    double Prob(bool logOut = false);
+
     void PrintBucketFunctionScopes(std::ostream &out) const;
     virtual ~CompileBucketTree();
 };

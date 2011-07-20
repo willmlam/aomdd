@@ -69,44 +69,111 @@ void IterateTester(Assignment & a) {
     cout << endl;
 }
 
+
+string inputFile, orderFile, evidFile, dotFile;
+
+bool compileMode, peMode;
+
+bool ParseCommandLine(int argc, char **argv) {
+    bool haveInputFile = false;
+    bool haveOrderingFile = false;
+    for (int i = 1; i < argc; ++i) {
+        string token(argv[i]);
+        int len = token.length();
+        if (token.substr(0, 1) == "-") {
+            if (token.substr(1, len-1) == "f") {
+                if (++i >= argc) return false;
+                inputFile = string(argv[i]);
+                haveInputFile = true;
+            }
+            else if (token.substr(1, len-1) == "o") {
+                if (++i >= argc) return false;
+                orderFile = string(argv[i]);
+                haveOrderingFile = true;
+            }
+            else if (token.substr(1, len-1) == "e") {
+                if (++i >= argc) return false;
+                evidFile = string(argv[i]);
+            }
+            else if (token.substr(1, len-1) == "t") {
+                if (++i >= argc) return false;
+                dotFile = string(argv[i]);
+            }
+            else if (token.substr(1, len-1) == "c") {
+                compileMode = true;
+            }
+            else if (token.substr(1, len-1) == "p") {
+                peMode = true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+    return haveInputFile && haveOrderingFile;
+}
+
 int main(int argc, char **argv) {
+    cout << "====================================================" << endl;
+    cout << "AOMDD-BE Compiler v0.1" << endl;
+    cout << "  by William Lam, UC Irvine <willmlam@ics.uci.edu>" << endl;
+    cout << "    (original algorithm by Robert Mateescu)" << endl;
+    cout << "====================================================" << endl;
+    cout << endl;
 
-
-    string inputFile, orderFile, evidFile;
-
-    inputFile = string(argv[1]);
-    orderFile = string(argv[2]);
-    if (argc >= 4) {
-        evidFile = string(argv[3]);
+    if ( !ParseCommandLine(argc, argv) ) {
+        cout << "Invalid arguments given" << endl;
+        cout << "Options:" << endl;
+        cout << "  -f <file>        path to problem file (UAI format)" << endl;
+        cout << "  -o <file>        path to elimination ordering file" << endl;
+        cout << "  -e <file>        path to evidence file" << endl;
+        cout << endl;
+        cout << "  -t <file>        path to DOT file to output generated pseudo-tree" << endl;
+        cout << endl;
+        cout << "  -c               compile full AOMDD" << endl;
+        cout << "  -p               compute P(e)" << endl;
+        cout << endl;
+        return 0;
     }
 
     Model m;
-    try {
         m.parseUAI(inputFile);
         list<int> ordering = parseOrder(orderFile);
         map<int, int> evidence;
-        if (argc >= 3) {
-            evidence = parseEvidence(evidFile);
-        }
+        if (evidFile != "") evidence = parseEvidence(evidFile);
         m.SetOrdering(ordering);
 
         Graph g(m.GetScopes());
+        Scope completeScope = m.GetScopes()[0];
+        for (unsigned int i = 1; i < m.GetScopes().size(); ++i) {
+            completeScope = completeScope + m.GetScopes()[i];
+        }
         g.InduceEdges(ordering);
-        PseudoTree pt(g);
+        PseudoTree pt(g, completeScope);
+
+        if (dotFile != "") {
+            cout << "Writing pseudo tree to: " << dotFile << endl;
+            WriteDot(pt.GetTree(), dotFile);
+        }
 
 
-        CompileBucketTree cbt(m, &pt, ordering, false);
-//        cbt.PrintBucketFunctionScopes(cout);
-        AOMDDFunction combined = cbt.Compile();
+        CompileBucketTree cbt(m, &pt, ordering);
+        AOMDDFunction combined;
+        if (compileMode) {
+            combined = cbt.Compile();
+            cout << "AOMDD size: " << combined.Size() << endl;
+        }
+        if (peMode) {
+            cout << "log P(e) = " << cbt.Prob(true) << endl;
+            cout << "P(e) = " << cbt.Prob() << endl;
+        }
 
-        cout << "AOMDD size: " << combined.Size() << endl;
 
 
 
-
-    } catch (GenericException & e) {
-        cout << e.what();
-    }
 
     return 0;
 }
