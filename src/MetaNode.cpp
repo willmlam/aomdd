@@ -59,8 +59,9 @@ const vector<MetaNodePtr> &MetaNode::ANDNode::GetChildren() const {
 }
 
 
+/*
 bool MetaNode::ANDNode::operator==(const ANDNode &rhs) const {
-    if (weight != rhs.weight || children.size() != rhs.children.size()) {
+    if (fabs(weight - rhs.weight) < 1e-10 || children.size() != rhs.children.size()) {
         return false;
     }
     for (unsigned int i = 0; i < children.size(); i++) {
@@ -70,6 +71,7 @@ bool MetaNode::ANDNode::operator==(const ANDNode &rhs) const {
     }
     return true;
 }
+*/
 
 void MetaNode::ANDNode::Save(ostream &out, string prefix) {
     out << prefix << "and-id: " << this << endl;
@@ -102,7 +104,7 @@ void MetaNode::ANDNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDes
 }
 
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
-    if (lhs->GetWeight() != rhs->GetWeight() || lhs->GetChildren().size()
+    if (fabs(lhs->GetWeight() - rhs->GetWeight()) >= 1e-10 || lhs->GetChildren().size()
             != rhs->GetChildren().size()) {
         return false;
     }
@@ -115,17 +117,7 @@ bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
 }
 
 bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
-    if (lhs->GetWeight() != rhs->GetWeight() || lhs->GetChildren().size()
-            != rhs->GetChildren().size()) {
-        return true;
-    }
-    for (unsigned int i = 0; i < lhs->GetChildren().size(); i++) {
-        if (lhs->GetChildren()[i].get() != rhs->GetChildren()[i].get()) {
-            return true;
-        }
-    }
-    return false;
-
+    return !(lhs == rhs);
 }
 
 // ======================
@@ -140,6 +132,7 @@ MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
     varID = var.GetOrdering().front();
     card = var.GetVarCard(varID);
     // All assignments must be specified
+    hashVal = hash_value(*this);
     assert(var.GetCard() == children.size());
 }
 
@@ -147,6 +140,7 @@ MetaNode::MetaNode(int varidIn, int cardIn, const vector<ANDNodePtr> &ch) :
     varID(varidIn), card(cardIn), children(ch), weight(1) {
     // Scope must be over one variable
     // All assignments must be specified
+    hashVal = hash_value(*this);
     assert(card == children.size());
 }
 
@@ -189,6 +183,7 @@ double MetaNode::Evaluate(const Assignment &a) const {
     }
 }
 
+/*
 // Considered equal if the scope and children pointers are the same
 bool MetaNode::operator==(const MetaNode &rhs) const {
     if (this == GetZero().get() || this == GetOne().get())
@@ -202,6 +197,7 @@ bool MetaNode::operator==(const MetaNode &rhs) const {
     }
     return true;
 }
+*/
 
 void MetaNode::Save(ostream &out, string prefix) {
     if(this == MetaNode::GetZero().get()) {
@@ -260,6 +256,7 @@ void MetaNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent
     }
 }
 
+/*
 const MetaNodePtr &MetaNode::GetZero() {
     if (!zeroInit) {
         terminalZero = MetaNodePtr(new MetaNode());
@@ -272,7 +269,9 @@ const MetaNodePtr &MetaNode::GetZero() {
         return terminalZero;
     }
 }
+*/
 
+/*
 const MetaNodePtr &MetaNode::GetOne() {
     if (!oneInit) {
         terminalOne = MetaNodePtr(new MetaNode());
@@ -283,6 +282,7 @@ const MetaNodePtr &MetaNode::GetOne() {
         return terminalOne;
     }
 }
+*/
 
 int MetaNode::NumOfNodes() const {
     boost::unordered_set<size_t> nodeSet;
@@ -311,9 +311,8 @@ size_t hash_value(const MetaNode &node) {
     size_t seed = 0;
     boost::hash_combine(seed, node.varID);
     boost::hash_combine(seed, node.card);
-    boost::hash_combine(seed, node.weight);
     BOOST_FOREACH(ANDNodePtr i, node.children) {
-        boost::hash_combine(seed, i.get());
+        boost::hash_combine(seed, i->GetWeight());
         BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
             boost::hash_combine(seed, j.get());
         }
@@ -326,7 +325,6 @@ size_t hash_value(const MetaNodePtr &node) {
     size_t seed = 0;
     boost::hash_combine(seed, node->GetVarID());
     boost::hash_combine(seed, node->GetCard());
-    boost::hash_combine(seed, node->GetWeight());
     BOOST_FOREACH(ANDNodePtr i, node->GetChildren()) {
         boost::hash_combine(seed, i->GetWeight());
         BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
@@ -337,13 +335,15 @@ size_t hash_value(const MetaNodePtr &node) {
 }
 
 bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs) {
-//    cout << "Equality Checker Called" << endl;
     if (lhs.get() == MetaNode::GetZero().get() && rhs.get()
             == MetaNode::GetOne().get())
         return false;
     if (rhs.get() == MetaNode::GetZero().get() && lhs.get()
             == MetaNode::GetOne().get())
         return false;
+    if (lhs->GetStoredHash() != rhs->GetStoredHash()) {
+        return false;
+    }
     if (lhs->GetVarID() != rhs->GetVarID() || lhs->GetCard() != rhs->GetCard()
             || lhs->GetChildren().size() != rhs->GetChildren().size())
         return false;
@@ -353,6 +353,11 @@ bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs) {
     }
     return true;
 }
+
+bool operator!=(const MetaNodePtr &lhs, const MetaNodePtr &rhs) {
+    return !(lhs == rhs);
+}
+
 
 // Initialize static variables
 MetaNodePtr MetaNode::terminalZero;

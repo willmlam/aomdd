@@ -11,6 +11,7 @@
 #include "MetaNode.h"
 #include "NodeManager.h"
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 using namespace aomdd;
@@ -72,7 +73,7 @@ void IterateTester(Assignment & a) {
 
 string inputFile, orderFile, evidFile, dotFile;
 
-bool compileMode, peMode;
+bool compileMode, peMode, vbeMode, logMode;
 
 bool ParseCommandLine(int argc, char **argv) {
     bool haveInputFile = false;
@@ -105,6 +106,12 @@ bool ParseCommandLine(int argc, char **argv) {
             else if (token.substr(1, len-1) == "p") {
                 peMode = true;
             }
+            else if (token.substr(1, len-1) == "vbe") {
+                vbeMode = true;
+            }
+            else if (token.substr(1, len-1) == "log") {
+                logMode = true;
+            }
             else {
                 return false;
             }
@@ -117,6 +124,7 @@ bool ParseCommandLine(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+    cout << setprecision(15);
     cout << "====================================================" << endl;
     cout << "AOMDD-BE Compiler v0.1" << endl;
     cout << "  by William Lam, UC Irvine <willmlam@ics.uci.edu>" << endl;
@@ -135,45 +143,66 @@ int main(int argc, char **argv) {
         cout << endl;
         cout << "  -c               compile full AOMDD" << endl;
         cout << "  -p               compute P(e)" << endl;
+        cout << "  -vbe             use vanilla bucket elimination" << endl;
+        cout << "  -log             use log" << endl;
         cout << endl;
         return 0;
     }
 
     Model m;
-        m.parseUAI(inputFile);
-        list<int> ordering = parseOrder(orderFile);
-        map<int, int> evidence;
-        if (evidFile != "") evidence = parseEvidence(evidFile);
-        m.SetOrdering(ordering);
+    cout << "Reading from input file: " << inputFile << endl;
+    m.parseUAI(inputFile);
+    cout << "Reading from ordering file: " << orderFile << endl;
+    list<int> ordering = parseOrder(orderFile);
+    map<int, int> evidence;
+    if (evidFile != "") evidence = parseEvidence(evidFile);
+    m.SetOrdering(ordering);
 
-        Graph g(m.GetScopes());
-        Scope completeScope = m.GetScopes()[0];
-        for (unsigned int i = 1; i < m.GetScopes().size(); ++i) {
-            completeScope = completeScope + m.GetScopes()[i];
+    Graph g(m.GetScopes());
+    Scope completeScope = m.GetScopes()[0];
+    for (unsigned int i = 1; i < m.GetScopes().size(); ++i) {
+        completeScope = completeScope + m.GetScopes()[i];
+    }
+    g.InduceEdges(ordering);
+    PseudoTree pt(g, completeScope);
+
+    if (dotFile != "") {
+        cout << "Writing pseudo tree to: " << dotFile << endl;
+        WriteDot(pt.GetTree(), dotFile);
+    }
+
+
+    CompileBucketTree cbt(m, &pt, ordering, evidence);
+    AOMDDFunction combined;
+    if (compileMode) {
+        combined = cbt.Compile();
+        if (!evidence.empty()) {
+            Assignment cond;
+            map<int, int>::iterator it = evidence.begin();
+            for(; it != evidence.end(); ++it) {
+                int var = it->first;
+                int assign = it->second;
+                cond.AddVar(var, combined.GetScope().GetVarCard(var));
+                cond.SetVal(var, assign);
+            }
+            combined.Condition(cond);
         }
-        g.InduceEdges(ordering);
-        PseudoTree pt(g, completeScope);
-
-        if (dotFile != "") {
-            cout << "Writing pseudo tree to: " << dotFile << endl;
-            WriteDot(pt.GetTree(), dotFile);
+        combined.Save(cout); cout << endl;
+        combined.PrintAsTable(cout); cout << endl;
+        cout << "AOMDD size: " << combined.Size() << endl;
+    }
+    if (peMode) {
+        double pr;
+        if (vbeMode) {
+            BucketTree bt(m, ordering, evidence);
+            pr = bt.Prob(logMode);
         }
-
-
-        CompileBucketTree cbt(m, &pt, ordering);
-        AOMDDFunction combined;
-        if (compileMode) {
-            combined = cbt.Compile();
-            cout << "AOMDD size: " << combined.Size() << endl;
+        else {
+            pr = cbt.Prob(logMode);
         }
-        if (peMode) {
-            cout << "log P(e) = " << cbt.Prob(true) << endl;
-            cout << "P(e) = " << cbt.Prob() << endl;
-        }
-
-
-
-
+        string prefix = logMode ? "log P(e) = " : "P(e) = ";
+        cout << prefix << pr << endl;
+    }
 
     return 0;
 }

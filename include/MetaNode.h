@@ -67,6 +67,8 @@ private:
     std::vector<ANDNodePtr> children;
     double weight;
 
+    size_t hashVal;
+
     // Used to make terminal nodes singletons
     static bool zeroInit;
     static bool oneInit;
@@ -100,12 +102,14 @@ public:
 
     inline bool IsTerminal() const { return this == GetZero().get() || this == GetOne().get(); }
 
+    inline size_t GetStoredHash() const { return hashVal; }
+
     // Normalizes below, sets weight and returns normalization constant
     double Normalize();
 
     double Evaluate(const Assignment &a) const;
 
-    bool operator==(const MetaNode &rhs) const;
+//    bool operator==(const MetaNode &rhs) const;
     void Save(std::ostream &out, std::string prefix = "");
     void RecursivePrint(std::ostream &out, std::string prefix);
     void RecursivePrint(std::ostream &out);
@@ -116,8 +120,28 @@ public:
 
     friend size_t hash_value(const MetaNode &node);
 
-    static const MetaNodePtr &GetZero();
-    static const MetaNodePtr &GetOne();
+    inline static const MetaNodePtr &GetZero() {
+        if (!zeroInit) {
+            terminalZero = MetaNodePtr(new MetaNode());
+            terminalZero->varID = -2;
+            terminalZero->weight = 0;
+            zeroInit = true;
+            return terminalZero;
+        }
+        else {
+            return terminalZero;
+        }
+    }
+    inline static const MetaNodePtr &GetOne() {
+        if (!oneInit) {
+            terminalOne = MetaNodePtr(new MetaNode());
+            oneInit = true;
+            return terminalOne;
+        }
+        else {
+            return terminalOne;
+        }
+    }
 
 };
 
@@ -125,6 +149,7 @@ typedef MetaNode::MetaNodePtr MetaNodePtr;
 typedef MetaNode::ANDNodePtr ANDNodePtr;
 
 bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs);
+bool operator!=(const MetaNodePtr &lhs, const MetaNodePtr &rhs);
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs);
 bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs);
 

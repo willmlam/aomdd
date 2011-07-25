@@ -24,6 +24,10 @@ public:
 
     AOMDDFunction *Flatten();
 
+    inline int GetBucketSize() const { return functions.size(); }
+
+    inline void ResizeBucket(int n) { functions.resize(n); }
+
     void PrintFunctionScopes(std::ostream &out) const;
     void PrintFunctionTables(std::ostream &out) const;
     void PrintDiagrams(std::ostream &out) const;

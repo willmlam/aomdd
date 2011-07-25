@@ -72,4 +72,11 @@ void Bucket::Save(ostream &out) {
     }
 }
 
+void Bucket::PrintFunctionTables(ostream &out) const {
+    BOOST_FOREACH(const TableFunction *f, functions) {
+        f->PrintAsTable(out); out << endl;
+    }
+    out << endl;
+}
+
 } // end of aomdd namespace

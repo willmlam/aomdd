@@ -257,72 +257,73 @@ vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
             == MetaNode::GetOne().get()) {
         return vector<MetaNodePtr> (1, node);
     }
-    bool redundant = true;
-    const vector<ANDNodePtr> &ch = node->GetChildren();
-    ANDNodePtr temp = ch[0];
-    for (unsigned int i = 1; i < ch.size(); ++i) {
-        if (temp != ch[i]) {
-            redundant = false;
-            break;
-        }
-    }
 
-    if ( redundant && !node->IsDummy() ) {
-        ut.erase(node);
-        vector<MetaNodePtr> andCh = temp->GetChildren();
-        vector<MetaNodePtr> ret;
-        for (unsigned int i = 0; i < andCh.size(); ++i) {
-            vector<MetaNodePtr> reduceSet = FullReduce(andCh[i], w);
-            BOOST_FOREACH(MetaNodePtr mn, reduceSet) {
-                if ( !ret.empty() ) {
-                    if ( ret.back().get() == MetaNode::GetOne().get() ) {
-                        ret.pop_back();
+    const vector<ANDNodePtr> &ch = node->GetChildren();
+    vector<ANDNodePtr> newCh;
+    for (unsigned int i = 0; i < ch.size(); ++i) {
+        const vector<MetaNodePtr> &andCh = ch[i]->GetChildren();
+        vector<MetaNodePtr> reduced;
+        for (unsigned int j = 0; j < andCh.size(); ++j) {
+            double wr = 1.0;
+            vector<MetaNodePtr> temp = FullReduce(andCh[j], wr);
+            BOOST_FOREACH(MetaNodePtr mn, temp) {
+                if ( mn.get() == MetaNode::GetZero().get() ) {
+                    wr = 0;
+                    reduced.clear();
+                    reduced.push_back(mn);
+                    break;
+                }
+                if ( !reduced.empty() ) {
+                    if ( reduced.back().get() == MetaNode::GetOne().get() ) {
+                        reduced.pop_back();
                     }
                     else if ( mn.get() == MetaNode::GetOne().get() ) {
                         continue;
                     }
                 }
-                ret.push_back(mn);
+                reduced.push_back(mn);
             }
+            w *= wr;
+            if (w == 0) break;
         }
-        w = temp->GetWeight();
-        return ret;
-    }
-    else {
-        vector<ANDNodePtr> newMetaCh;
-        for (unsigned int i = 0; i < ch.size(); ++i) {
-            vector<MetaNodePtr> andCh = ch[i]->GetChildren();
-            vector<MetaNodePtr> newandCh;
-            for (unsigned int j = 0; j < andCh.size(); ++j) {
-                vector<MetaNodePtr> reduceSet = FullReduce(andCh[j], w);
-                BOOST_FOREACH(MetaNodePtr mn, reduceSet) {
-                    if ( !newandCh.empty() ) {
-                        if ( newandCh.back().get() == MetaNode::GetOne().get() ) {
-                            newandCh.pop_back();
-                        }
-                        else if ( mn.get() == MetaNode::GetOne().get() ) {
-                            continue;
-                        }
-                    }
-                    newandCh.push_back(mn);
-                }
-            }
-            ANDNodePtr
-                    rAND(new MetaNode::ANDNode(w * ch[i]->GetWeight(), newandCh));
-            newMetaCh.push_back(rAND);
-            w = 1.0;
-        }
-        node->SetChildren(newMetaCh);
-        ut.insert(node);
-        return vector<MetaNodePtr>(1, node);
+        ANDNodePtr rAND(new MetaNode::ANDNode(w * ch[i]->GetWeight(), reduced));
+        newCh.push_back(rAND);
+        w = 1.0;
     }
 
+    bool redundant = true;
+    ANDNodePtr temp = newCh[0];
+    if (newCh.size() == 1) redundant = false;
+    for (unsigned int i = 1; i < newCh.size(); ++i) {
+        if (temp != newCh[i]) {
+            redundant = false;
+            break;
+        }
+    }
+
+    if ( redundant ) {
+        w *= newCh[0]->GetWeight();
+        return newCh[0]->GetChildren();
+    }
+    else {
+        MetaNodePtr ret = CreateMetaNode(node->GetVarID(), node->GetCard(), newCh);
+        return vector<MetaNodePtr>(1, ret);
+    }
 }
 
 MetaNodePtr NodeManager::FullReduce(MetaNodePtr root) {
     double w = 1.0;
     vector<MetaNodePtr> nodes = FullReduce(root, w);
-    return nodes[0];
+
+    // Reduced to a single root and weight was not reweighted
+    if (nodes.size() == 0 && w == 1.0) {
+        return nodes[0];
+    }
+
+    int varid = root->GetVarID();
+    ANDNodePtr newAND(new MetaNode::ANDNode(w, nodes));
+    MetaNodePtr newMeta = CreateMetaNode(varid, 1, vector<ANDNodePtr>(1, newAND));
+    return newMeta;
 }
 
 MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
@@ -494,6 +495,10 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
         cout << "New weight = " << weight << endl;
         */
 
+        if (weight == 0) {
+            newChildren.clear();
+            newChildren.push_back(MetaNode::GetZero());
+        }
         ANDNodePtr newNode(new MetaNode::ANDNode(weight, newChildren));
         children.push_back(newNode);
     }
@@ -545,54 +550,46 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
 
     // If the root is to be marginalized
     if (s.VarExists(varid)) {
+        /*
         // Make a copy for the first value
         const vector<MetaNodePtr> &firstMetaNodes = newANDNodes[0]->GetChildren();
         double weight = 0;
 
         // Propagate the AND weight downward
-        vector<MetaNodePtr> newMetaNodes = ReweighNodes(firstMetaNodes, newANDNodes[0]->GetWeight());
+//        vector<MetaNodePtr> newMetaNodes = ReweighNodes(firstMetaNodes, newANDNodes[0]->GetWeight());
+        vector<MetaNodePtr> newMetaNodes(firstMetaNodes);
         weight += newANDNodes[0]->GetWeight();
 
         for (unsigned int i = 1; i < newANDNodes.size(); ++i) {
             const vector<MetaNodePtr> &curMetaNodes = newANDNodes[i]->GetChildren();
-            vector<MetaNodePtr> tempMetaNodes = ReweighNodes(curMetaNodes, newANDNodes[i]->GetWeight());
+            vector<MetaNodePtr> tempMetaNodes(curMetaNodes);
             weight += newANDNodes[i]->GetWeight();
 
             // "+=" on newMetaNodes
             vector<ApplyParamSet> paramSet = GetParamSets(embeddedpt, newMetaNodes, tempMetaNodes);
-            /*
-            cout << "Marginalize paramsets" << endl;
-            BOOST_FOREACH(ApplyParamSet aps, paramSet) {
-                cout << "lhs: " << aps.first->GetVarID() << "(" << aps.first.get() << "), ";
-                cout << "rhs:";
-                BOOST_FOREACH(MetaNodePtr rn, aps.second) {
-                    cout << " " << rn->GetVarID() << "(" << rn.get() << ") ";
-                }
-                cout << endl;
-            }
-            */
             newMetaNodes.clear();
             for (unsigned int j = 0; j < paramSet.size(); ++j) {
                 MetaNodePtr newMeta = Apply(paramSet[j].first, paramSet[j].second, SUM, embeddedpt);
-                /*
-                cout << "Original input DDs" << endl;
-                paramSet[j].first->RecursivePrint(cout); cout << endl;
-                paramSet[j].second[0]->RecursivePrint(cout); cout << endl;
-                cout << "Apply results" << endl;
-                cout << "lhs: " << paramSet[j].first->GetVarID() << "(" << paramSet[j].first.get() << "), ";
-                cout << "rhs:";
-                BOOST_FOREACH(MetaNodePtr rn, paramSet[j].second) {
-                    cout << " " << rn->GetVarID() << "(" << rn.get() << ") ";
-                }
-                cout << endl;
-                newMeta->RecursivePrint(cout); cout << endl << endl;
-                */
                 newMetaNodes.push_back(newMeta);
             }
         }
         newANDNodes.clear();
         if (newMetaNodes.size() > 1 || newMetaNodes[0].get() != MetaNode::GetOne().get())
             weight = 1;
+            */
+
+        // Assume node resides at bottom
+        double weight = 0;
+        for (unsigned int i = 0; i < newANDNodes.size(); ++i) {
+            weight += newANDNodes[i]->GetWeight();
+        }
+        newANDNodes.clear();
+        vector<MetaNodePtr> newMetaNodes;
+        if (weight == 0) {
+            newMetaNodes.push_back(MetaNode::GetZero());
+        } else {
+            newMetaNodes.push_back(MetaNode::GetOne());
+        }
         ANDNodePtr newAND(new MetaNode::ANDNode(weight, newMetaNodes));
         for (unsigned int i = 0; i < andNodes.size(); ++i) {
             newANDNodes.push_back(newAND);
@@ -619,7 +616,9 @@ MetaNodePtr NodeManager::Condition(MetaNodePtr root, const Assignment &cond) {
             newMeta.push_back(Condition(j, cond));
         }
         ANDNodePtr newAND(new MetaNode::ANDNode(rootCh[val]->GetWeight(), newMeta));
-        newANDNodes.push_back(newAND);
+        for (unsigned int i = 0; i < rootCh.size(); ++i) {
+            newANDNodes.push_back(newAND);
+        }
     }
     else {
         BOOST_FOREACH(ANDNodePtr i, root->GetChildren()) {

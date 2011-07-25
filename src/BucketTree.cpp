@@ -39,28 +39,32 @@ double BucketTree::Prob(bool logOut) {
     else {
         pr = 1;
     }
+    int numBuckets = ordering.size();
     Assignment empty;
     unsigned int count = 1;
     for (; rit != ordering.rend(); ++rit) {
-        cout << "Count:" << count++ << endl;
-        cout << "Bucket #" << *rit << endl;
+        cout << "Combining functions in bucket " << *rit;
+        cout << " (" << count++ << " of " << numBuckets << ")" << endl;
+//        buckets[*rit].PrintFunctionTables(cout); cout << endl;
         TableFunction *message = buckets[*rit].Flatten(ordering);
-        //cout.precision(15);
-        //message->Save(cout); cout << endl;
+        cout << "After flattening" << endl;
+//        message->PrintAsTable(cout); cout << endl;
         Scope elim;
         elim.AddVar(*rit, message->GetScope().GetVarCard(*rit));
         map<int, int>::iterator eit = evidence.find(*rit);
         if (eit != evidence.end()) {
             Assignment cond(elim);
             cond.SetVal(*rit, eit->second);
-            cout << "Conditioning" << endl;
+//            cout << "Conditioning" << endl;
             message->Condition(cond);
 
         }
         else {
-            cout << "Marginalizing" << endl;
+//            cout << "Marginalizing" << endl;
             message->Marginalize(elim);
         }
+        cout << "After eliminating " << *rit << endl;
+//        message->PrintAsTable(cout); cout << endl;
         if (message->GetScope().IsEmpty()) {
             if (logOut) {
                 double val = message->GetVal(empty, true);
@@ -78,8 +82,7 @@ double BucketTree::Prob(bool logOut) {
         }
         else {
             int destBucket = message->GetScope().GetOrdering().back();
-            cout << "Sending message to " << destBucket << endl << endl;
-            ;
+            cout << "Sending message from <" << *rit << "> to <" << destBucket << ">" << endl;
             buckets[destBucket].AddFunction(message);
         }
     }

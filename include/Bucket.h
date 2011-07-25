@@ -35,6 +35,7 @@ public:
     virtual ~Bucket();
 
     void Save(std::ostream &out);
+    void PrintFunctionTables(std::ostream &out) const;
 };
 
 } // end of aomdd namespace

@@ -63,6 +63,11 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
         domain = s;
         return;
     }
+
+    if (s.IsEmpty()) {
+        s.AddVar(root->GetVarID(), 1);
+        s.AddVar(rhs.root->GetVarID(), 1);
+    }
     /*
     if (pt->HasDummy()) {
         s.AddVar(pt->GetRoot(), 1);
@@ -75,7 +80,9 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     DirectedGraph embedpt;
     int embedroot;
     tie(embedpt, embedroot) = pt->GenerateEmbeddable(s);
-    s.Save(cout); cout << endl;
+
+//    s.Save(cout); cout << endl;
+
     string debugDot = "debug.dot";
     WriteDot(embedpt, debugDot);
 
@@ -138,27 +145,62 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool forceReduceOff) {
     if (fullReduce) {
         double w = 1.0;
         root = mgr->FullReduce(mgr->Marginalize(root, elimVars, pt->GetTree()), w)[0];
+        domain = domain - elimVars;
         if (root->IsTerminal()) {
-            cout << "varid (became terminal): " << varid << endl;
-            int dummy = varid;
-            DInEdge ei, ei_end;
-            tie(ei, ei_end) = in_edges(dummy, pt->GetTree());
-            if (ei != ei_end) {
-                dummy = source(*ei, pt->GetTree());
+//            cout << "varid (became terminal): " << varid << endl;
+            int dummy;
+            // Terminal is still only within the scope of its function
+            if (!domain.IsEmpty()) {
+                dummy = domain.GetOrdering().back();
+            }
+            // Terminal affects global result if scope became empty
+            else {
+                dummy = pt->GetRoot();
             }
             ANDNodePtr singleAND(new MetaNode::ANDNode(w, vector<MetaNodePtr>(1, root)));
             root = mgr->CreateMetaNode(dummy, 1, vector<ANDNodePtr>(1, singleAND));
             Scope s;
             s.AddVar(dummy, pt->GetScope().GetVarCard(dummy));
-            domain = s;
-        }
-        else {
-            domain = domain - elimVars;
+//            domain = s;
         }
     }
     else {
         root = mgr->Marginalize(root, elimVars, pt->GetTree());
         domain = domain - elimVars;
+    }
+}
+
+void AOMDDFunction::Condition(const Assignment &cond) {
+    int varid = root->GetVarID();
+    if (varid < 0) {
+        domain = domain - cond;
+        return;
+    }
+    if (fullReduce) {
+        double w = 1.0;
+        root = mgr->FullReduce(mgr->Condition(root, cond), w)[0];
+        domain = domain - cond;
+        if (root->IsTerminal()) {
+//            cout << "varid (became terminal): " << varid << endl;
+            int dummy;
+            // Terminal is still only within the scope of its function
+            if (!domain.IsEmpty()) {
+                dummy = domain.GetOrdering().back();
+            }
+            // Terminal affects global result if scope became empty
+            else {
+                dummy = pt->GetRoot();
+            }
+            ANDNodePtr singleAND(new MetaNode::ANDNode(w, vector<MetaNodePtr>(1, root)));
+            root = mgr->CreateMetaNode(dummy, 1, vector<ANDNodePtr>(1, singleAND));
+            Scope s;
+            s.AddVar(dummy, pt->GetScope().GetVarCard(dummy));
+//            domain = s;
+        }
+    }
+    else {
+        root = mgr->Condition(root, cond);
+        domain = domain - cond;
     }
 }
 

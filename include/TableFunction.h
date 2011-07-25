@@ -49,6 +49,7 @@ public:
     virtual void Condition(const Assignment &cond);
 
     virtual void Save(std::ostream& out) const;
+    void PrintAsTable(std::ostream& out) const;
 
 };
 

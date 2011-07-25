@@ -173,4 +173,12 @@ void TableFunction::Save(ostream& out) const {
     }
 }
 
+void TableFunction::PrintAsTable(ostream &out) const {
+    Assignment a(domain);
+    a.SetAllVal(0);
+    do {
+        a.Save(out); out << " value=" << GetVal(a) << endl;
+    } while (a.Iterate());
+}
+
 } // end of aomdd namespace

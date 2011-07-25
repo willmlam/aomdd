@@ -21,13 +21,22 @@ class CompileBucketTree {
     std::vector<CompileBucket> buckets;
     const PseudoTree *pt;
     std::list<int> ordering;
+    std::map<int, int> evidence;
+    std::vector<int> initialBucketSizes;
 
     bool fullReduce;
     bool compiled;
     AOMDDFunction compiledDD;
+
+    void ResetBuckets();
+
 public:
     CompileBucketTree();
-    CompileBucketTree(const Model &m, const PseudoTree *ptIn, const std::list<int> &orderIn, bool fr=true);
+    CompileBucketTree(const Model &m,
+            const PseudoTree *ptIn,
+            const std::list<int> &orderIn,
+            const std::map<int, int> &evidIn,
+            bool fr=true);
 
     AOMDDFunction Compile();
 
