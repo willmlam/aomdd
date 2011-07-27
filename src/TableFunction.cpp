@@ -147,6 +147,34 @@ void TableFunction::Marginalize(const Scope &margVars) {
     values = newValues;
 }
 
+void TableFunction::Maximize(const Scope &maxVars) {
+    Scope outScope = domain - maxVars;
+    Scope elimVars = domain * maxVars;
+    vector<double> newValues;
+    Assignment a(domain);
+    Assignment outScopeA(outScope);
+    Assignment elimVarsA(elimVars);
+    outScopeA.SetAllVal(0);
+    elimVarsA.SetAllVal(0);
+
+    do {
+        a.SetAssign(outScopeA);
+        double newVal = DOUBLE_MIN;
+        do {
+            a.SetAssign(elimVarsA);
+            double temp = GetVal(a);
+            if (temp > newVal) {
+                newVal = temp;
+            }
+        } while (elimVarsA.Iterate());
+        newValues.push_back(newVal);
+    } while (outScopeA.Iterate());
+
+    assert(newValues.size() == outScope.GetCard());
+    domain = outScope;
+    values = newValues;
+}
+
 void TableFunction::Condition(const Assignment &cond) {
     Scope outScope = domain - cond;
     vector<double> newValues;

@@ -25,5 +25,6 @@
 // Constants
 const int UNKNOWN_VAL = -1;
 const int ERROR_VAL = -10;
+const int DOUBLE_MIN = -100000000;
 
 #endif

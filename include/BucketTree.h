@@ -30,6 +30,8 @@ public:
 
     double Prob(bool logOut = false);
 
+    double MPE(bool logOut = false);
+
     void Save(std::ostream &out);
 
 };

@@ -44,6 +44,7 @@ public:
 
     // Specify the variables to eliminate
     virtual void Marginalize(const Scope &margVars);
+    virtual void Maximize(const Scope &maxVars);
 
     // Conditions the function on evidence (irreversible)
     virtual void Condition(const Assignment &cond);

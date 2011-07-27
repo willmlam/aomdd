@@ -27,6 +27,11 @@ using namespace std;
 void Model::parseUAI(string filename) {
     ifstream infile(filename.c_str());
 
+    if (infile.fail()) {
+        cerr << "Error opening file." << endl;
+        exit(-1);
+    }
+
     string type;
     int nv, nf;
     int intBuffer;
@@ -126,7 +131,6 @@ void Model::parseUAI(string filename) {
      exit(1);
      */
     /* DEBUG */
-
 }
 
 } // end of aomdd namespace

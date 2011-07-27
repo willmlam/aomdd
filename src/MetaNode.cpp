@@ -25,7 +25,7 @@ MetaNode::ANDNode::~ANDNode() {
 }
 
 double MetaNode::ANDNode::Normalize() {
-    BOOST_FOREACH(MetaNodePtr i, children) {
+    BOOST_FOREACH(MetaNodePtr &i, children) {
         weight *= i->Normalize();
         i->SetWeight(1);
     }
@@ -34,7 +34,7 @@ double MetaNode::ANDNode::Normalize() {
 
 double MetaNode::ANDNode::Evaluate(const Assignment &a) {
     double ret = weight;
-    BOOST_FOREACH(MetaNodePtr i, children) {
+    BOOST_FOREACH(const MetaNodePtr &i, children) {
         ret *= i->Evaluate(a);
         if (ret == 0)
             return ret;
@@ -73,19 +73,19 @@ bool MetaNode::ANDNode::operator==(const ANDNode &rhs) const {
 }
 */
 
-void MetaNode::ANDNode::Save(ostream &out, string prefix) {
+void MetaNode::ANDNode::Save(ostream &out, string prefix) const {
     out << prefix << "and-id: " << this << endl;
     out << prefix << "weight: " << weight << endl;
     out << prefix << "children: ";
-    BOOST_FOREACH(MetaNodePtr i, children)
+    BOOST_FOREACH(const MetaNodePtr &i, children)
                 {
                     out << " " << i;
                 }
 }
 
-void MetaNode::ANDNode::RecursivePrint(ostream &out, string prefix) {
+void MetaNode::ANDNode::RecursivePrint(ostream &out, string prefix) const {
     Save(out, prefix); out << endl;
-    BOOST_FOREACH(MetaNodePtr i, children) {
+    BOOST_FOREACH(const MetaNodePtr &i, children) {
         i->RecursivePrint(out, prefix + "    ");
         out << endl;
     }
@@ -98,7 +98,7 @@ void MetaNode::ANDNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDes
     ss.clear();
     DVertexDesc current = add_vertex(cur, diagram);
     add_edge(parent, current, diagram);
-    BOOST_FOREACH(MetaNodePtr i, children) {
+    BOOST_FOREACH(const MetaNodePtr &i, children) {
         i->GenerateDiagram(diagram, current);
     }
 }
@@ -155,10 +155,10 @@ double MetaNode::Normalize() {
     }
     double normConstant = 0;
     Save(cout); cout << endl;
-    BOOST_FOREACH(ANDNodePtr i, children) {
+    BOOST_FOREACH(ANDNodePtr &i, children) {
         normConstant += i->Normalize();
     }
-    BOOST_FOREACH(ANDNodePtr i, children) {
+    BOOST_FOREACH(ANDNodePtr &i, children) {
         i->SetWeight(i->GetWeight() / normConstant);
     }
     weight *= normConstant;
@@ -199,7 +199,7 @@ bool MetaNode::operator==(const MetaNode &rhs) const {
 }
 */
 
-void MetaNode::Save(ostream &out, string prefix) {
+void MetaNode::Save(ostream &out, string prefix) const {
     if(this == MetaNode::GetZero().get()) {
         out << prefix << "TERMINAL ZERO" << endl;
     }
@@ -216,7 +216,7 @@ void MetaNode::Save(ostream &out, string prefix) {
     out << prefix << "id: " << this << endl;
     out << prefix << "weight: " << weight << endl;
     out << prefix << "children: ";
-    BOOST_FOREACH(ANDNodePtr i, children)
+    BOOST_FOREACH(const ANDNodePtr &i, children)
                 {
                     out << " " << i;
                 }
@@ -225,15 +225,15 @@ void MetaNode::Save(ostream &out, string prefix) {
     }
 }
 
-void MetaNode::RecursivePrint(ostream &out, string prefix) {
+void MetaNode::RecursivePrint(ostream &out, string prefix) const {
     Save(out, prefix); out << endl;
-    BOOST_FOREACH(ANDNodePtr i, children) {
+    BOOST_FOREACH(const ANDNodePtr &i, children) {
         i->RecursivePrint(out, prefix + "    ");
         out << endl;
     }
 }
 
-void MetaNode::RecursivePrint(ostream &out) {
+void MetaNode::RecursivePrint(ostream &out) const {
     RecursivePrint(out, "");
 }
 
@@ -251,7 +251,7 @@ void MetaNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent
     ss.clear();
     DVertexDesc current = add_vertex(cur, diagram);
     add_edge(parent, current, diagram);
-    BOOST_FOREACH(ANDNodePtr i, children) {
+    BOOST_FOREACH(const ANDNodePtr &i, children) {
         i->GenerateDiagram(diagram, current);
     }
 }
@@ -300,8 +300,8 @@ void MetaNode::NumOfNodes(boost::unordered_set<size_t> &nodeSet) const {
 //        cout << "Found something isomorphic! (at var " << varID << ")" << endl;
         return;
     }
-    BOOST_FOREACH(ANDNodePtr i, children) {
-        BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
+    BOOST_FOREACH(const ANDNodePtr &i, children) {
+        BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
             j->NumOfNodes(nodeSet);
         }
     }
@@ -311,9 +311,9 @@ size_t hash_value(const MetaNode &node) {
     size_t seed = 0;
     boost::hash_combine(seed, node.varID);
     boost::hash_combine(seed, node.card);
-    BOOST_FOREACH(ANDNodePtr i, node.children) {
+    BOOST_FOREACH(const ANDNodePtr &i, node.children) {
         boost::hash_combine(seed, i->GetWeight());
-        BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
+        BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
             boost::hash_combine(seed, j.get());
         }
     }
@@ -325,9 +325,9 @@ size_t hash_value(const MetaNodePtr &node) {
     size_t seed = 0;
     boost::hash_combine(seed, node->GetVarID());
     boost::hash_combine(seed, node->GetCard());
-    BOOST_FOREACH(ANDNodePtr i, node->GetChildren()) {
+    BOOST_FOREACH(const ANDNodePtr &i, node->GetChildren()) {
         boost::hash_combine(seed, i->GetWeight());
-        BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
+        BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
             boost::hash_combine(seed, j.get());
         }
     }

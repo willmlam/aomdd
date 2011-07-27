@@ -41,6 +41,7 @@ public:
     AOMDDFunction Compile();
 
     double Prob(bool logOut = false);
+    double MPE(bool logOut = false);
 
     void PrintBucketFunctionScopes(std::ostream &out) const;
     void PrintBuckets(std::ostream &out) const;

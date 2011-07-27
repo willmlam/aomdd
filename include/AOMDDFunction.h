@@ -43,6 +43,7 @@ public:
 
     void Multiply(const AOMDDFunction &rhs);
     void Marginalize(const Scope &elimVars, bool mutableIDs = true);
+    void Maximize(const Scope &elimVars, bool mutableIDs = true);
     void Condition(const Assignment &cond);
 
     void Normalize();

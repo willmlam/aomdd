@@ -17,40 +17,37 @@
 namespace aomdd {
 
 enum Operator {
-    PROD, SUM, REDUCE, MARGINALIZE, NONE
+    PROD, SUM, MAX, REDUCE, MARGINALIZE, NONE
 };
 
-// Note: set comparison will use overridden version of == for MetaNodePtr
-// Should be ok...
-
-typedef boost::unordered_set<MetaNodePtr> ParamSet;
+typedef boost::unordered_set<size_t> ParamSet;
 
 class Operation {
     Operator op;
     ParamSet params;
-    MetaNodePtr result;
+    int varid;
 
 public:
     Operation() :
         op(NONE) {
     }
-    Operation(Operator o, MetaNodePtr arg) :
-        op(o) {
-        params.insert(arg);
+    Operation(Operator o, MetaNodePtr arg, int vid = 0) :
+        op(o), varid(vid) {
+        params.insert(size_t(arg.get()));
     }
     Operation(Operator o, MetaNodePtr arg1, const std::vector<MetaNodePtr> &arg2) :
         op(o) {
-        params.insert(arg1);
+        params.insert(size_t(arg1.get()));
         for (unsigned int i = 0; i < arg2.size(); ++i) {
-            params.insert(arg2[i]);
+            params.insert(size_t(arg2[i].get()));
         }
     }
 
-    const Operator &GetOperator() const {
+    inline const Operator &GetOperator() const {
         return op;
     }
 
-    const ParamSet &GetParamSet() const {
+    inline const ParamSet &GetParamSet() const {
         return params;
     }
 };
@@ -119,6 +116,8 @@ public:
 
     MetaNodePtr Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
     MetaNodePtr Condition(MetaNodePtr root, const Assignment &cond);
+
+    MetaNodePtr Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
     MetaNodePtr Normalize(MetaNodePtr root);
 
 

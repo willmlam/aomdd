@@ -21,6 +21,10 @@ const int OUTPUT_COMPLEXITY_LIMIT = 2048;
 
 list<int> parseOrder(string filename) {
     ifstream infile(filename.c_str());
+    if (infile.fail()) {
+        cerr << "Error opening file." << endl;
+        exit(-1);
+    }
 
     string buffer;
     int nv, intBuffer;
@@ -38,6 +42,11 @@ list<int> parseOrder(string filename) {
 
 map<int, int> parseEvidence(string filename) {
     ifstream infile(filename.c_str());
+
+    if (infile.fail()) {
+        cerr << "Error opening file." << endl;
+        exit(-1);
+    }
 
     string buffer;
     int ne, intBuffer;
@@ -75,7 +84,7 @@ void IterateTester(Assignment & a) {
 
 string inputFile, orderFile, evidFile, dotFile;
 
-bool compileMode, peMode, vbeMode, logMode;
+bool compileMode, peMode, mpeMode, vbeMode, logMode;
 
 bool verifyVals;
 
@@ -107,8 +116,11 @@ bool ParseCommandLine(int argc, char **argv) {
             else if (token.substr(1, len-1) == "c") {
                 compileMode = true;
             }
-            else if (token.substr(1, len-1) == "p") {
+            else if (token.substr(1, len-1) == "pe") {
                 peMode = true;
+            }
+            else if (token.substr(1, len-1) == "mpe") {
+                mpeMode = true;
             }
             else if (token.substr(1, len-1) == "vbe") {
                 vbeMode = true;
@@ -127,7 +139,15 @@ bool ParseCommandLine(int argc, char **argv) {
             return false;
         }
     }
-    return haveInputFile && haveOrderingFile;
+    if (!haveInputFile) {
+        cerr << "Missing problem file." << endl;
+        return false;
+    }
+    else if (!haveOrderingFile) {
+        cerr << "Missing ordering file." << endl;
+        return false;
+    }
+    return true;
 }
 
 int main(int argc, char **argv) {
@@ -149,13 +169,15 @@ int main(int argc, char **argv) {
         cout << "  -t <file>        path to DOT file to output generated pseudo-tree" << endl;
         cout << endl;
         cout << "  -c               compile full AOMDD" << endl;
-        cout << "  -p               compute P(e)" << endl;
+        cout << "  -pe              compute P(e)" << endl;
+        cout << "  -mpe             compute MPE" << endl;
         cout << "  -vbe             use vanilla bucket elimination" << endl;
-        cout << "  -log             use log" << endl;
-        cout << "  -verify          verifying compiled diagram" << endl;
+        cout << "  -log             ouput results in log space" << endl;
+        cout << "  -verify          verify compiled diagram" << endl;
         cout << endl;
         return 0;
     }
+
 
     Model m;
     cout << "Reading from input file: " << inputFile << endl;
@@ -203,11 +225,11 @@ int main(int argc, char **argv) {
             combined.Condition(cond);
         }
         int totalCard = combined.GetScope().GetCard();
-        cout << "Total complexity: " << totalCard << endl;
         if (totalCard <= OUTPUT_COMPLEXITY_LIMIT) {
             combined.Save(cout); cout << endl;
             combined.PrintAsTable(cout); cout << endl;
         }
+        cout << "Total complexity: " << totalCard << endl;
         cout << "AOMDD size: " << combined.Size() << endl;
     }
     if (peMode) {
@@ -223,10 +245,24 @@ int main(int argc, char **argv) {
         cout << prefix << pr << endl;
     }
 
+    if (mpeMode) {
+        double pr;
+        if (vbeMode) {
+            BucketTree bt(m, ordering, evidence);
+            pr = bt.MPE(logMode);
+        }
+        else {
+            pr = cbt.MPE(logMode);
+        }
+        string prefix = logMode ? "log MPE = " : "MPE = ";
+        cout << prefix << pr << endl;
+    }
+
     if (verifyVals) {
         if (compileMode) {
             Assignment a(completeScope);
             a.SetAllVal(0);
+            int misses = 0;
             for (int i = 0; i < OUTPUT_COMPLEXITY_LIMIT; i++) {
                 double compVal = combined.GetVal(a, logMode);
                 double flatVal = logMode ? 0 : 1;
@@ -239,12 +275,16 @@ int main(int argc, char **argv) {
                     }
                 }
                 cout << "cv=" << compVal << ", fv=" << flatVal;
-                if (fabs(compVal - flatVal) > 1e-20)
+                if (fabs(compVal - flatVal) > 1e-20) {
+                    misses++;
                     cout << "...not matching!" << endl;
-                else
+                }
+                else {
                     cout << endl;
+                }
                 if(!a.Iterate()) break;
             }
+            cout << "Number of incorrect values: " << misses << endl;
         }
     }
 

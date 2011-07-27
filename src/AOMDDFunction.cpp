@@ -173,6 +173,31 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     }
 }
 
+void AOMDDFunction::Maximize(const Scope &elimVars, bool mutableIDs) {
+    /*
+    domain.Save(cout); cout << endl;
+    elimVars.Save(cout); cout << endl;
+    */
+    int varid = root->GetVarID();
+    if (varid < 0) {
+        domain = domain - elimVars;
+        return;
+    }
+    if (fullReduce) {
+        root = mgr->FullReduce(mgr->Maximize(root, elimVars, pt->GetTree()));
+        domain = domain - elimVars;
+        if (mutableIDs && root->IsDummy() && !domain.IsEmpty() && !domain.VarExists(root->GetVarID())) {
+            int newDummyID = domain.GetOrdering().front();
+            cout << "Changing dummy id " << "<" << root->GetVarID() << "> to <" << newDummyID << ">" << endl;
+            root = mgr->CreateMetaNode(newDummyID, 1.0, root->GetChildren());
+        }
+    }
+    else {
+        root = mgr->Maximize(root, elimVars, pt->GetTree());
+        domain = domain - elimVars;
+    }
+}
+
 void AOMDDFunction::Condition(const Assignment &cond) {
     int varid = root->GetVarID();
     if (varid < 0) {
