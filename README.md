@@ -12,11 +12,8 @@ This code compiles Bayesian networks and Markov networks to AOMDDs and computes 
       -t <file>       path to DOT file to output generated pseudo-tree
 
     Inference options:
-      -c              compile full AOMDD
+      -c              compile full AOMDD first
       -pe             compute P(e)
-      -mpe            compute MPE
+      -mpe            compute MPE(e) cost
       -vbe            use vanilla bucket elimination
       -log            output results in log space
-
-    Debugging options:
-      -verify         verify compiled diagram

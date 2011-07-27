@@ -161,19 +161,21 @@ int main(int argc, char **argv) {
 
     if ( !ParseCommandLine(argc, argv) ) {
         cout << "Invalid arguments given" << endl;
-        cout << "Options:" << endl;
+        cout << "Options list" << endl;
+        cout << "Input files:" << endl;
         cout << "  -f <file>        path to problem file (UAI format) [required]" << endl;
         cout << "  -o <file>        path to elimination ordering file [required]" << endl;
         cout << "  -e <file>        path to evidence file" << endl;
         cout << endl;
+        cout << "Output files:" << endl;
         cout << "  -t <file>        path to DOT file to output generated pseudo-tree" << endl;
         cout << endl;
-        cout << "  -c               compile full AOMDD" << endl;
+        cout << "Inference options:" << endl;
+        cout << "  -c               compile full AOMDD first" << endl;
         cout << "  -pe              compute P(e)" << endl;
-        cout << "  -mpe             compute MPE" << endl;
+        cout << "  -mpe             compute MPE(e) cost" << endl;
         cout << "  -vbe             use vanilla bucket elimination" << endl;
         cout << "  -log             output results in log space" << endl;
-        cout << "  -verify          verify compiled diagram" << endl;
         cout << endl;
         return 0;
     }
