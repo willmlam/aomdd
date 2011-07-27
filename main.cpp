@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
         cout << "  -pe              compute P(e)" << endl;
         cout << "  -mpe             compute MPE" << endl;
         cout << "  -vbe             use vanilla bucket elimination" << endl;
-        cout << "  -log             ouput results in log space" << endl;
+        cout << "  -log             output results in log space" << endl;
         cout << "  -verify          verify compiled diagram" << endl;
         cout << endl;
         return 0;
