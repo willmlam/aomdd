@@ -1,7 +1,8 @@
 AOMDD Compiler
-==============
 
-##Options:
+This code compiles Bayesian networks and Markov networks to AOMDDs and computes P(e) and MPE queries.
+
+# Options
     -f <file>       path to problem file (UAI format) [required]
     -o <file>       path to elimination ordering file [required]
     -e <file>       path to evidence file
