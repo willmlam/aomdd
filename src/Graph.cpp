@@ -16,12 +16,11 @@ Graph::Graph() : root(-1) {
     // TODO Auto-generated constructor stub
 }
 
-Graph::Graph(const vector<Scope> &scopes) :
-    g(scopes.size()), root(-1), inducedWidth(-1) {
-    unsigned int n = scopes.size();
+Graph::Graph(int n, const vector<Scope> &scopes) :
+    g(n), root(-1), inducedWidth(-1) {
 
     // For each function...
-    for (unsigned int i = 0; i < n; ++i) {
+    for (unsigned int i = 0; i < scopes.size(); ++i) {
         // get the scope...
         list<int> scopeVars(scopes[i].GetOrdering());
 

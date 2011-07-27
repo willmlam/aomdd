@@ -17,14 +17,6 @@ using namespace std;
 Model::Model() {
 }
 
-Model::Model(const vector<int> &domainsIn) :
-    domains(domainsIn) {
-}
-
-Model::Model(const vector<int> &domainsIn, const vector<TableFunction> &funcsIn) :
-    domains(domainsIn), functions(funcsIn) {
-}
-
 vector<Scope> Model::GetScopes() const {
     vector<Scope> ret;
     for (unsigned int i = 0; i < functions.size(); ++i) {

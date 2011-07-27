@@ -74,7 +74,7 @@ struct EmbedTreeGenerator : public boost::dfs_visitor<> {
             numScopeUnfinished--;
             add_edge(v,v,treeRef);
             remove_edge(v,v,treeRef);
-            if (degree(int(v), treeRef) == 0) {
+            if (in_degree(int(v), treeRef) == 0) {
                 disconnectedRoots.push_back(v);
                 DInEdge ei, ei_end;
                 tie(ei, ei_end) = in_edges(v, g);

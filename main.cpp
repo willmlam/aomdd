@@ -17,6 +17,8 @@
 using namespace aomdd;
 using namespace std;
 
+const int OUTPUT_COMPLEXITY_LIMIT = 2048;
+
 list<int> parseOrder(string filename) {
     ifstream infile(filename.c_str());
 
@@ -75,6 +77,8 @@ string inputFile, orderFile, evidFile, dotFile;
 
 bool compileMode, peMode, vbeMode, logMode;
 
+bool verifyVals;
+
 bool ParseCommandLine(int argc, char **argv) {
     bool haveInputFile = false;
     bool haveOrderingFile = false;
@@ -112,6 +116,9 @@ bool ParseCommandLine(int argc, char **argv) {
             else if (token.substr(1, len-1) == "log") {
                 logMode = true;
             }
+            else if (token.substr(1, len-1) == "verify") {
+                verifyVals = true;
+            }
             else {
                 return false;
             }
@@ -135,8 +142,8 @@ int main(int argc, char **argv) {
     if ( !ParseCommandLine(argc, argv) ) {
         cout << "Invalid arguments given" << endl;
         cout << "Options:" << endl;
-        cout << "  -f <file>        path to problem file (UAI format)" << endl;
-        cout << "  -o <file>        path to elimination ordering file" << endl;
+        cout << "  -f <file>        path to problem file (UAI format) [required]" << endl;
+        cout << "  -o <file>        path to elimination ordering file [required]" << endl;
         cout << "  -e <file>        path to evidence file" << endl;
         cout << endl;
         cout << "  -t <file>        path to DOT file to output generated pseudo-tree" << endl;
@@ -145,6 +152,7 @@ int main(int argc, char **argv) {
         cout << "  -p               compute P(e)" << endl;
         cout << "  -vbe             use vanilla bucket elimination" << endl;
         cout << "  -log             use log" << endl;
+        cout << "  -verify          verifying compiled diagram" << endl;
         cout << endl;
         return 0;
     }
@@ -155,16 +163,21 @@ int main(int argc, char **argv) {
     cout << "Reading from ordering file: " << orderFile << endl;
     list<int> ordering = parseOrder(orderFile);
     map<int, int> evidence;
-    if (evidFile != "") evidence = parseEvidence(evidFile);
+    if (evidFile != "") {
+        cout << "Reading from evidence file: " << evidFile << endl;
+        evidence = parseEvidence(evidFile);
+    }
     m.SetOrdering(ordering);
 
-    Graph g(m.GetScopes());
+    Graph g(m.GetNumVars(), m.GetScopes());
     Scope completeScope = m.GetScopes()[0];
     for (unsigned int i = 1; i < m.GetScopes().size(); ++i) {
         completeScope = completeScope + m.GetScopes()[i];
     }
     g.InduceEdges(ordering);
     PseudoTree pt(g, completeScope);
+
+    cout << "w/h : " << pt.GetInducedWidth() << "/" << pt.GetHeight() << endl;
 
     if (dotFile != "") {
         cout << "Writing pseudo tree to: " << dotFile << endl;
@@ -173,6 +186,8 @@ int main(int argc, char **argv) {
 
 
     CompileBucketTree cbt(m, &pt, ordering, evidence);
+//    cbt.PrintBuckets(cout); cout << endl;
+
     AOMDDFunction combined;
     if (compileMode) {
         combined = cbt.Compile();
@@ -187,8 +202,12 @@ int main(int argc, char **argv) {
             }
             combined.Condition(cond);
         }
-        combined.Save(cout); cout << endl;
-        combined.PrintAsTable(cout); cout << endl;
+        int totalCard = combined.GetScope().GetCard();
+        cout << "Total complexity: " << totalCard << endl;
+        if (totalCard <= OUTPUT_COMPLEXITY_LIMIT) {
+            combined.Save(cout); cout << endl;
+            combined.PrintAsTable(cout); cout << endl;
+        }
         cout << "AOMDD size: " << combined.Size() << endl;
     }
     if (peMode) {
@@ -202,6 +221,31 @@ int main(int argc, char **argv) {
         }
         string prefix = logMode ? "log P(e) = " : "P(e) = ";
         cout << prefix << pr << endl;
+    }
+
+    if (verifyVals) {
+        if (compileMode) {
+            Assignment a(completeScope);
+            a.SetAllVal(0);
+            for (int i = 0; i < OUTPUT_COMPLEXITY_LIMIT; i++) {
+                double compVal = combined.GetVal(a, logMode);
+                double flatVal = logMode ? 0 : 1;
+                BOOST_FOREACH(const TableFunction &tf, m.GetFunctions()) {
+                    if (logMode) {
+                        flatVal += tf.GetVal(a, logMode);
+                    }
+                    else {
+                        flatVal *= tf.GetVal(a, logMode);
+                    }
+                }
+                cout << "cv=" << compVal << ", fv=" << flatVal;
+                if (fabs(compVal - flatVal) > 1e-20)
+                    cout << "...not matching!" << endl;
+                else
+                    cout << endl;
+                if(!a.Iterate()) break;
+            }
+        }
     }
 
     return 0;

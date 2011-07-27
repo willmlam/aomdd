@@ -39,7 +39,12 @@ AOMDDFunction::AOMDDFunction(const Scope &domainIn,
         root = mgr->CreateMetaNode(domain, valsIn);
     }
     */
-    root = mgr->CreateMetaNode(domain, valsIn);
+    if (fullReduce) {
+        root = mgr->FullReduce(mgr->CreateMetaNode(domain, valsIn));
+    }
+    else {
+        root = mgr->CreateMetaNode(domain, valsIn);
+    }
 }
 
 double AOMDDFunction::GetVal(const Assignment &a, bool logOut) const {
@@ -53,6 +58,8 @@ bool AOMDDFunction::SetVal(const Assignment &a, double val) {
 }
 
 void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
+//    Save(cout); cout << endl;
+//    rhs.Save(cout); cout << endl;
     Scope s = domain + rhs.GetScope();
     if (root.get() == MetaNode::GetZero().get()) {
         domain = s;
@@ -60,6 +67,15 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     }
     else if (root.get() == MetaNode::GetOne().get()) {
         root = rhs.root;
+        domain = s;
+        return;
+    }
+    else if (rhs.root.get() == MetaNode::GetZero().get()) {
+        root = rhs.root;
+        domain = s;
+        return;
+    }
+    else if (rhs.root.get() == MetaNode::GetOne().get()) {
         domain = s;
         return;
     }
@@ -81,17 +97,17 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     int embedroot;
     tie(embedpt, embedroot) = pt->GenerateEmbeddable(s);
 
-//    s.Save(cout); cout << endl;
+    /*
+    s.Save(cout); cout << endl;
 
     string debugDot = "debug.dot";
     WriteDot(embedpt, debugDot);
+    */
 
     vector<MetaNodePtr> lhsParam(1, root);
     vector<MetaNodePtr> rhsParam(1, rhs.root);
-    /*
-    cout << "original lhs: " << root->GetVarID()
-            << ", original rhs: " << rhs.root->GetVarID() << endl;
-            */
+//    cout << "original lhs: " << root->GetVarID()
+//            << ", original rhs: " << rhs.root->GetVarID() << endl;
     vector<ApplyParamSet> apsVec = mgr->GetParamSets(embedpt, lhsParam, rhsParam);
     ApplyParamSet aps;
     if (apsVec.size() == 1) {
@@ -132,7 +148,7 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     domain = s;
 }
 
-void AOMDDFunction::Marginalize(const Scope &elimVars, bool forceReduceOff) {
+void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     /*
     domain.Save(cout); cout << endl;
     elimVars.Save(cout); cout << endl;
@@ -143,25 +159,12 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool forceReduceOff) {
         return;
     }
     if (fullReduce) {
-        double w = 1.0;
-        root = mgr->FullReduce(mgr->Marginalize(root, elimVars, pt->GetTree()), w)[0];
+        root = mgr->FullReduce(mgr->Marginalize(root, elimVars, pt->GetTree()));
         domain = domain - elimVars;
-        if (root->IsTerminal()) {
-//            cout << "varid (became terminal): " << varid << endl;
-            int dummy;
-            // Terminal is still only within the scope of its function
-            if (!domain.IsEmpty()) {
-                dummy = domain.GetOrdering().back();
-            }
-            // Terminal affects global result if scope became empty
-            else {
-                dummy = pt->GetRoot();
-            }
-            ANDNodePtr singleAND(new MetaNode::ANDNode(w, vector<MetaNodePtr>(1, root)));
-            root = mgr->CreateMetaNode(dummy, 1, vector<ANDNodePtr>(1, singleAND));
-            Scope s;
-            s.AddVar(dummy, pt->GetScope().GetVarCard(dummy));
-//            domain = s;
+        if (mutableIDs && root->IsDummy() && !domain.IsEmpty() && !domain.VarExists(root->GetVarID())) {
+            int newDummyID = domain.GetOrdering().front();
+            cout << "Changing dummy id " << "<" << root->GetVarID() << "> to <" << newDummyID << ">" << endl;
+            root = mgr->CreateMetaNode(newDummyID, 1.0, root->GetChildren());
         }
     }
     else {

@@ -19,18 +19,16 @@ namespace aomdd {
 
 class Model {
 protected:
+    int numVars;
     std::vector<int> domains;
     std::vector<TableFunction> functions;
     std::list<int> ordering;
 public:
     Model();
 
-    Model(const std::vector<int> &domainsIn);
-
-    Model(const std::vector<int> &domainsIn,
-            const std::vector<TableFunction> &funcsIn);
-
     virtual ~Model();
+
+    inline int GetNumVars() const { return numVars; }
 
     inline const std::vector<TableFunction> &GetFunctions() const {
         return functions;

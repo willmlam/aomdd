@@ -38,6 +38,7 @@ void Model::parseUAI(string filename) {
 
     // Parse domains
     infile >> nv;
+    numVars = nv;
     for (int i = 0; i < nv; i++) {
         infile >> intBuffer;
         domains.push_back(intBuffer);
@@ -52,7 +53,7 @@ void Model::parseUAI(string filename) {
         Scope newScope;
         for (int j = 0; j < scopeSize; j++) {
             infile >> intBuffer;
-            assert(intBuffer < (int) domains.size());
+            assert(intBuffer < int(domains.size()));
             ordering.push_back(intBuffer);
             newScope.AddVar(intBuffer, domains[intBuffer]);
         }
@@ -64,7 +65,7 @@ void Model::parseUAI(string filename) {
     for (int i = 0; i < nf; i++) {
         infile >> intBuffer;
         int scopeSize = intBuffer;
-        assert(scopeSize == (int) fScopes[i].GetCard());
+        assert(scopeSize == int(fScopes[i].GetCard()));
         TableFunction newFunction(fScopes[i]);
         Assignment a(fScopes[i]);
         a.SetAllVal(0);

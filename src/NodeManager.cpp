@@ -316,7 +316,7 @@ MetaNodePtr NodeManager::FullReduce(MetaNodePtr root) {
     vector<MetaNodePtr> nodes = FullReduce(root, w);
 
     // Reduced to a single root and weight was not reweighted
-    if (nodes.size() == 0 && w == 1.0) {
+    if (nodes.size() == 1 && fabs(w - 1.0) < 1e-10) {
         return nodes[0];
     }
 

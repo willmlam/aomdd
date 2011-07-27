@@ -43,6 +43,7 @@ public:
     double Prob(bool logOut = false);
 
     void PrintBucketFunctionScopes(std::ostream &out) const;
+    void PrintBuckets(std::ostream &out) const;
     virtual ~CompileBucketTree();
 };
 

@@ -42,7 +42,7 @@ public:
     virtual bool SetVal(const Assignment &a, double val);
 
     void Multiply(const AOMDDFunction &rhs);
-    void Marginalize(const Scope &elimVars, bool forceReduceOff = false);
+    void Marginalize(const Scope &elimVars, bool mutableIDs = true);
     void Condition(const Assignment &cond);
 
     void Normalize();

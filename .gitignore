@@ -32,8 +32,8 @@ daooptW
 *.pl
 *.sh
 *.txt
+CVO
 
 Makefile
-tst/aomddR
-
-tst/aomddD
+tst/*
+repo/*

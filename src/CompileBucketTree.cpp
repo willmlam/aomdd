@@ -99,7 +99,7 @@ double CompileBucketTree::Prob(bool logOut) {
                 probFunction.Condition(cond);
             }
             else {
-                probFunction.Marginalize(elim);
+                probFunction.Marginalize(elim, false);
             }
             // At root
             if (ei == ei_end) {
@@ -153,8 +153,18 @@ double CompileBucketTree::Prob(bool logOut) {
 //            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
 
+            // empty scope, no need to send message, update final result
+            if (message->GetScope().IsEmpty()) {
+                Assignment a;
+                if (logOut) {
+                    pr += message->GetVal(a, logOut);
+                }
+                else {
+                    pr *= message->GetVal(a, logOut);
+                }
+            }
             // Not at root
-            if (ei != ei_end) {
+            else if (ei != ei_end) {
                 int parent = source(*ei, tree);
                 cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
                 buckets[parent].AddFunction(message);
@@ -162,7 +172,12 @@ double CompileBucketTree::Prob(bool logOut) {
             // At root
             else {
                 Assignment a;
-                pr = message->GetVal(a, logOut);
+                if (logOut) {
+                    pr += message->GetVal(a, logOut);
+                }
+                else {
+                    pr *= message->GetVal(a, logOut);
+                }
             }
         }
     }
@@ -175,6 +190,13 @@ void CompileBucketTree::PrintBucketFunctionScopes(ostream &out) const {
         buckets[i].PrintFunctionScopes(out);
         out << endl;
     }
+}
+
+void CompileBucketTree::PrintBuckets(ostream &out) const {
+    BOOST_FOREACH(const CompileBucket &b, buckets) {
+        b.PrintDiagrams(out); out << endl;
+    }
+    out << endl;
 }
 
 void CompileBucketTree::ResetBuckets() {

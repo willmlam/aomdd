@@ -27,7 +27,7 @@ class Graph {
     int inducedWidth;
     Graph();
 public:
-    Graph(const std::vector<Scope> &scopes);
+    Graph(int n, const std::vector<Scope> &scopes);
     virtual ~Graph();
 
     const UndirectedGraph &GetGraph() const;
