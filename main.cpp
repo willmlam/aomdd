@@ -18,6 +18,8 @@ using namespace aomdd;
 using namespace std;
 
 const int OUTPUT_COMPLEXITY_LIMIT = 2048;
+time_t timeStart, timeEnd;
+double timePassed;
 
 list<int> parseOrder(string filename) {
     ifstream infile(filename.c_str());
@@ -82,9 +84,10 @@ void IterateTester(Assignment & a) {
 }
 
 
-string inputFile, orderFile, evidFile, dotFile;
+string inputFile, orderFile, evidFile, dotFile, outputResultFile;
 
 bool compileMode, peMode, mpeMode, vbeMode, logMode;
+
 
 bool verifyVals;
 
@@ -112,6 +115,10 @@ bool ParseCommandLine(int argc, char **argv) {
             else if (token.substr(1, len-1) == "t") {
                 if (++i >= argc) return false;
                 dotFile = string(argv[i]);
+            }
+            else if (token.substr(1, len-1) == "r") {
+                if (++i >= argc) return false;
+                outputResultFile = string(argv[i]);
             }
             else if (token.substr(1, len-1) == "c") {
                 compileMode = true;
@@ -147,6 +154,10 @@ bool ParseCommandLine(int argc, char **argv) {
         cerr << "Missing ordering file." << endl;
         return false;
     }
+    if (peMode && mpeMode) {
+        cerr << "Please choose a single query type (P(e) or MPE)." << endl;
+        return false;
+    }
     return true;
 }
 
@@ -169,6 +180,7 @@ int main(int argc, char **argv) {
         cout << endl;
         cout << "Output files:" << endl;
         cout << "  -t <file>        path to DOT file to output generated pseudo-tree" << endl;
+        cout << "  -r <file>        path to output results" << endl;
         cout << endl;
         cout << "Inference options:" << endl;
         cout << "  -c               compile full AOMDD first" << endl;
@@ -180,17 +192,36 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    ofstream out;
+
+    bool outputToFile = false;
+    if (outputResultFile != "") {
+        out.open(outputResultFile.c_str());
+        outputToFile = true;
+    }
+
 
     Model m;
     cout << "Reading from input file: " << inputFile << endl;
+    if (outputToFile) {
+        out << "Reading from input file: " << inputFile << endl;
+    }
+
     m.parseUAI(inputFile);
     cout << "Reading from ordering file: " << orderFile << endl;
+    if (outputToFile) {
+        out << "Reading from ordering file: " << orderFile << endl;
+    }
     list<int> ordering = parseOrder(orderFile);
     map<int, int> evidence;
     if (evidFile != "") {
         cout << "Reading from evidence file: " << evidFile << endl;
+        if (outputToFile) {
+            out << "Reading from evidence file: " << evidFile << endl;
+        }
         evidence = parseEvidence(evidFile);
     }
+
     m.SetOrdering(ordering);
 
     Graph g(m.GetNumVars(), m.GetScopes());
@@ -202,6 +233,9 @@ int main(int argc, char **argv) {
     PseudoTree pt(g, completeScope);
 
     cout << "w/h : " << pt.GetInducedWidth() << "/" << pt.GetHeight() << endl;
+    if (outputToFile) {
+        out << "w/h : " << pt.GetInducedWidth() << "/" << pt.GetHeight() << endl;
+    }
 
     if (dotFile != "") {
         cout << "Writing pseudo tree to: " << dotFile << endl;
@@ -210,10 +244,11 @@ int main(int argc, char **argv) {
 
 
     CompileBucketTree cbt(m, &pt, ordering, evidence);
-//    cbt.PrintBuckets(cout); cout << endl;
+    BucketTree bt(m, ordering, evidence);
 
     AOMDDFunction combined;
     if (compileMode) {
+        time(&timeStart);
         combined = cbt.Compile();
         if (!evidence.empty()) {
             Assignment cond;
@@ -226,38 +261,59 @@ int main(int argc, char **argv) {
             }
             combined.Condition(cond);
         }
+        time(&timeEnd);
+        timePassed = difftime(timeEnd, timeStart);
         int totalCard = combined.GetScope().GetCard();
         if (totalCard <= OUTPUT_COMPLEXITY_LIMIT) {
             combined.Save(cout); cout << endl;
             combined.PrintAsTable(cout); cout << endl;
         }
+        cout << "Time: " << timePassed << "s" << endl;
         cout << "Total complexity: " << totalCard << endl;
         cout << "AOMDD size: " << combined.Size() << endl;
+        if (outputToFile) {
+            out << "Time: " << timePassed << "s" << endl;
+            out << "Total complexity: " << totalCard << endl;
+            out << "AOMDD size: " << combined.Size() << endl;
+        }
     }
     if (peMode) {
         double pr;
+        time(&timeStart);
         if (vbeMode) {
-            BucketTree bt(m, ordering, evidence);
             pr = bt.Prob(logMode);
         }
         else {
             pr = cbt.Prob(logMode);
         }
+        time(&timeEnd);
+        timePassed = difftime(timeEnd, timeStart);
         string prefix = logMode ? "log P(e) = " : "P(e) = ";
+        cout << "Time: " << timePassed << "s" << endl;
         cout << prefix << pr << endl;
+        if (outputToFile) {
+            out << "Time: " << timePassed << "s" << endl;
+            out << prefix << pr << endl;
+        }
     }
-
-    if (mpeMode) {
+    else if (mpeMode) {
         double pr;
+        time(&timeStart);
         if (vbeMode) {
-            BucketTree bt(m, ordering, evidence);
             pr = bt.MPE(logMode);
         }
         else {
             pr = cbt.MPE(logMode);
         }
+        time(&timeEnd);
+        timePassed = difftime(timeEnd, timeStart);
         string prefix = logMode ? "log MPE = " : "MPE = ";
+        cout << "Time: " << timePassed << "s" << endl;
         cout << prefix << pr << endl;
+        if (outputToFile) {
+            out << "Time: " << timePassed << "s" << endl;
+            out << prefix << pr << endl;
+        }
     }
 
     if (verifyVals) {
