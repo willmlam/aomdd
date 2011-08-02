@@ -131,7 +131,7 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
         }
     }
     /*
-    cout << "lhs: " << aps.first->GetVarID() << ", "
+    cout << "lhs: " << aps.first->GetVarID() << ", ";
     cout << "rhs:";
     BOOST_FOREACH(MetaNodePtr r, aps.second) {
         cout << " " << r->GetVarID();

@@ -10,7 +10,9 @@
 #include "MetaNode.h"
 #include <sstream>
 
+
 namespace aomdd {
+
 using namespace std;
 
 MetaNode::ANDNode::ANDNode() :
@@ -104,7 +106,7 @@ void MetaNode::ANDNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDes
 }
 
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
-    if (fabs(lhs->GetWeight() - rhs->GetWeight()) >= 1e-10 || lhs->GetChildren().size()
+    if (fabs(lhs->GetWeight() - rhs->GetWeight()) >= TOLERANCE || lhs->GetChildren().size()
             != rhs->GetChildren().size()) {
         return false;
     }

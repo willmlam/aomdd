@@ -100,7 +100,7 @@ public:
     // Be sure the input node is a root!
     // Returns a vector of pointers since ANDNodes can have multiple
     // MetaNode children
-    std::vector<MetaNodePtr> FullReduce(MetaNodePtr node, double &w);
+    std::vector<MetaNodePtr> FullReduce(MetaNodePtr node, double &w, bool isRoot=false);
 
     // Driver function that returns a dummy root if needed (to combine
     // multiple MetaNodes as a single output

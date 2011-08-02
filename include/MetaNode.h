@@ -18,6 +18,9 @@
 
 namespace aomdd {
 
+// tolerance for equal weights
+const double TOLERANCE = 1e-50;
+
 class MetaNode {
 friend class NodeManager;
 public:

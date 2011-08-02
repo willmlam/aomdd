@@ -253,7 +253,7 @@ MetaNodePtr NodeManager::CreateMetaNode(const Scope &vars,
     return CreateMetaNode(rootVar, children, weight);
 }
 
-vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
+vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w, bool isRoot) {
     // terminal check
     if (node.get() == MetaNode::GetZero().get() || node.get()
             == MetaNode::GetOne().get()) {
@@ -295,7 +295,7 @@ vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w) {
 
     bool redundant = true;
     ANDNodePtr temp = newCh[0];
-    if (newCh.size() == 1) redundant = false;
+    if (newCh.size() == 1 && isRoot) redundant = false;
     for (unsigned int i = 1; i < newCh.size(); ++i) {
         if (temp != newCh[i]) {
             redundant = false;
@@ -323,10 +323,10 @@ MetaNodePtr NodeManager::FullReduce(MetaNodePtr root) {
         return ocit->second;
     }
 
-    vector<MetaNodePtr> nodes = FullReduce(root, w);
+    vector<MetaNodePtr> nodes = FullReduce(root, w, true);
 
     // Reduced to a single root and weight was not reweighted
-    if (nodes.size() == 1 && fabs(w - 1.0) < 1e-10) {
+    if (nodes.size() == 1 && fabs(w - 1.0) < TOLERANCE) {
         return nodes[0];
     }
 
