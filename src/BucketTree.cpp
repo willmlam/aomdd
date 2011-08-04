@@ -104,10 +104,14 @@ double BucketTree::MPE(bool logOut) {
     for (; rit != ordering.rend(); ++rit) {
         cout << "Combining functions in bucket " << *rit;
         cout << " (" << count++ << " of " << numBuckets << ")" << endl;
-//        buckets[*rit].PrintFunctionTables(cout); cout << endl;
+
+        buckets[*rit].PrintFunctionTables(cout); cout << endl;
+
         TableFunction *message = buckets[*rit].Flatten(ordering);
         cout << "After flattening" << endl;
-//        message->PrintAsTable(cout); cout << endl;
+
+        message->PrintAsTable(cout); cout << endl;
+
         Scope elim;
         elim.AddVar(*rit, message->GetScope().GetVarCard(*rit));
         map<int, int>::iterator eit = evidence.find(*rit);
@@ -123,7 +127,9 @@ double BucketTree::MPE(bool logOut) {
             message->Maximize(elim);
         }
         cout << "After eliminating " << *rit << endl;
-//        message->PrintAsTable(cout); cout << endl;
+
+        message->PrintAsTable(cout); cout << endl;
+
         if (message->GetScope().IsEmpty()) {
             if (logOut) {
                 double val = message->GetVal(empty, true);

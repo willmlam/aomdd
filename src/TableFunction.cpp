@@ -36,7 +36,7 @@ double TableFunction::GetVal(const Assignment &a, bool logOut) const {
         cout << idx << ", Max is: " << values.size() << std::endl;
         throw GenericException("Invalid indexing of function: " + idx);
     }
-    return !logOut ? values[idx] : log(values[idx]);
+    return !logOut ? values[idx] : log10(values[idx]);
 }
 
 double TableFunction::GetValForceOldOrder(const Assignment &a, bool logOut) const {
@@ -45,7 +45,7 @@ double TableFunction::GetValForceOldOrder(const Assignment &a, bool logOut) cons
         cout << idx << ", Max is: " << values.size() << std::endl;
         throw GenericException("Invalid indexing of function: " + idx);
     }
-    return !logOut ? values[idx] : log(values[idx]);
+    return !logOut ? values[idx] : log10(values[idx]);
 }
 
 bool TableFunction::SetVal(const Assignment &a, double val) {

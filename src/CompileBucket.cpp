@@ -29,6 +29,10 @@ AOMDDFunction *CompileBucket::Flatten() {
         message = new AOMDDFunction(*functions[0]);
         for (unsigned int i = 1; i < functions.size(); ++i) {
             message->Multiply(*functions[i]);
+            /* DEBUG */
+//            message->Save(cout); cout << endl;
+//            message->PrintAsTable(cout); cout << endl;
+            /* DEBUG */
         }
     }
     return message;

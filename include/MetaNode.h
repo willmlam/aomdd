@@ -54,6 +54,11 @@ public:
         void RecursivePrint(std::ostream &out, std::string prefix) const;
         void RecursivePrint(std::ostream &out) const;
         void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
+
+        inline size_t MemUsage() const {
+            size_t mtpSize = sizeof(MetaNodePtr) + sizeof(size_t);
+            return sizeof(weight) + sizeof(children) + (children.size() * mtpSize);
+        }
     };
 
     typedef boost::shared_ptr<ANDNode> ANDNodePtr;
@@ -77,8 +82,6 @@ private:
     static bool oneInit;
     static MetaNodePtr terminalZero;
     static MetaNodePtr terminalOne;
-
-    static unsigned int idCount;
 
     void NumOfNodes(boost::unordered_set<size_t> &nodeSet) const;
 
@@ -144,6 +147,17 @@ public:
         else {
             return terminalOne;
         }
+    }
+
+    inline size_t MemUsage() const {
+        size_t apsize = sizeof(ANDNodePtr) + sizeof(size_t);
+        size_t temp = sizeof(varID) + sizeof(card) +
+                sizeof(children) + sizeof(weight) +
+                sizeof(hashVal) + (children.size() * apsize);
+        BOOST_FOREACH(const ANDNodePtr &i, children) {
+            temp += i->MemUsage();
+        }
+        return temp;
     }
 
 };

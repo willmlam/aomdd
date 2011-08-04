@@ -49,7 +49,7 @@ AOMDDFunction::AOMDDFunction(const Scope &domainIn,
 
 double AOMDDFunction::GetVal(const Assignment &a, bool logOut) const {
     double value = root->Evaluate(a);
-    return logOut ? log(value) : value;
+    return logOut ? log10(value) : value;
 }
 
 bool AOMDDFunction::SetVal(const Assignment &a, double val) {

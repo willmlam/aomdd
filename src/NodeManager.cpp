@@ -360,6 +360,10 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
     OperationCache::iterator ocit = opCache.find(ocEntry);
     if ( ocit != opCache.end() ) {
         //Found result in cache
+        /*
+        cout << "lhs: " << lhs.get() << endl;
+        cout << "Returning:" << ocit->second.get() << endl;
+        */
         return ocit->second;
     }
 
@@ -455,6 +459,12 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
         // For each parameter set
         for (unsigned int i = 0; i < paramSets.size(); ++i) {
             MetaNodePtr subDD = Apply(paramSets[i].first, paramSets[i].second, op, embeddedPT, w);
+            /*
+            cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
+            paramSets[i].first->RecursivePrint(cout); cout << endl;
+            cout << "SubDD:" << "(" << varid << "," << k << ")" << endl;
+            subDD->RecursivePrint(cout); cout << endl;
+            */
             if ( op == PROD && subDD.get() == MetaNode::GetZero().get() ) {
                 newChildren.clear();
                 newChildren.push_back(MetaNode::GetZero());
@@ -493,6 +503,14 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
     MetaNodePtr u = CreateMetaNode(var, children);
     Operation entryKey(op, lhs, rhs);
     opCache.insert(make_pair<Operation, MetaNodePtr>(entryKey, u));
+    /*
+    cout << "Created cache entry" << endl;
+    cout << "keys:";
+    BOOST_FOREACH(size_t k, entryKey.GetParamSet()) {
+        cout << " " << (void*)k;
+    }
+    cout << endl << "res:" << u.get() << endl;
+    */
     return u;
 }
 

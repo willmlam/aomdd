@@ -20,7 +20,7 @@ enum Operator {
     PROD, SUM, MAX, REDUCE, MARGINALIZE, NONE
 };
 
-typedef boost::unordered_set<size_t> ParamSet;
+typedef boost::unordered_multiset<size_t> ParamSet;
 
 class Operation {
     Operator op;
