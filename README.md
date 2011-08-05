@@ -10,6 +10,7 @@ This code compiles Bayesian networks and Markov networks to AOMDDs and computes 
 
     Output files:
       -t <file>       path to DOT file to output generated pseudo-tree
+      -r <file>       path to output results
 
     Inference options:
       -c              compile full AOMDD first
