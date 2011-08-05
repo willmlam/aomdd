@@ -347,7 +347,11 @@ int main(int argc, char **argv) {
     }
 
     cout << "Number of nodes in cache: "
-            << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl << endl;
+                << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl << endl;
+    if (outputToFile) {
+        out << "Number of nodes in cache: "
+                << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl;
+    }
 
     return 0;
 }
