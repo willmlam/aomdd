@@ -130,6 +130,7 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
             aps = apsVec[0];
         }
     }
+
     /*
     cout << "lhs: " << aps.first->GetVarID() << ", ";
     cout << "rhs:";
@@ -137,10 +138,10 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
         cout << " " << r->GetVarID();
     }
     cout << endl;
+    aps.first->RecursivePrint(cout); cout << endl;
     */
     if (fullReduce) {
-        double w = 1.0;
-        root = mgr->FullReduce(mgr->Apply(aps.first, aps.second, PROD, embedpt), w)[0];
+        root = mgr->FullReduce(mgr->Apply(aps.first, aps.second, PROD, embedpt));
     }
     else {
         root = mgr->Apply(aps.first, aps.second, PROD, embedpt);

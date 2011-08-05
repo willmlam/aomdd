@@ -28,8 +28,9 @@ size_t hash_value(const Operation &o) {
 
 }
 bool operator==(const Operation &lhs, const Operation &rhs) {
-    return lhs.GetOperator() == rhs.GetOperator() && lhs.GetParamSet()
-            == rhs.GetParamSet();
+    return lhs.GetOperator() == rhs.GetOperator() &&
+            lhs.GetVarID() == rhs.GetVarID() &&
+            lhs.GetParamSet() == rhs.GetParamSet();
 }
 
 // =================
@@ -351,10 +352,9 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
             (!rhs.empty()) &&
             lhs->GetVarID() == rhs[0]->GetVarID() &&
             !(rhs[0]->IsDummy()) ) {
-        vector<MetaNodePtr> newrhs(lhs->GetChildren()[0]->GetChildren());
-        return Apply(rhs[0], newrhs, op, embeddedPT, w);
+        vector<MetaNodePtr> newrhs(1, lhs);
+        return Apply(rhs[0], newrhs, op, embeddedPT, 1.0);
     }
-
 
     Operation ocEntry(op, lhs, rhs);
     OperationCache::iterator ocit = opCache.find(ocEntry);
@@ -458,7 +458,7 @@ MetaNodePtr NodeManager::Apply(MetaNodePtr lhs,
 
         // For each parameter set
         for (unsigned int i = 0; i < paramSets.size(); ++i) {
-            MetaNodePtr subDD = Apply(paramSets[i].first, paramSets[i].second, op, embeddedPT, w);
+            MetaNodePtr subDD = Apply(paramSets[i].first, paramSets[i].second, op, embeddedPT, 1.0);
             /*
             cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
             paramSets[i].first->RecursivePrint(cout); cout << endl;
@@ -527,8 +527,9 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     }
     int varid = root->GetVarID();
     int card = root->GetCard();
+    int elimvar = s.GetOrdering().front();
 
-    Operation ocEntry(MARGINALIZE, root, varid);
+    Operation ocEntry(MARGINALIZE, root, elimvar);
     OperationCache::iterator ocit = opCache.find(ocEntry);
     if ( ocit != opCache.end() ) {
         //Found result in cache
@@ -577,7 +578,7 @@ MetaNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     MetaNodePtr ret = CreateMetaNode(var, newANDNodes, root->GetWeight());
-    Operation entryKey(MARGINALIZE, root, varid);
+    Operation entryKey(MARGINALIZE, root, elimvar);
     opCache.insert(make_pair<Operation, MetaNodePtr>(entryKey, ret));
     return ret;
 }
@@ -595,11 +596,18 @@ MetaNodePtr NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     }
     int varid = root->GetVarID();
     int card = root->GetCard();
+    int elimvar = s.GetOrdering().front();
 
-    Operation ocEntry(MAX, root, varid);
+    Operation ocEntry(MAX, root, elimvar);
     OperationCache::iterator ocit = opCache.find(ocEntry);
     if ( ocit != opCache.end() ) {
         //Found result in cache
+        /*
+        cout << "operator: " << ocit->first.GetOperator() << endl;
+        cout << "root: " << root.get() << endl;
+        cout << "elimvar: " << elimvar << endl;
+        cout << "Returning: " << ocit->second.get() << endl;
+        */
         return ocit->second;
     }
 
@@ -648,8 +656,17 @@ MetaNodePtr NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     MetaNodePtr ret = CreateMetaNode(var, newANDNodes, root->GetWeight());
-    Operation entryKey(MAX, root, varid);
+    Operation entryKey(MAX, root, elimvar);
     opCache.insert(make_pair<Operation, MetaNodePtr>(entryKey, ret));
+    /*
+    cout << "Created cache entry(MAX)" << endl;
+    cout << "elimvar:" << elimvar << endl;
+    cout << "keys:";
+    BOOST_FOREACH(size_t k, entryKey.GetParamSet()) {
+        cout << " " << (void*)k;
+    }
+    cout << endl << "res:" << ret.get() << endl;
+    */
     return ret;
 }
 

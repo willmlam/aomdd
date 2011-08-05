@@ -50,6 +50,10 @@ public:
     inline const ParamSet &GetParamSet() const {
         return params;
     }
+
+    inline int GetVarID() const {
+        return varid;
+    }
 };
 
 size_t hash_value(const Operation &o);
