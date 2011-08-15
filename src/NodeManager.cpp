@@ -150,7 +150,7 @@ vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
 MetaNodePtr NodeManager::CreateMetaNode(const Scope &var,
         const vector<ANDNodePtr> &ch, double weight) {
     MetaNodePtr temp(new MetaNode(var, ch));
-//    temp = SingleLevelFullReduce(temp);
+    temp = SingleLevelFullReduce(temp);
     temp->SetWeight(weight);
     UniqueTable::iterator it = ut.find(temp);
     if (it != ut.end()) {
