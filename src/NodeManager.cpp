@@ -46,46 +46,6 @@ NodeManager *NodeManager::GetNodeManager() {
     }
 }
 
-vector<MetaNodePtr> NodeManager::ReweighNodes(const vector<MetaNodePtr> &nodes, double w) {
-    vector<MetaNodePtr> ret;
-    BOOST_FOREACH(MetaNodePtr i, nodes) {
-        if (i.get() != MetaNode::GetZero().get() &&
-                i.get() != MetaNode::GetOne().get()) {
-            MetaNodePtr newNode(new MetaNode(*i));
-            newNode->SetWeight(newNode->GetWeight() * w);
-            ret.push_back(newNode);
-        }
-        else {
-            ret.push_back(i);
-        }
-    }
-    return ret;
-}
-
-vector<MetaNodePtr> NodeManager::CopyMetaNodes(const vector<MetaNodePtr> &nodes) {
-    vector<MetaNodePtr> ret;
-    BOOST_FOREACH(MetaNodePtr i, nodes) {
-        if (i.get() != MetaNode::GetZero().get() &&
-                i.get() != MetaNode::GetOne().get()) {
-            MetaNodePtr newNode(new MetaNode(*i));
-            ret.push_back(newNode);
-        }
-        else {
-            ret.push_back(i);
-        }
-    }
-    return ret;
-}
-
-vector<ANDNodePtr> NodeManager::CopyANDNodes(const vector<ANDNodePtr> &nodes) {
-    vector<ANDNodePtr> ret;
-    BOOST_FOREACH(ANDNodePtr i, nodes) {
-        ANDNodePtr newNode(new MetaNode::ANDNode(*i));
-        ret.push_back(newNode);
-    }
-    return ret;
-}
-
 vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
         const vector<MetaNodePtr> &lhs, const vector<MetaNodePtr> &rhs) const {
     vector<ApplyParamSet> ret;
@@ -190,6 +150,7 @@ vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
 MetaNodePtr NodeManager::CreateMetaNode(const Scope &var,
         const vector<ANDNodePtr> &ch, double weight) {
     MetaNodePtr temp(new MetaNode(var, ch));
+//    temp = SingleLevelFullReduce(temp);
     temp->SetWeight(weight);
     UniqueTable::iterator it = ut.find(temp);
     if (it != ut.end()) {
@@ -252,6 +213,62 @@ MetaNodePtr NodeManager::CreateMetaNode(const Scope &vars,
         }
     }
     return CreateMetaNode(rootVar, children, weight);
+}
+
+vector<MetaNodePtr> NodeManager::SingleLevelFullReduce(MetaNodePtr node, double &w, bool isRoot) {
+    // terminal check
+    if (node.get() == MetaNode::GetZero().get() || node.get()
+            == MetaNode::GetOne().get()) {
+        return vector<MetaNodePtr> (1, node);
+    }
+
+    const vector<ANDNodePtr> &ch = node->GetChildren();
+
+    bool redundant = true;
+    ANDNodePtr temp = ch[0];
+    if (ch.size() == 1 && isRoot) redundant = false;
+    for (unsigned int i = 1; i < ch.size(); ++i) {
+        if (temp != ch[i]) {
+            redundant = false;
+            break;
+        }
+    }
+
+    if ( redundant ) {
+        w *= ch[0]->GetWeight();
+        return ch[0]->GetChildren();
+    }
+    else {
+        return vector<MetaNodePtr>(1, node);
+    }
+
+}
+
+MetaNodePtr NodeManager::SingleLevelFullReduce(MetaNodePtr root) {
+    double w = 1.0;
+
+    Operation ocEntry(REDUCE, root);
+    OperationCache::iterator ocit = opCache.find(ocEntry);
+    if ( ocit != opCache.end() ) {
+        //Found result in cache
+        return ocit->second;
+    }
+
+    vector<MetaNodePtr> nodes = SingleLevelFullReduce(root, w, true);
+
+    // Reduced to a single root and weight was not reweighted
+    if (nodes.size() == 1 && fabs(w - 1.0) < TOLERANCE) {
+        return nodes[0];
+    }
+
+    int varid = root->GetVarID();
+    ANDNodePtr newAND(new MetaNode::ANDNode(w, nodes));
+    MetaNodePtr newMeta(new MetaNode(varid, 1, vector<ANDNodePtr>(1, newAND)));
+    /*
+    Operation entryKey(REDUCE, root);
+    opCache.insert(make_pair<Operation, MetaNodePtr>(entryKey, newMeta));
+    */
+    return newMeta;
 }
 
 vector<MetaNodePtr> NodeManager::FullReduce(MetaNodePtr node, double &w, bool isRoot) {

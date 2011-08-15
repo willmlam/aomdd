@@ -60,29 +60,13 @@ const vector<MetaNodePtr> &MetaNode::ANDNode::GetChildren() const {
     return children;
 }
 
-
-/*
-bool MetaNode::ANDNode::operator==(const ANDNode &rhs) const {
-    if (fabs(weight - rhs.weight) < 1e-10 || children.size() != rhs.children.size()) {
-        return false;
-    }
-    for (unsigned int i = 0; i < children.size(); i++) {
-        if (children[i].get() != rhs.children[i].get()) {
-            return false;
-        }
-    }
-    return true;
-}
-*/
-
 void MetaNode::ANDNode::Save(ostream &out, string prefix) const {
     out << prefix << "and-id: " << this << endl;
     out << prefix << "weight: " << weight << endl;
     out << prefix << "children: ";
-    BOOST_FOREACH(const MetaNodePtr &i, children)
-                {
-                    out << " " << i;
-                }
+    BOOST_FOREACH(const MetaNodePtr &i, children) {
+        out << " " << i;
+    }
 }
 
 void MetaNode::ANDNode::RecursivePrint(ostream &out, string prefix) const {
@@ -185,22 +169,6 @@ double MetaNode::Evaluate(const Assignment &a) const {
     }
 }
 
-/*
-// Considered equal if the scope and children pointers are the same
-bool MetaNode::operator==(const MetaNode &rhs) const {
-    if (this == GetZero().get() || this == GetOne().get())
-        return false;
-    if (varID != rhs.varID || card != rhs.card || children.size()
-            != rhs.children.size())
-        return false;
-    for (unsigned int i = 0; i < children.size(); i++) {
-        if (children[i] != rhs.children[i])
-            return false;
-    }
-    return true;
-}
-*/
-
 void MetaNode::Save(ostream &out, string prefix) const {
     if(this == MetaNode::GetZero().get()) {
         out << prefix << "TERMINAL ZERO" << endl;
@@ -257,34 +225,6 @@ void MetaNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent
         i->GenerateDiagram(diagram, current);
     }
 }
-
-/*
-const MetaNodePtr &MetaNode::GetZero() {
-    if (!zeroInit) {
-        terminalZero = MetaNodePtr(new MetaNode());
-        terminalZero->varID = -2;
-        terminalZero->weight = 0;
-        zeroInit = true;
-        return terminalZero;
-    }
-    else {
-        return terminalZero;
-    }
-}
-*/
-
-/*
-const MetaNodePtr &MetaNode::GetOne() {
-    if (!oneInit) {
-        terminalOne = MetaNodePtr(new MetaNode());
-        oneInit = true;
-        return terminalOne;
-    }
-    else {
-        return terminalOne;
-    }
-}
-*/
 
 int MetaNode::NumOfNodes() const {
     boost::unordered_set<size_t> nodeSet;

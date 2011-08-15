@@ -77,15 +77,7 @@ class NodeManager {
     static bool initialized;
     static NodeManager *singleton;
 
-    // Reweigh nodes by multiplying in w to the MetaNode, unless it's a terminal
-    std::vector<MetaNodePtr> ReweighNodes(
-            const std::vector<MetaNodePtr> &nodes, double w);
     MetaNodePtr NormalizeHelper(MetaNodePtr root);
-
-    std::vector<MetaNodePtr> CopyMetaNodes(
-            const std::vector<MetaNodePtr> &nodes);
-    std::vector<ANDNodePtr> CopyANDNodes(
-            const std::vector<ANDNodePtr> &nodes);
 
 public:
     static NodeManager *GetNodeManager();
@@ -109,6 +101,11 @@ public:
     // Driver function that returns a dummy root if needed (to combine
     // multiple MetaNodes as a single output
     MetaNodePtr FullReduce(MetaNodePtr node);
+
+    // Same as above, but single level version, it assumes all the decision
+    // diagrams rooted by the children are already fully reduced
+    std::vector<MetaNodePtr> SingleLevelFullReduce(MetaNodePtr node, double &w, bool isRoot=false);
+    MetaNodePtr SingleLevelFullReduce(MetaNodePtr node);
 
 
     MetaNodePtr Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
