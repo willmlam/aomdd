@@ -17,7 +17,7 @@
 using namespace aomdd;
 using namespace std;
 
-const int OUTPUT_COMPLEXITY_LIMIT = 2048;
+const unsigned long OUTPUT_COMPLEXITY_LIMIT = 2048;
 time_t timeStart, timeEnd;
 double timePassed;
 
@@ -243,13 +243,20 @@ int main(int argc, char **argv) {
     }
 
 
-    CompileBucketTree cbt(m, &pt, ordering, evidence);
-    BucketTree bt(m, ordering, evidence);
+    CompileBucketTree *cbt = NULL;
+    BucketTree *bt = NULL;
+
+    if (vbeMode) {
+        bt = new BucketTree(m, ordering, evidence);
+    }
+    else {
+        cbt = new CompileBucketTree(m, &pt, ordering, evidence);
+    }
 
     AOMDDFunction combined;
     if (compileMode) {
         time(&timeStart);
-        combined = cbt.Compile();
+        combined = cbt->Compile();
         if (!evidence.empty()) {
             Assignment cond;
             map<int, int>::iterator it = evidence.begin();
@@ -263,7 +270,7 @@ int main(int argc, char **argv) {
         }
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
-        int totalCard = combined.GetScope().GetCard();
+        unsigned long totalCard = combined.GetScope().GetCard();
         if (totalCard <= OUTPUT_COMPLEXITY_LIMIT) {
             combined.Save(cout); cout << endl;
             combined.PrintAsTable(cout); cout << endl;
@@ -281,10 +288,10 @@ int main(int argc, char **argv) {
         double pr;
         time(&timeStart);
         if (vbeMode) {
-            pr = bt.Prob(logMode);
+            pr = bt->Prob(logMode);
         }
         else {
-            pr = cbt.Prob(logMode);
+            pr = cbt->Prob(logMode);
         }
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
@@ -300,10 +307,10 @@ int main(int argc, char **argv) {
         double pr;
         time(&timeStart);
         if (vbeMode) {
-            pr = bt.MPE(logMode);
+            pr = bt->MPE(logMode);
         }
         else {
-            pr = cbt.MPE(logMode);
+            pr = cbt->MPE(logMode);
         }
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
@@ -321,7 +328,7 @@ int main(int argc, char **argv) {
             Assignment a(completeScope);
             a.SetAllVal(0);
             int misses = 0;
-            for (int i = 0; i < OUTPUT_COMPLEXITY_LIMIT; i++) {
+            for (unsigned int i = 0; i < OUTPUT_COMPLEXITY_LIMIT; i++) {
                 double compVal = combined.GetVal(a, logMode);
                 double flatVal = logMode ? 0 : 1;
                 BOOST_FOREACH(const TableFunction &tf, m.GetFunctions()) {
@@ -352,6 +359,9 @@ int main(int argc, char **argv) {
         out << "Number of nodes in cache: "
                 << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl;
     }
+
+    if (bt) delete bt;
+    if (cbt) delete cbt;
 
     return 0;
 }
