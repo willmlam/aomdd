@@ -59,14 +59,86 @@ public:
 size_t hash_value(const Operation &o);
 bool operator==(const Operation &lhs, const Operation &rhs);
 
-typedef boost::unordered_set<MetaNodePtr> UniqueTable;
-typedef boost::unordered_map<Operation, MetaNodePtr> OperationCache;
+struct nodehasher {
+    std::size_t operator()(const MetaNodePtr &node) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, node->GetVarID());
+        boost::hash_combine(seed, node->GetCard());
+        BOOST_FOREACH(const ANDNodePtr &i, node->GetChildren()) {
+            boost::hash_combine(seed, i->GetWeight());
+            BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
+                boost::hash_combine(seed, j.get());
+            }
+        }
+        return seed;
+    }
+};
+
+struct eqnode {
+    bool operator()(const MetaNodePtr &lhs, const MetaNodePtr &rhs) const {
+        if (lhs.get() == MetaNode::GetZero().get() && rhs.get()
+                == MetaNode::GetOne().get())
+            return false;
+        if (rhs.get() == MetaNode::GetZero().get() && lhs.get()
+                == MetaNode::GetOne().get())
+            return false;
+        if (lhs->GetStoredHash() != rhs->GetStoredHash()) {
+            return false;
+        }
+        if (lhs->GetVarID() != rhs->GetVarID() || lhs->GetCard() != rhs->GetCard()
+                || lhs->GetChildren().size() != rhs->GetChildren().size())
+            return false;
+        for (unsigned int i = 0; i < lhs->GetChildren().size(); i++) {
+            if (lhs->GetChildren()[i] != rhs->GetChildren()[i])
+                return false;
+        }
+        return true;
+    }
+};
+
+struct ophasher {
+    std::size_t operator()(const Operation &o) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, o.GetOperator());
+        boost::hash_combine(seed, o.GetVarID());
+        BOOST_FOREACH(ParamSet::value_type i, o.GetParamSet()) {
+            boost::hash_combine(seed, i);
+        }
+        return seed;
+    }
+};
+
+struct eqop {
+    bool operator()(const Operation &lhs, const Operation &rhs) const {
+        return lhs.GetOperator() == rhs.GetOperator() &&
+                lhs.GetVarID() == rhs.GetVarID() &&
+                lhs.GetParamSet() == rhs.GetParamSet();
+    }
+};
+
+typedef std::vector<MetaNodePtr> MetaNodeList;
+typedef std::pair<MetaNodeList, double> WeightedMetaNodeList;
+
+//typedef boost::unordered_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+//typedef google::dense_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+typedef google::sparse_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+//typedef boost::unordered_map<Operation, MetaNodePtr> OperationCache;
+//typedef google::dense_hash_map<Operation, MetaNodePtr, ophasher, eqop> OperationCache;
+typedef google::sparse_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
 typedef std::pair<MetaNodePtr, std::vector<MetaNodePtr> > ApplyParamSet;
 
 class NodeManager {
     UniqueTable ut;
     OperationCache opCache;
     NodeManager() {
+        /*
+        MetaNodePtr nullKey(new MetaNode(-1, 0, std::vector<ANDNodePtr>()));
+        ut.set_empty_key(nullKey);
+        */
+        /*
+        Operation nullOpKey;
+        opCache.set_empty_key(nullOpKey);
+        */
     }
     NodeManager(NodeManager const&) {
     }
@@ -77,30 +149,23 @@ class NodeManager {
     static bool initialized;
     static NodeManager *singleton;
 
-    // Reweigh nodes by multiplying in w to the MetaNode, unless it's a terminal
-    std::vector<MetaNodePtr> ReweighNodes(
-            const std::vector<MetaNodePtr> &nodes, double w);
     MetaNodePtr NormalizeHelper(MetaNodePtr root);
-
-    std::vector<MetaNodePtr> CopyMetaNodes(
-            const std::vector<MetaNodePtr> &nodes);
-    std::vector<ANDNodePtr> CopyANDNodes(
-            const std::vector<ANDNodePtr> &nodes);
 
 public:
     static NodeManager *GetNodeManager();
     // Create a metanode from a variable with a children list
-    MetaNodePtr CreateMetaNode(const Scope &var,
-            const std::vector<ANDNodePtr> &ch, double weight = 1);
+    WeightedMetaNodeList CreateMetaNode(const Scope &var,
+            const std::vector<ANDNodePtr> &ch);
 
-    MetaNodePtr CreateMetaNode(int varid, unsigned int card,
-            const std::vector<ANDNodePtr> &ch, double weight = 1);
+    WeightedMetaNodeList CreateMetaNode(int varid, unsigned int card,
+            const std::vector<ANDNodePtr> &ch);
 
     // Create a metanode based on a tabular form of the function
     // Variable ordering is defined by the scope
-    MetaNodePtr CreateMetaNode(const Scope &vars,
-            const std::vector<double> &vals, double weight = 1);
+    WeightedMetaNodeList CreateMetaNode(const Scope &vars,
+            const std::vector<double> &vals);
 
+    /*
     // Be sure the input node is a root!
     // Returns a vector of pointers since ANDNodes can have multiple
     // MetaNode children
@@ -109,23 +174,38 @@ public:
     // Driver function that returns a dummy root if needed (to combine
     // multiple MetaNodes as a single output
     MetaNodePtr FullReduce(MetaNodePtr node);
+    */
 
+    // Same as above, but single level version, it assumes all the decision
+    // diagrams rooted by the children are already fully reduced
+    WeightedMetaNodeList SingleLevelFullReduce(MetaNodePtr node);
 
-    MetaNodePtr Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
-            const DirectedGraph &embeddedPT, double w = 1);
+    WeightedMetaNodeList Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
+            const DirectedGraph &embeddedPT);
 
     std::vector<ApplyParamSet> GetParamSets(const DirectedGraph &tree,
             const std::vector<MetaNodePtr> &lhs,
             const std::vector<MetaNodePtr> &rhs) const;
 
-    MetaNodePtr Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
-    MetaNodePtr Condition(MetaNodePtr root, const Assignment &cond);
+    WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    WeightedMetaNodeList Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    WeightedMetaNodeList Condition(MetaNodePtr root, const Assignment &cond);
 
-    MetaNodePtr Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
-    MetaNodePtr Normalize(MetaNodePtr root);
+    // Normalizes the weights of the immediate AND nodes to sum to 1.
+//    double Normalize(MetaNodePtr root);
 
 
     unsigned int GetNumberOfNodes() const;
+    unsigned int GetNumberOfOpCacheEntries() const;
+
+    inline size_t utBucketCount() const { return ut.bucket_count(); }
+    inline size_t ocBucketCount() const { return opCache.bucket_count(); }
+
+    inline void PrintUTBucketSizes() const {
+        for (size_t i = 0; i < ut.bucket_count(); ++i) {
+            std::cout << i << "\t" << ut.bucket_size(i) << std::endl;
+        }
+    }
 
     void PrintUniqueTable(std::ostream &out) const;
     void PrintReferenceCount(std::ostream &out) const;

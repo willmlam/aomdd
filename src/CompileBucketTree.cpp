@@ -53,11 +53,19 @@ AOMDDFunction CompileBucketTree::Compile() {
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
-//            buckets[*rit].PrintDiagrams(cout); cout << endl;
-//            buckets[*rit].PrintFunctionTables(cout); cout << endl;
+            /*
+            buckets[*rit].PrintDiagrams(cout); cout << endl;
+            buckets[*rit].PrintFunctionTables(cout); cout << endl;
+            */
 
             AOMDDFunction *message = buckets[*rit].Flatten();
             message->SetScopeOrdering(ordering);
+
+            /*
+            message->Save(cout); cout << endl;
+            message->PrintAsTable(cout); cout << endl;
+            */
+
             DInEdge ei, ei_end;
             tie(ei, ei_end) = in_edges(*rit, tree);
             // Not at root
@@ -81,6 +89,17 @@ double CompileBucketTree::Prob(bool logOut) {
 
     // If it's already been compiled, we can just eliminate from the large DD
     if (compiled) {
+        Assignment a;
+        typedef std::map<int, int> map_t;
+        BOOST_FOREACH(map_t::value_type i, evidence) {
+            a.AddVar(i.first, i.second + 1);
+            a.SetVal(i.first, i.second);
+        }
+
+        pr = compiledDD.Sum(a);
+        if (logOut) pr = log10(pr);
+
+        /*
         AOMDDFunction probFunction(compiledDD);
         const DirectedGraph &tree = pt->GetTree();
 
@@ -111,6 +130,7 @@ double CompileBucketTree::Prob(bool logOut) {
                 pr = probFunction.GetVal(a, logOut);
             }
         }
+        */
     }
 
     // Otherwise, compile, but eliminate variables along the way
@@ -193,9 +213,19 @@ double CompileBucketTree::MPE(bool logOut) {
 
     // If it's already been compiled, we can just eliminate from the large DD
     if (compiled) {
-        AOMDDFunction probFunction(compiledDD);
-        const DirectedGraph &tree = pt->GetTree();
+        Assignment a;
+        typedef std::map<int, int> map_t;
+        BOOST_FOREACH(map_t::value_type i, evidence) {
+            a.AddVar(i.first, i.second + 1);
+            a.SetVal(i.first, i.second);
+        }
 
+        pr = compiledDD.Maximum(a);
+        if (logOut) pr = log10(pr);
+
+        /*
+        const DirectedGraph &tree = pt->GetTree();
+        AOMDDFunction probFunction(compiledDD);
         list<int>::reverse_iterator rit = ordering.rbegin();
         int numBuckets = ordering.size();
         int count = 1;
@@ -223,6 +253,7 @@ double CompileBucketTree::MPE(bool logOut) {
                 pr = probFunction.GetVal(a, logOut);
             }
         }
+        */
     }
 
     // Otherwise, compile, but eliminate variables along the way

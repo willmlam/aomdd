@@ -28,7 +28,7 @@ void Model::parseUAI(string filename) {
     ifstream infile(filename.c_str());
 
     if (infile.fail()) {
-        cerr << "Error opening file." << endl;
+        cerr << "Error opening file: " << filename << endl;
         exit(-1);
     }
 

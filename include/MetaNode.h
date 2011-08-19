@@ -44,8 +44,6 @@ public:
 
         const std::vector<MetaNodePtr> &GetChildren() const;
 
-        // Normalizes all the children MetaNodes and updates the weight
-        double Normalize();
         double Evaluate(const Assignment &a);
 
         bool operator==(const ANDNode &rhs) const;
@@ -73,7 +71,7 @@ private:
     unsigned int card;
     // children: ANDNodes
     std::vector<ANDNodePtr> children;
-    double weight;
+//    double weight;
 
     size_t hashVal;
 
@@ -82,6 +80,9 @@ private:
     static bool oneInit;
     static MetaNodePtr terminalZero;
     static MetaNodePtr terminalOne;
+
+    double cachedElimValue;
+    bool elimValueCached;
 
     void NumOfNodes(boost::unordered_set<size_t> &nodeSet) const;
 
@@ -96,10 +97,11 @@ public:
     inline int GetVarID() const { return varID; }
 
     inline unsigned int GetCard() const { return card; }
-
+/*
     inline double GetWeight() const { return weight; }
 
     inline void SetWeight(double w) { weight = w; }
+    */
 
     inline const std::vector<ANDNodePtr> &GetChildren() const { return children; }
     inline void SetChildren(const std::vector<ANDNodePtr> &ch) { children = ch; }
@@ -113,7 +115,17 @@ public:
     // Normalizes below, sets weight and returns normalization constant
     double Normalize();
 
+    // Returns the maximum value that the function rooted at this
+    // metanode can take on, subject to the assignment
+    double Maximum(const Assignment &a);
+
+    // Returns the sum of the values of the function rooted at this
+    // metanode, subject to the assignment
+    double Sum(const Assignment &a);
+
     double Evaluate(const Assignment &a) const;
+
+    void ClearElimCacheValue() { elimValueCached = false; }
 
 //    bool operator==(const MetaNode &rhs) const;
     void Save(std::ostream &out, std::string prefix = "") const;
@@ -130,7 +142,7 @@ public:
         if (!zeroInit) {
             terminalZero = MetaNodePtr(new MetaNode());
             terminalZero->varID = -2;
-            terminalZero->weight = 0;
+//            terminalZero->weight = 0;
             zeroInit = true;
             return terminalZero;
         }
@@ -152,7 +164,7 @@ public:
     inline size_t MemUsage() const {
         size_t apsize = sizeof(ANDNodePtr) + sizeof(size_t);
         size_t temp = sizeof(varID) + sizeof(card) +
-                sizeof(children) + sizeof(weight) +
+                sizeof(children) +
                 sizeof(hashVal) + (children.size() * apsize);
         BOOST_FOREACH(const ANDNodePtr &i, children) {
             temp += i->MemUsage();

@@ -22,7 +22,7 @@ class AOMDDFunction: public Function {
 private:
     static NodeManager *mgr;
 
-    MetaNodePtr root;
+    WeightedMetaNodeList root;
     const PseudoTree *pt;
 
     bool fullReduce;
@@ -46,10 +46,18 @@ public:
     void Maximize(const Scope &elimVars, bool mutableIDs = true);
     void Condition(const Assignment &cond);
 
+    double Maximum(const Assignment &cond);
+    double Sum(const Assignment &cond);
+
     void Normalize();
 
-    inline int Size() const { return root->NumOfNodes(); }
-    inline int RootRefCount() const { return root.use_count(); }
+    inline unsigned int Size() const {
+        unsigned int size = 0;
+        BOOST_FOREACH(MetaNodePtr m, root.first) {
+            size += m->NumOfNodes();
+        }
+        return size;
+    }
 
     inline void SetScopeOrdering(const std::list<int> &ordering) { domain.SetOrdering(ordering); }
 

@@ -24,7 +24,7 @@ double timePassed;
 list<int> parseOrder(string filename) {
     ifstream infile(filename.c_str());
     if (infile.fail()) {
-        cerr << "Error opening file." << endl;
+        cerr << "Error opening file: " << filename << endl;
         exit(-1);
     }
 
@@ -46,7 +46,7 @@ map<int, int> parseEvidence(string filename) {
     ifstream infile(filename.c_str());
 
     if (infile.fail()) {
-        cerr << "Error opening file." << endl;
+        cerr << "Error opening file: " << filename << endl;
         exit(-1);
     }
 
@@ -68,27 +68,8 @@ map<int, int> parseEvidence(string filename) {
     return evidence;
 }
 
-void IterateTester(Assignment & a) {
-    a.SetAllVal(0);
-
-    cout << "Total card: " << a.GetCard() << endl;
-
-    cout << "Testing iteration" << endl;
-    do {
-        cout << "Index: " << a.GetIndex() << "  ";
-        a.Save(cout);
-        cout << endl;
-    } while (a.Iterate());
-
-    cout << endl;
-}
-
-
 string inputFile, orderFile, evidFile, dotFile, outputResultFile;
-
 bool compileMode, peMode, mpeMode, vbeMode, logMode;
-
-
 bool verifyVals;
 
 bool ParseCommandLine(int argc, char **argv) {
@@ -257,6 +238,7 @@ int main(int argc, char **argv) {
     if (compileMode) {
         time(&timeStart);
         combined = cbt->Compile();
+        /*
         if (!evidence.empty()) {
             Assignment cond;
             map<int, int>::iterator it = evidence.begin();
@@ -268,6 +250,7 @@ int main(int argc, char **argv) {
             }
             combined.Condition(cond);
         }
+        */
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
         unsigned long totalCard = combined.GetScope().GetCard();
@@ -340,7 +323,7 @@ int main(int argc, char **argv) {
                     }
                 }
                 cout << "cv=" << compVal << ", fv=" << flatVal;
-                if (fabs(compVal - flatVal) > 1e-20) {
+                if (fabs(compVal - flatVal) > 1e-10) {
                     misses++;
                     cout << "...not matching!" << endl;
                 }
@@ -354,10 +337,20 @@ int main(int argc, char **argv) {
     }
 
     cout << "Number of nodes in cache: "
-                << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl << endl;
+            << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl << endl;
+    /*
+    cout << "(Bucket count):" << NodeManager::GetNodeManager()->utBucketCount() << endl << endl;
+    cout << "Bucket sizes:" << endl;
+    NodeManager::GetNodeManager()->PrintUTBucketSizes(); cout << endl;
+    cout << "Number of nodes in op-cache: "
+            << NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries() << endl << endl;
+    cout << "(Bucket count):" << NodeManager::GetNodeManager()->ocBucketCount() << endl << endl;
+    */
     if (outputToFile) {
         out << "Number of nodes in cache: "
                 << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl;
+        out << "Number of nodes in op-cache: "
+                << NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries() << endl << endl;
     }
 
     if (bt) delete bt;
