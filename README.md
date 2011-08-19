@@ -3,7 +3,7 @@
 This code compiles Bayesian networks and Markov networks to AOMDDs and computes P(e) and MPE queries.
 
 ### Prerequisites
-Boost
+Boost 1.46 or newer. (not tested with older versions)
 
 ### Options
     Input files:
