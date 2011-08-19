@@ -1,6 +1,9 @@
-AOMDD Compiler
+## AOMDD Compiler
 
 This code compiles Bayesian networks and Markov networks to AOMDDs and computes P(e) and MPE queries.
+
+# Prerequisites
+Boost
 
 # Options
     Input files:
