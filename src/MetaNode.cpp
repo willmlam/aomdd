@@ -26,14 +26,6 @@ MetaNode::ANDNode::ANDNode(double w, const vector<MetaNodePtr> &ch) :
 MetaNode::ANDNode::~ANDNode() {
 }
 
-double MetaNode::ANDNode::Normalize() {
-    BOOST_FOREACH(MetaNodePtr &i, children) {
-        weight *= i->Normalize();
-        i->SetWeight(1);
-    }
-    return weight;
-}
-
 double MetaNode::ANDNode::Evaluate(const Assignment &a) {
     double ret = weight;
     BOOST_FOREACH(const MetaNodePtr &i, children) {
@@ -108,22 +100,23 @@ bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
 
 // ======================
 
-MetaNode::MetaNode() : varID(-1), card(0), weight(1) {
+MetaNode::MetaNode() : varID(-1), card(0), elimValueCached(false) {
 }
 
 MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
-    children(ch), weight(1) {
+    children(ch), elimValueCached(false) {
     // Scope must be over one variable
     assert(var.GetNumVars() == 1);
     varID = var.GetOrdering().front();
     card = var.GetVarCard(varID);
+
     // All assignments must be specified
     hashVal = hash_value(*this);
-    assert(var.GetCard() == children.size());
+    assert(var.GetCard() == children.size() || children.size() == 1);
 }
 
 MetaNode::MetaNode(int varidIn, int cardIn, const vector<ANDNodePtr> &ch) :
-    varID(varidIn), card(cardIn), children(ch), weight(1) {
+    varID(varidIn), card(cardIn), children(ch), elimValueCached(false) {
     // Scope must be over one variable
     // All assignments must be specified
     hashVal = hash_value(*this);
@@ -133,22 +126,86 @@ MetaNode::MetaNode(int varidIn, int cardIn, const vector<ANDNodePtr> &ch) :
 MetaNode::~MetaNode() {
 }
 
-
-
 double MetaNode::Normalize() {
-    if (this == GetZero().get() || this == GetOne().get()) {
-        return 1;
+    if (IsTerminal()) {
+        return 1.0;
     }
-    double normConstant = 0;
-    Save(cout); cout << endl;
+    double normValue = 0;
     BOOST_FOREACH(ANDNodePtr &i, children) {
-        normConstant += i->Normalize();
+        normValue += i->GetWeight();
     }
     BOOST_FOREACH(ANDNodePtr &i, children) {
-        i->SetWeight(i->GetWeight() / normConstant);
+        i->SetWeight(i->GetWeight() / normValue);
     }
-    weight *= normConstant;
-    return weight;
+    return normValue;
+}
+
+double MetaNode::Maximum(const Assignment &a) {
+    int val;
+    if (this == MetaNode::GetZero().get()) {
+        return 0.0;
+    }
+    else if (this == MetaNode::GetOne().get()) {
+        return 1.0;
+    }
+    else if (elimValueCached) {
+        return cachedElimValue;
+    }
+    else if ( (val = a.GetVal(varID)) != ERROR_VAL) {
+        double temp = children[val]->GetWeight();
+        BOOST_FOREACH(MetaNodePtr j, children[val]->GetChildren()) {
+            temp *= j->Maximum(a);
+        }
+        cachedElimValue = temp;
+        elimValueCached = true;
+    }
+    else {
+        double maxVal = DOUBLE_MIN;
+        BOOST_FOREACH(ANDNodePtr i, children) {
+            double temp = i->GetWeight();
+            BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
+                temp *= j->Maximum(a);
+            }
+            if (temp > maxVal) maxVal = temp;
+        }
+        cachedElimValue = maxVal;
+        elimValueCached = true;
+    }
+    return cachedElimValue;
+}
+
+double MetaNode::Sum(const Assignment &a) {
+    int val;
+    if (this == MetaNode::GetZero().get()) {
+        return 0.0;
+    }
+    else if (this == MetaNode::GetOne().get()) {
+        return 1.0;
+    }
+    else if (elimValueCached) {
+        return cachedElimValue;
+    }
+    else if ( (val = a.GetVal(varID)) != ERROR_VAL) {
+        double temp = children[val]->GetWeight();
+        BOOST_FOREACH(MetaNodePtr j, children[val]->GetChildren()) {
+            temp *= j->Sum(a);
+        }
+        cachedElimValue = temp;
+        elimValueCached = true;
+    }
+    else {
+        double total = 0.0;
+        BOOST_FOREACH(ANDNodePtr i, children) {
+            double temp = i->GetWeight();
+            BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
+                temp *= j->Sum(a);
+            }
+            total += temp;
+        }
+        cachedElimValue = total;
+        elimValueCached = true;
+    }
+    return cachedElimValue;
 }
 
 double MetaNode::Evaluate(const Assignment &a) const {
@@ -160,12 +217,12 @@ double MetaNode::Evaluate(const Assignment &a) const {
     }
     // Handle dummy variable case
     else if (card == 1) {
-        return weight * children[0]->Evaluate(a);
+        return children[0]->Evaluate(a);
     }
     else {
         int idx = a.GetVal(varID);
         assert(idx >= 0);
-        return weight * children[idx]->Evaluate(a);
+        return children[idx]->Evaluate(a);
     }
 }
 
@@ -184,7 +241,7 @@ void MetaNode::Save(ostream &out, string prefix) const {
     }
     out << endl;
     out << prefix << "id: " << this << endl;
-    out << prefix << "weight: " << weight << endl;
+//    out << prefix << "weight: " << weight << endl;
     out << prefix << "children: ";
     BOOST_FOREACH(const ANDNodePtr &i, children)
                 {

@@ -11,6 +11,10 @@
 #include <boost/unordered_set.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/shared_ptr.hpp>
+#include <google/dense_hash_set>
+#include <google/sparse_hash_set>
+#include <google/dense_hash_map>
+#include <google/sparse_hash_map>
 
 #include <iostream>
 #include <sstream>
@@ -25,6 +29,6 @@
 // Constants
 const int UNKNOWN_VAL = -1;
 const int ERROR_VAL = -10;
-const int DOUBLE_MIN = -100000000;
+const double DOUBLE_MIN = -100000000;
 
 #endif
