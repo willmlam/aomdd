@@ -120,25 +120,21 @@ typedef std::vector<MetaNodePtr> MetaNodeList;
 typedef std::pair<MetaNodeList, double> WeightedMetaNodeList;
 
 //typedef boost::unordered_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
-//typedef google::dense_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
-typedef google::sparse_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+typedef google::dense_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+//typedef google::sparse_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
 //typedef boost::unordered_map<Operation, MetaNodePtr> OperationCache;
-//typedef google::dense_hash_map<Operation, MetaNodePtr, ophasher, eqop> OperationCache;
-typedef google::sparse_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
+typedef google::dense_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
+//typedef google::sparse_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
 typedef std::pair<MetaNodePtr, std::vector<MetaNodePtr> > ApplyParamSet;
 
 class NodeManager {
     UniqueTable ut;
     OperationCache opCache;
     NodeManager() {
-        /*
         MetaNodePtr nullKey(new MetaNode(-1, 0, std::vector<ANDNodePtr>()));
         ut.set_empty_key(nullKey);
-        */
-        /*
         Operation nullOpKey;
         opCache.set_empty_key(nullOpKey);
-        */
     }
     NodeManager(NodeManager const&) {
     }
@@ -187,7 +183,7 @@ public:
             const std::vector<MetaNodePtr> &lhs,
             const std::vector<MetaNodePtr> &rhs) const;
 
-    WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT, bool &sumOpPerformed);
     WeightedMetaNodeList Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
     WeightedMetaNodeList Condition(MetaNodePtr root, const Assignment &cond);
 

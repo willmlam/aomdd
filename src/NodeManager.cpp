@@ -400,13 +400,12 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
         vector<MetaNodePtr> newChildren;
         double weight = 1.0;
         weight *= lhs->GetChildren()[k]->GetWeight();
-        vector<MetaNodePtr> lhsChildren =
+        vector<ApplyParamSet> paramSets;
+        const vector<MetaNodePtr> &paramLHS =
                 lhs->GetChildren()[k]->GetChildren();
-        vector<MetaNodePtr> tempChildren;
 
         if ( rhs.size() == 1 && varid == rhs[0]->GetVarID() ) {
             // Same variable, single roots case
-            tempChildren = rhs[0]->GetChildren()[k]->GetChildren();
             double rhsWeight = rhs[0]->GetChildren()[k]->GetWeight();
             switch(op) {
                 case PROD:
@@ -421,13 +420,12 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
                 default:
                     assert(false);
             }
+            paramSets = GetParamSets(embeddedPT, paramLHS, rhs[0]->GetChildren()[k]->GetChildren());
         }
         else {
             // Not the same variable, prepare to push rhs down
-            tempChildren = rhs;
+            paramSets = GetParamSets(embeddedPT, paramLHS, rhs);
         }
-
-        vector<ApplyParamSet> paramSets = GetParamSets(embeddedPT, lhsChildren, tempChildren);
 
         bool terminalOnly = true;
         bool earlyTerminate = false;
@@ -491,12 +489,10 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
         ANDNodePtr newNode(new MetaNode::ANDNode(weight, newChildren));
         children.push_back(newNode);
     }
-    // Redundancy can be resolved outside
     Scope var;
     var.AddVar(varid, card);
     WeightedMetaNodeList u = CreateMetaNode(var, children);
-    Operation entryKey(op, lhs, rhs);
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(entryKey, u));
+    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
     /*
     cout << "Created cache entry" << endl;
     cout << "keys:";
@@ -509,10 +505,12 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
 }
 
 // Sets each AND node of variables to marginalize to be the result of summing
-// the respective MetaNode children of each AND node. Redundancy can be
-// resolved outside.
+// the respective MetaNode children of each AND node.
+
+// Current bug: have to check for the case where the node is not present,
+// but is a child of a node that is being marginalized.
 WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
-        const DirectedGraph &embeddedpt) {
+        const DirectedGraph &embeddedpt, bool &sumOpPerformed) {
     if (root.get() == MetaNode::GetZero().get()) {
         return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetZero()), 0.0);
     }
@@ -538,8 +536,26 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
         vector<MetaNodePtr> newMetaNodes;
         bool terminalOnly = true;
         double weight = 1.0;
+        bool checkForMargVar = false;
+        bool foundMargVar = false;
+
+        DEdge ei, ei_end;
+
+        tie(ei, ei_end) = out_edges(varid, embeddedpt);
+        while(ei != ei_end) {
+            if (int(target(*ei, embeddedpt)) == elimvar) {
+                checkForMargVar = true;
+                break;
+            }
+            ei++;
+        }
+
+
         BOOST_FOREACH(MetaNodePtr j, metaNodes) {
-            WeightedMetaNodeList newMetaNodeList = Marginalize(j, s, embeddedpt);
+            if (checkForMargVar && j->GetVarID() == elimvar) {
+                foundMargVar = true;
+            }
+            WeightedMetaNodeList newMetaNodeList = Marginalize(j, s, embeddedpt, sumOpPerformed);
             /*
             cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
             paramSets[i].first->RecursivePrint(cout); cout << endl;
@@ -549,6 +565,7 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
 
             // Note: would have to modify for other operators
             weight *= newMetaNodeList.second;
+
             BOOST_FOREACH(MetaNodePtr m, newMetaNodeList.first) {
                 if (!m->IsTerminal()) {
                     if (terminalOnly) {
@@ -562,12 +579,16 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
                 }
             }
         }
+        if (checkForMargVar && !foundMargVar) {
+            weight *= s.GetVarCard(elimvar);
+        }
         ANDNodePtr newANDNode(new MetaNode::ANDNode(i->GetWeight() * weight, newMetaNodes));
         newANDNodes.push_back(newANDNode);
     }
 
     // If the root is to be marginalized
     if (s.VarExists(varid)) {
+//        sumOpPerformed = true;
         // Assume node resides at bottom
         double weight = 0;
         for (unsigned int i = 0; i < newANDNodes.size(); ++i) {
@@ -588,8 +609,7 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
-    Operation entryKey(MARGINALIZE, root, elimvar);
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(entryKey, ret));
+    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
     return ret;
 }
 
@@ -682,8 +702,7 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
-    Operation entryKey(MAX, root, elimvar);
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(entryKey, ret));
+    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
     /*
     cout << "Created cache entry(MAX)" << endl;
     cout << "elimvar:" << elimvar << endl;

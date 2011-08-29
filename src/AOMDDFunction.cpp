@@ -195,8 +195,11 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     domain.Save(cout); cout << endl;
     elimVars.Save(cout); cout << endl;
     */
+    Scope actualElimVars = domain * elimVars;
     if (root.first.size() == 1 && root.first[0]->IsTerminal()) {
-        domain = domain - elimVars;
+//        cout << "Using special terminal case" << endl;
+        domain = domain - actualElimVars;
+        root.second *= actualElimVars.GetCard();
         return;
     }
     /*
@@ -212,13 +215,19 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     */
     WeightedMetaNodeList newroot;
     newroot.second = root.second;
+    bool sumOpPerformed = false;
     BOOST_FOREACH(MetaNodePtr m, root.first) {
-        WeightedMetaNodeList l = mgr->Marginalize(m, elimVars, pt->GetTree());
+        WeightedMetaNodeList l = mgr->Marginalize(m, elimVars, pt->GetTree(), sumOpPerformed);
         newroot.first.insert(newroot.first.end(), l.first.begin(), l.first.end());
         newroot.second *= l.second;
     }
+    /*
+    if (!sumOpPerformed) {
+        newroot.second *= actualElimVars.GetCard();
+    }
+    */
     root = newroot;
-    domain = domain - elimVars;
+    domain = domain - actualElimVars;
 }
 
 void AOMDDFunction::Maximize(const Scope &elimVars, bool mutableIDs) {
