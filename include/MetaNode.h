@@ -84,7 +84,7 @@ private:
     double cachedElimValue;
     bool elimValueCached;
 
-    void NumOfNodes(boost::unordered_set<size_t> &nodeSet) const;
+    void FindUniqueNodes(boost::unordered_set<const MetaNode *> &nodeSet) const;
 
 public:
     MetaNode();
@@ -131,7 +131,7 @@ public:
     void Save(std::ostream &out, std::string prefix = "") const;
     void RecursivePrint(std::ostream &out, std::string prefix) const;
     void RecursivePrint(std::ostream &out) const;
-    int NumOfNodes() const;
+    std::pair<unsigned int, unsigned int> NumOfNodes() const;
     DirectedGraph GenerateDiagram() const;
 
     void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;

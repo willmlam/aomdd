@@ -20,6 +20,7 @@ namespace aomdd {
 class Model {
 protected:
     int numVars;
+    int maxDomain;
     std::vector<int> domains;
     std::vector<TableFunction> functions;
     std::list<int> ordering;
@@ -29,6 +30,7 @@ public:
     virtual ~Model();
 
     inline int GetNumVars() const { return numVars; }
+    inline int GetMaxDomain() const { return maxDomain; }
 
     inline const std::vector<TableFunction> &GetFunctions() const {
         return functions;

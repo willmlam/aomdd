@@ -14,7 +14,7 @@
 namespace aomdd {
 using namespace std;
 
-Model::Model() {
+Model::Model() : numVars(0), maxDomain(0) {
 }
 
 vector<Scope> Model::GetScopes() const {

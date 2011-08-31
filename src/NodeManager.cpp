@@ -798,13 +798,6 @@ double NodeManager::Normalize(MetaNodePtr root) {
 }
 */
 
-unsigned int NodeManager::GetNumberOfNodes() const {
-    return ut.size();
-}
-
-unsigned int NodeManager::GetNumberOfOpCacheEntries() const {
-    return opCache.size();
-}
 
 void NodeManager::PrintUniqueTable(ostream &out) const {
     BOOST_FOREACH (MetaNodePtr i, ut) {

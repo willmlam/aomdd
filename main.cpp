@@ -70,6 +70,7 @@ map<int, int> parseEvidence(string filename) {
 
 string inputFile, orderFile, evidFile, dotFile, outputResultFile;
 bool compileMode, peMode, mpeMode, vbeMode, logMode;
+bool outCompile;
 bool verifyVals;
 
 bool ParseCommandLine(int argc, char **argv) {
@@ -119,6 +120,9 @@ bool ParseCommandLine(int argc, char **argv) {
             else if (token.substr(1, len-1) == "verify") {
                 verifyVals = true;
             }
+            else if (token.substr(1, len-1) == "outcompile") {
+                outCompile = true;
+            }
             else {
                 return false;
             }
@@ -164,12 +168,14 @@ int main(int argc, char **argv) {
         cout << "  -r <file>        path to output results" << endl;
         cout << endl;
         cout << "Inference options:" << endl;
-        cout << "  -c               compile full AOMDD first" << endl;
+        cout << "  -c               compile full AOMDD" << endl;
         cout << "  -pe              compute P(e)" << endl;
         cout << "  -mpe             compute MPE(e) cost" << endl;
         cout << "  -vbe             use vanilla bucket elimination" << endl;
         cout << "  -log             output results in log space" << endl;
         cout << endl;
+        cout << "Other options:" << endl;
+        cout << "  -outcompile      output compiled AOMDD" << endl;
         return 0;
     }
 
@@ -213,10 +219,58 @@ int main(int argc, char **argv) {
     g.InduceEdges(ordering);
     PseudoTree pt(g, completeScope);
 
-    cout << "w/h : " << pt.GetInducedWidth() << "/" << pt.GetHeight() << endl;
+    cout << endl << "Problem information:" << endl;
+
+    cout << "n=" << m.GetNumVars() << endl;
+    cout << "w=" << pt.GetInducedWidth() << endl;
+    cout << "h=" << pt.GetHeight() << endl;
+    cout << "k=" << m.GetMaxDomain() << endl;
+    cout << "Number of functions=" << m.GetScopes().size() << endl;
+
     if (outputToFile) {
-        out << "w/h : " << pt.GetInducedWidth() << "/" << pt.GetHeight() << endl;
+        out << endl << "Problem information:" << endl;
+        out << "n=" << m.GetNumVars() << endl;
+        out << "w=" << pt.GetInducedWidth() << endl;
+        out << "h=" << pt.GetHeight() << endl;
+        out << "k=" << m.GetMaxDomain() << endl;
+        out << "Number of functions=" << m.GetScopes().size() << endl;
     }
+
+    // Compute CM-graph space
+    unsigned int numOR = 0;
+    unsigned int numAND = 0;
+
+    for (int i = 0; i < m.GetNumVars(); ++i) {
+        int stateSpace = 1;
+        BOOST_FOREACH(int v, pt.GetContexts()[i]) {
+            if (v == -1) continue;
+            stateSpace *= completeScope.GetVarCard(v);
+        }
+        numOR += stateSpace;
+        numAND += stateSpace * completeScope.GetVarCard(i);
+    }
+
+    cout << "Number of OR nodes=" << numOR << endl;
+    cout << "Number of AND nodes=" << numAND << endl;
+    cout << "Total CM nodes=" << numOR + numAND << endl << endl;
+    if (outputToFile) {
+        out << "Number of OR nodes=" << numOR << endl;
+        out << "Number of AND nodes=" << numAND << endl;
+        out << "Total CM nodes=" << numOR + numAND << endl << endl;
+    }
+
+    /*
+    // output contexts
+    for (int i = 0; i < m.GetNumVars(); ++i) {
+        cout << i << ":";
+        BOOST_FOREACH(int v, pt.GetContexts()[i]) {
+            if (v == -1) break;
+            cout << " " << v;
+        }
+        cout << endl;
+    }
+    cout << endl;
+    */
 
     if (dotFile != "") {
         cout << "Writing pseudo tree to: " << dotFile << endl;
@@ -254,17 +308,30 @@ int main(int argc, char **argv) {
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
         unsigned long totalCard = combined.GetScope().GetCard();
-        if (totalCard <= OUTPUT_COMPLEXITY_LIMIT) {
+        if (outCompile && totalCard <= OUTPUT_COMPLEXITY_LIMIT) {
             combined.Save(cout); cout << endl;
             combined.PrintAsTable(cout); cout << endl;
         }
-        cout << "Time: " << timePassed << "s" << endl;
-        cout << "Total complexity: " << totalCard << endl;
-        cout << "AOMDD size: " << combined.Size() << endl;
+
+        int numMeta, numAND;
+        tie(numMeta, numAND) = combined.Size();
+        cout << endl;
+        cout << "Time=" << timePassed << "s" << endl;
+        cout << "Total flat state space=" << totalCard << endl;
+        cout << "Number of AOMDD metanodes=" << numMeta << endl;
+        cout << "Number of AOMDD AND nodes=" << numAND << endl;
+        cout << "Total AOMDD nodes=" << numMeta + numAND << endl;
+        cout << setprecision(2) << fixed;
+        cout << "Compression ratio=" << double(numOR) / numMeta << endl;
         if (outputToFile) {
-            out << "Time: " << timePassed << "s" << endl;
-            out << "Total complexity: " << totalCard << endl;
-            out << "AOMDD size: " << combined.Size() << endl;
+            out << endl;
+            out << "Time=" << timePassed << "s" << endl;
+            out << "Total flat state space=" << totalCard << endl;
+            out << "Number of AOMDD metanodes=" << numMeta << endl;
+            out << "Number of AOMDD AND nodes=" << numAND << endl;
+            out << "Total AOMDD nodes=" << numMeta + numAND << endl;
+            out << setprecision(2) << fixed;
+            out << "Compression ratio=" << double(numOR) / numMeta;
         }
     }
     if (peMode) {
@@ -278,11 +345,13 @@ int main(int argc, char **argv) {
         }
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
-        string prefix = logMode ? "log P(e) = " : "P(e) = ";
-        cout << "Time: " << timePassed << "s" << endl;
+        string prefix = logMode ? "log P(e)=" : "P(e)=";
+        cout << endl;
+        cout << "Time=" << timePassed << "s" << endl;
         cout << prefix << pr << endl;
         if (outputToFile) {
-            out << "Time: " << timePassed << "s" << endl;
+            out << endl;
+            out << "Time=" << timePassed << "s" << endl;
             out << prefix << pr << endl;
         }
     }
@@ -297,11 +366,13 @@ int main(int argc, char **argv) {
         }
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
-        string prefix = logMode ? "log MPE = " : "MPE = ";
-        cout << "Time: " << timePassed << "s" << endl;
+        string prefix = logMode ? "log MPE=" : "MPE=";
+        cout << endl;
+        cout << "Time=" << timePassed << "s" << endl;
         cout << prefix << pr << endl;
         if (outputToFile) {
-            out << "Time: " << timePassed << "s" << endl;
+            out << endl;
+            out << "Time=" << timePassed << "s" << endl;
             out << prefix << pr << endl;
         }
     }
@@ -336,21 +407,28 @@ int main(int argc, char **argv) {
         }
     }
 
-    cout << "Number of nodes in cache: "
-            << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl << endl;
-    /*
+    unsigned int uniqueMetaNodes = NodeManager::GetNodeManager()->GetNumberOfNodes();
+    unsigned int numANDNodes = NodeManager::GetNodeManager()->GetNumberOfANDNodes();
+    unsigned int ocEntries = NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries();
+    if (uniqueMetaNodes > 0) {
+        cout << endl;
+        cout << "Number of nodes in cache=" << uniqueMetaNodes << endl;
+        cout << "Number of AND nodes in cache=" << numANDNodes << endl;
+        cout << "Number of nodes in op-cache=" << ocEntries << endl << endl;
+        /*
     cout << "(Bucket count):" << NodeManager::GetNodeManager()->utBucketCount() << endl << endl;
     cout << "Bucket sizes:" << endl;
     NodeManager::GetNodeManager()->PrintUTBucketSizes(); cout << endl;
     cout << "Number of nodes in op-cache: "
             << NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries() << endl << endl;
     cout << "(Bucket count):" << NodeManager::GetNodeManager()->ocBucketCount() << endl << endl;
-    */
-    if (outputToFile) {
-        out << "Number of nodes in cache: "
-                << NodeManager::GetNodeManager()->GetNumberOfNodes() << endl;
-        out << "Number of nodes in op-cache: "
-                << NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries() << endl << endl;
+         */
+        if (outputToFile) {
+            out << endl;
+            out << "Number of nodes in cache=" << uniqueMetaNodes << endl;
+            out << "Number of AND nodes in cache=" << numANDNodes << endl;
+            out << "Number of nodes in op-cache=" << ocEntries << endl << endl;
+        }
     }
 
     if (bt) delete bt;

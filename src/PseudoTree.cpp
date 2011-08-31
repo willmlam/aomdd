@@ -19,7 +19,9 @@ PseudoTree::PseudoTree() {
 
 PseudoTree::PseudoTree(const Graph &inducedGraph, const Scope &sIn)
 : inducedWidth(inducedGraph.GetInducedWidth()), s(sIn), hasDummy(false) {
+    context.resize(s.GetNumVars());
     DFSGenerator(inducedGraph);
+    ComputeContext(inducedGraph);
     if (hasDummy) {
         s.AddVar(root, 1);
     }
@@ -53,6 +55,73 @@ unsigned int PseudoTree::GetHeight(int r) const {
        }
     }
     return 1 + subtreeMax;
+}
+
+void PseudoTree::ComputeContext(const Graph &inducedGraph) {
+    set<int> anc;
+    if (hasDummy) {
+        DEdge out, out_end;
+        tie(out, out_end) = out_edges(root, g);
+        while (out != out_end) {
+            ComputeContext(target(*out, g), inducedGraph, anc);
+            out++;
+        }
+    }
+    else {
+        ComputeContext(root, inducedGraph, anc);
+    }
+}
+
+const set<int> &PseudoTree::ComputeContext(int r, const Graph &inducedGraph, set<int> &ancestors) {
+
+    // See if context has already been computed
+    if (!context[r].empty()) {
+        ancestors.erase(r);
+        return context[r];
+    }
+
+    DEdge out, out_end;
+    tie(out, out_end) = out_edges(r, g);
+    const UndirectedGraph &ig = inducedGraph.GetGraph();
+
+    // Leaf node case
+    if (out == out_end) {
+        Edge ei, ei_end;
+        tie(ei, ei_end) = out_edges(r, ig);
+        while (ei != ei_end) {
+           context[r].insert(target(*ei, ig));
+           ei++;
+        }
+    }
+
+    // Get union of contexts of children
+    else {
+        ancestors.insert(r);
+        while (out != out_end) {
+            const set<int> &temp = ComputeContext(target(*out, g), inducedGraph, ancestors);
+            BOOST_FOREACH(int v, temp) {
+                context[r].insert(v);
+            }
+            // also add in its ancestors
+            context[r].erase(r);
+            out++;
+        }
+        Edge ei, ei_end;
+        tie(ei, ei_end) = out_edges(r, ig);
+        while (ei != ei_end) {
+            int neighbor = target(*ei, ig);
+            if (ancestors.find(neighbor) != ancestors.end()) {
+                context[r].insert(neighbor);
+            }
+            ei++;
+        }
+
+        if (context[r].empty() ) {
+            context[r].insert(-1);
+        }
+    }
+    ancestors.erase(r);
+    return context[r];
 }
 
 void PseudoTree::DFSGenerator(const Graph &inducedGraph) {

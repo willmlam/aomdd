@@ -191,8 +191,20 @@ public:
 //    double Normalize(MetaNodePtr root);
 
 
-    unsigned int GetNumberOfNodes() const;
-    unsigned int GetNumberOfOpCacheEntries() const;
+    inline unsigned int GetNumberOfNodes() const {
+        return ut.size();
+    }
+    inline unsigned int GetNumberOfANDNodes() const {
+        unsigned int count = 0;
+        BOOST_FOREACH(MetaNodePtr m, ut) {
+            count += m->GetCard();
+        }
+        return count;
+    }
+
+    inline unsigned int GetNumberOfOpCacheEntries() const {
+        return opCache.size();
+    }
 
     inline size_t utBucketCount() const { return ut.bucket_count(); }
     inline size_t ocBucketCount() const { return opCache.bucket_count(); }

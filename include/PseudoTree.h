@@ -111,6 +111,7 @@ class PseudoTree {
     int inducedWidth;
     Scope s;
     bool hasDummy;
+    std::vector<std::set<int> > context;
 public:
     PseudoTree();
     // Assumes graph is an induced graph...
@@ -124,6 +125,7 @@ public:
     int GetRoot() const { return root; }
     bool HasDummy() const { return hasDummy; }
     inline const Scope &GetScope() const { return s; }
+    inline const std::vector<std::set<int> > &GetContexts() { return context; }
 
     // Generates an embeddable pseudo tree to use as a backbone tree
     std::pair<DirectedGraph, int> GenerateEmbeddable(const Scope &s) const;
@@ -131,6 +133,9 @@ public:
 private:
     void DFSGenerator(const Graph &inducedGraph);
     void BalancingGenerator(const Graph &inducedGraph);
+
+    void ComputeContext(const Graph &inducedGraph);
+    const std::set<int> &ComputeContext(int r, const Graph &inducedGraph, std::set<int> &ancestors);
     unsigned int GetHeight(int r) const;
 };
 

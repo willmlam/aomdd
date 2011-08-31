@@ -283,16 +283,20 @@ void MetaNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent
     }
 }
 
-int MetaNode::NumOfNodes() const {
-    boost::unordered_set<size_t> nodeSet;
-    NumOfNodes(nodeSet);
-    return nodeSet.size();
+pair<unsigned int, unsigned int> MetaNode::NumOfNodes() const {
+    boost::unordered_set<const MetaNode *> nodeSet;
+    FindUniqueNodes(nodeSet);
+    unsigned int count = 0;
+    BOOST_FOREACH(const MetaNode *m, nodeSet) {
+        count += m->GetCard();
+    }
+    return pair<unsigned int, unsigned int>(nodeSet.size(), count);
 }
 
-void MetaNode::NumOfNodes(boost::unordered_set<size_t> &nodeSet) const {
+void MetaNode::FindUniqueNodes(boost::unordered_set<const MetaNode *> &nodeSet) const {
     if (IsTerminal()) return;
     unsigned int oldSize = nodeSet.size();
-    nodeSet.insert(size_t(this));
+    nodeSet.insert(this);
 
     // Check if this has already been visited
     if (nodeSet.size() == oldSize) {
@@ -301,7 +305,7 @@ void MetaNode::NumOfNodes(boost::unordered_set<size_t> &nodeSet) const {
     }
     BOOST_FOREACH(const ANDNodePtr &i, children) {
         BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
-            j->NumOfNodes(nodeSet);
+            j->FindUniqueNodes(nodeSet);
         }
     }
 }

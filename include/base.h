@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <stack>
+#include <algorithm>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/functional/hash.hpp>

@@ -44,8 +44,12 @@ void Model::parseUAI(string filename) {
     // Parse domains
     infile >> nv;
     numVars = nv;
+
     for (int i = 0; i < nv; i++) {
         infile >> intBuffer;
+        if (intBuffer > maxDomain) {
+            maxDomain = intBuffer;
+        }
         domains.push_back(intBuffer);
     }
 

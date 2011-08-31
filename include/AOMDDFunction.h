@@ -51,12 +51,17 @@ public:
 
     void Normalize();
 
-    inline unsigned int Size() const {
-        unsigned int size = 0;
+    inline std::pair<unsigned int, unsigned int> Size() const {
+        unsigned int numMeta = 0;
+        unsigned int numAND = 0;
+        unsigned int numMetaTemp = 0;
+        unsigned int numANDTemp = 0;
         BOOST_FOREACH(MetaNodePtr m, root.first) {
-            size += m->NumOfNodes();
+            tie(numMetaTemp, numANDTemp) = m->NumOfNodes();
+            numMeta += numMetaTemp;
+            numAND += numANDTemp;
         }
-        return size;
+        return std::pair<unsigned int, unsigned int>(numMeta, numAND);
     }
 
     inline void SetScopeOrdering(const std::list<int> &ordering) { domain.SetOrdering(ordering); }
