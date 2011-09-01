@@ -180,6 +180,7 @@ int main(int argc, char **argv) {
     }
 
     ofstream out;
+    out << setprecision(15);
 
     bool outputToFile = false;
     if (outputResultFile != "") {
@@ -321,7 +322,6 @@ int main(int argc, char **argv) {
         cout << "Number of AOMDD metanodes=" << numMeta << endl;
         cout << "Number of AOMDD AND nodes=" << numAND << endl;
         cout << "Total AOMDD nodes=" << numMeta + numAND << endl;
-        cout << setprecision(2) << fixed;
         cout << "Compression ratio=" << double(numOR) / numMeta << endl;
         if (outputToFile) {
             out << endl;
@@ -330,7 +330,6 @@ int main(int argc, char **argv) {
             out << "Number of AOMDD metanodes=" << numMeta << endl;
             out << "Number of AOMDD AND nodes=" << numAND << endl;
             out << "Total AOMDD nodes=" << numMeta + numAND << endl;
-            out << setprecision(2) << fixed;
             out << "Compression ratio=" << double(numOR) / numMeta;
         }
     }

@@ -43,7 +43,7 @@ public:
     virtual unsigned int GetVarCard(int i) const;
 
     // Get the cardinality of the scope
-    virtual unsigned int GetCard() const;
+    virtual unsigned long GetCard() const;
 
     // Check whether another scope has consistent cardinalities to this scope
     virtual bool HasConsistentCard(const Scope &rhs) const;

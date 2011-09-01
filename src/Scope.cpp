@@ -85,8 +85,8 @@ inline unsigned int Scope::GetVarCard(int i) const {
     return 0;
 }
 
-inline unsigned int Scope::GetCard() const {
-    unsigned int totalCard = 1;
+inline unsigned long Scope::GetCard() const {
+    unsigned long totalCard = 1;
 
     boost::unordered_map<int, unsigned int>::const_iterator it =
             varCard.begin();
