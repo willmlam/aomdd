@@ -33,9 +33,10 @@ void Model::parseUAI(string filename) {
     }
 
     string type;
-    int nv, nf;
-    int intBuffer;
-    double doubleBuffer;
+    int nv = 0;
+    int nf = 0;
+    int intBuffer = 0;
+    double doubleBuffer = 0;
     vector<Scope> fScopes;
 
     // Parse type
@@ -86,6 +87,7 @@ void Model::parseUAI(string filename) {
             functions.back().SetVal(a, doubleBuffer);
         } while (a.Iterate());
     }
+    infile.close();
 
     /* DEBUG */
     /*
