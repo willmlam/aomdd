@@ -29,6 +29,10 @@ public:
     TableFunction *Flatten(const std::list<int> &ordering);
     TableFunction *FlattenFast(const std::list<int> &ordering);
 
+    inline const Scope &GetScope() const {
+        return s;
+    }
+
     inline unsigned int GetCliqueSize() const {
         return s.GetOrdering().size();
     }

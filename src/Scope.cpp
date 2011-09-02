@@ -169,6 +169,10 @@ void Scope::Save(ostream &out) const {
 Assignment::Assignment() {
 }
 
+Assignment::~Assignment() {
+    varAssigns.clear();
+}
+
 Assignment::Assignment(const Scope &s) :
     Scope(s) {
     boost::unordered_map<int, unsigned int>::iterator it = varCard.begin();

@@ -74,7 +74,7 @@ public:
 
     Assignment(const Assignment &lhs, const Assignment &rhs, oper op);
 
-    //    virtual ~Assignment();
+    virtual ~Assignment();
 
     // Add a variable if it does not already exist
     virtual bool AddVar(int i, unsigned int card);

@@ -72,6 +72,7 @@ string inputFile, orderFile, evidFile, dotFile, outputResultFile;
 bool compileMode, peMode, mpeMode, vbeMode, logMode;
 bool outCompile;
 bool verifyVals;
+bool vbeSpace;
 
 bool ParseCommandLine(int argc, char **argv) {
     bool haveInputFile = false;
@@ -122,6 +123,9 @@ bool ParseCommandLine(int argc, char **argv) {
             }
             else if (token.substr(1, len-1) == "outcompile") {
                 outCompile = true;
+            }
+            else if (token.substr(1, len-1) == "vbespace") {
+                vbeSpace = true;
             }
             else {
                 return false;
@@ -176,6 +180,7 @@ int main(int argc, char **argv) {
         cout << endl;
         cout << "Other options:" << endl;
         cout << "  -outcompile      output compiled AOMDD" << endl;
+        cout << "  -vbespace        compute space needed by vanilla bucket elimination" << endl;
         return 0;
     }
 
@@ -238,29 +243,44 @@ int main(int argc, char **argv) {
     }
 
     // Compute CM-graph space
-    unsigned int numOR = 0;
-    unsigned int numAND = 0;
+    unsigned long numOR = 0;
+    unsigned long numAND = 0;
+
+    unsigned long largestMessageSize = 0;
+    unsigned int bucketID = 0;
 
     for (int i = 0; i < m.GetNumVars(); ++i) {
-        int stateSpace = 1;
+        unsigned long stateSpace = 1;
         BOOST_FOREACH(int v, pt.GetContexts()[i]) {
             if (v == -1) continue;
             stateSpace *= completeScope.GetVarCard(v);
         }
         numOR += stateSpace;
-        numAND += stateSpace * completeScope.GetVarCard(i);
+        unsigned long totalSpace = stateSpace * completeScope.GetVarCard(i);
+        if (stateSpace > largestMessageSize) {
+            largestMessageSize = stateSpace;
+            bucketID = i;
+        }
+        numAND += totalSpace;
+    }
+
+    BOOST_FOREACH(int v, pt.GetContexts()[bucketID]) {
+        cout << completeScope.GetVarCard(v) << endl;
     }
 
     cout << "Number of OR nodes=" << numOR << endl;
     cout << "Number of AND nodes=" << numAND << endl;
     cout << "Total CM nodes=" << numOR + numAND << endl << endl;
+    cout << "Largest message size=" << largestMessageSize << endl;
+    cout << "Memory (MBytes)=" << (double)largestMessageSize * 8 / pow(2.0, 20)<< endl << endl;
     if (outputToFile) {
         out << "Number of OR nodes=" << numOR << endl;
         out << "Number of AND nodes=" << numAND << endl;
         out << "Total CM nodes=" << numOR + numAND << endl << endl;
+        out << "Largest message size=" << largestMessageSize << endl << endl;
+        out << "Memory (MBytes)=" << (double)largestMessageSize * 8 / pow(2.0, 20)<< endl << endl;
     }
 
-    /*
     // output contexts
     for (int i = 0; i < m.GetNumVars(); ++i) {
         cout << i << ":";
@@ -271,7 +291,6 @@ int main(int argc, char **argv) {
         cout << endl;
     }
     cout << endl;
-    */
 
     if (dotFile != "") {
         cout << "Writing pseudo tree to: " << dotFile << endl;
@@ -323,6 +342,7 @@ int main(int argc, char **argv) {
         cout << "Number of AOMDD AND nodes=" << numAND << endl;
         cout << "Total AOMDD nodes=" << numMeta + numAND << endl;
         cout << "Compression ratio=" << double(numOR) / numMeta << endl;
+        cout << "AOMDD Memory (MBytes)=" << combined.MemUsage() << endl;
         if (outputToFile) {
             out << endl;
             out << "Time=" << timePassed << "s" << endl;
@@ -331,6 +351,7 @@ int main(int argc, char **argv) {
             out << "Number of AOMDD AND nodes=" << numAND << endl;
             out << "Total AOMDD nodes=" << numMeta + numAND << endl;
             out << "Compression ratio=" << double(numOR) / numMeta;
+            out << "AOMDD Memory (MBytes)=" << combined.MemUsage() << endl;
         }
     }
     if (peMode) {
@@ -409,11 +430,14 @@ int main(int argc, char **argv) {
     unsigned int uniqueMetaNodes = NodeManager::GetNodeManager()->GetNumberOfNodes();
     unsigned int numANDNodes = NodeManager::GetNodeManager()->GetNumberOfANDNodes();
     unsigned int ocEntries = NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries();
+    double utMemUsage = NodeManager::GetNodeManager()->MemUsage();
     if (uniqueMetaNodes > 0) {
         cout << endl;
         cout << "Number of nodes in cache=" << uniqueMetaNodes << endl;
         cout << "Number of AND nodes in cache=" << numANDNodes << endl;
         cout << "Number of nodes in op-cache=" << ocEntries << endl << endl;
+
+        cout << "cache memory (MBytes)=" << utMemUsage << endl;
         /*
     cout << "(Bucket count):" << NodeManager::GetNodeManager()->utBucketCount() << endl << endl;
     cout << "Bucket sizes:" << endl;
@@ -427,11 +451,14 @@ int main(int argc, char **argv) {
             out << "Number of nodes in cache=" << uniqueMetaNodes << endl;
             out << "Number of AND nodes in cache=" << numANDNodes << endl;
             out << "Number of nodes in op-cache=" << ocEntries << endl << endl;
+
+            out << "cache memory (MBytes)=" << utMemUsage << endl;
         }
     }
 
     if (bt) delete bt;
     if (cbt) delete cbt;
 
+    cin.get();
     return 0;
 }

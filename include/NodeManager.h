@@ -54,6 +54,15 @@ public:
     inline int GetVarID() const {
         return varid;
     }
+
+    inline double MemUsage() const {
+        double memUsage = 0;
+        memUsage += sizeof(op) + sizeof(params) + sizeof(varid);
+        BOOST_FOREACH(ParamSet::value_type m, params) {
+            memUsage += sizeof(m);
+        }
+        return memUsage;
+    }
 };
 
 size_t hash_value(const Operation &o);
@@ -217,6 +226,26 @@ public:
 
     void PrintUniqueTable(std::ostream &out) const;
     void PrintReferenceCount(std::ostream &out) const;
+
+    inline double MemUsage() const {
+        double memUsage = 0;
+        BOOST_FOREACH(MetaNodePtr m, ut) {
+            memUsage += m->MemUsage();
+        }
+        return memUsage / pow(2.0,20);
+    }
+
+    inline double OpCacheMemUsage() const {
+        double memUsage = 0;
+        BOOST_FOREACH(OperationCache::value_type i, opCache) {
+            memUsage += sizeof(i.first) + i.first.MemUsage();
+            memUsage += sizeof(i.second.first) + sizeof(i.second.second);
+            BOOST_FOREACH(MetaNodePtr m, i.second.first) {
+                memUsage += sizeof(m);
+            }
+        }
+        return memUsage / pow(2.0,20);
+    }
 
 };
 

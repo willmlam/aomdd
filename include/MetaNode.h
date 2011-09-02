@@ -161,6 +161,8 @@ public:
         }
     }
 
+    double ComputeTotalMemory() const;
+
     inline size_t MemUsage() const {
         size_t apsize = sizeof(ANDNodePtr) + sizeof(size_t);
         size_t temp = sizeof(varID) + sizeof(card) +

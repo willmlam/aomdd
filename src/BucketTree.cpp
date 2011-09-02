@@ -29,7 +29,19 @@ BucketTree::~BucketTree() {
 
 }
 
-// Remember to get rid of table leaks later
+unsigned long BucketTree::ComputeMaxValuesStored() const {
+    list<int>::const_reverse_iterator rit = ordering.rbegin();
+
+    unsigned int numBuckets = ordering.size();
+
+    unsigned long maxValue = 0;
+
+    for (; rit != ordering.rend(); ++rit) {
+
+    }
+    return maxValue;
+}
+
 double BucketTree::Prob(bool logOut) {
     list<int>::reverse_iterator rit = ordering.rbegin();
     double pr;

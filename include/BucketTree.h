@@ -28,6 +28,8 @@ public:
 
     virtual ~BucketTree();
 
+    unsigned long ComputeMaxValuesStored() const;
+
     double Prob(bool logOut = false);
 
     double MPE(bool logOut = false);

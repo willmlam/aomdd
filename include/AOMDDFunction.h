@@ -70,6 +70,14 @@ public:
 
     virtual void Save(std::ostream &out) const;
     void PrintAsTable(std::ostream &out) const;
+
+    inline double MemUsage() const {
+        double memUsage = 0;
+        BOOST_FOREACH(MetaNodePtr m, root.first) {
+            memUsage += m->ComputeTotalMemory();
+        }
+        return memUsage;
+    }
 };
 
 } // end of aomdd namespace

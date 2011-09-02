@@ -293,6 +293,17 @@ pair<unsigned int, unsigned int> MetaNode::NumOfNodes() const {
     return pair<unsigned int, unsigned int>(nodeSet.size(), count);
 }
 
+double MetaNode::ComputeTotalMemory() const {
+    unordered_set<const MetaNode *> nodeSet;
+    FindUniqueNodes(nodeSet);
+    double memUsage = 0;
+    BOOST_FOREACH(const MetaNode *m, nodeSet) {
+        memUsage += m->MemUsage();
+    }
+    memUsage /= pow(2.0, 20);
+    return memUsage;
+}
+
 void MetaNode::FindUniqueNodes(boost::unordered_set<const MetaNode *> &nodeSet) const {
     if (IsTerminal()) return;
     unsigned int oldSize = nodeSet.size();

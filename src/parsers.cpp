@@ -75,16 +75,16 @@ void Model::parseUAI(string filename) {
         infile >> intBuffer;
         int scopeSize = intBuffer;
         assert(scopeSize == int(fScopes[i].GetCard()));
-        TableFunction newFunction(fScopes[i]);
+//        TableFunction newFunction(fScopes[i]);
+        functions.push_back(TableFunction(fScopes[i]));
         Assignment a(fScopes[i]);
         a.SetAllVal(0);
         int count = 0;
         do {
             assert(count++ < scopeSize);
             infile >> doubleBuffer;
-            newFunction.SetVal(a, doubleBuffer);
+            functions.back().SetVal(a, doubleBuffer);
         } while (a.Iterate());
-        functions.push_back(newFunction);
     }
 
     /* DEBUG */
