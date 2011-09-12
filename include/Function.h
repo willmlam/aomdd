@@ -19,6 +19,11 @@ public:
         domain(domainIn) {
     }
 
+    Function(const Function &f) :
+        domain(f.domain) {
+
+    }
+
     virtual ~Function() {
     }
 

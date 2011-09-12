@@ -272,15 +272,16 @@ int main(int argc, char **argv) {
     cout << "Number of AND nodes=" << numAND << endl;
     cout << "Total CM nodes=" << numOR + numAND << endl << endl;
     cout << "Largest message size=" << largestMessageSize << endl;
-    cout << "Memory (MBytes)=" << (double)largestMessageSize * 8 / pow(2.0, 20)<< endl << endl;
+    cout << "Memory (MBytes)=" << (double)largestMessageSize * 8 / pow(2.0, 20) << endl << endl;
     if (outputToFile) {
         out << "Number of OR nodes=" << numOR << endl;
         out << "Number of AND nodes=" << numAND << endl;
         out << "Total CM nodes=" << numOR + numAND << endl << endl;
         out << "Largest message size=" << largestMessageSize << endl << endl;
-        out << "Memory (MBytes)=" << (double)largestMessageSize * 8 / pow(2.0, 20)<< endl << endl;
+        out << "Memory (MBytes)=" << (double)largestMessageSize * 8 / pow(2.0, 20) << endl << endl;
     }
 
+    /*
     // output contexts
     for (int i = 0; i < m.GetNumVars(); ++i) {
         cout << i << ":";
@@ -291,6 +292,7 @@ int main(int argc, char **argv) {
         cout << endl;
     }
     cout << endl;
+    */
 
     if (dotFile != "") {
         cout << "Writing pseudo tree to: " << dotFile << endl;
@@ -305,13 +307,15 @@ int main(int argc, char **argv) {
         bt = new BucketTree(m, ordering, evidence);
     }
     else {
-        cbt = new CompileBucketTree(m, &pt, ordering, evidence);
+        cbt = new CompileBucketTree(m, &pt, ordering, evidence, bucketID);
     }
 
     AOMDDFunction combined;
+    cout << "Before:" << sizeof(combined) << endl;
     if (compileMode) {
         time(&timeStart);
         combined = cbt->Compile();
+        cout << "After:" << sizeof(combined) << endl;
         /*
         if (!evidence.empty()) {
             Assignment cond;
@@ -333,25 +337,80 @@ int main(int argc, char **argv) {
             combined.PrintAsTable(cout); cout << endl;
         }
 
-        int numMeta, numAND;
-        tie(numMeta, numAND) = combined.Size();
+        vector<unsigned int> numMeta;
+        vector<unsigned int> numANDMDD;
+        vector<double> varESemanticWidth(m.GetNumVars(), 0.0);
+        tie(numMeta, numANDMDD) = combined.GetCounts(m.GetNumVars());
+
+        // Compute semantic widths
+        for (int i = 0; i < m.GetNumVars(); ++i) {
+            // Compute log-average of domain size in context
+            double logSum = 0;
+            BOOST_FOREACH(int v, pt.GetContexts()[i]) {
+                logSum += log(double(completeScope.GetVarCard(v)));
+            }
+            if (pt.GetContexts()[i].size() == 1 && pt.GetContexts()[i].count(-1) == 1) {
+	            varESemanticWidth[i] = 0;
+            }
+            else {
+                double logAvgDomain = logSum / pt.GetContexts()[i].size();
+                if (logSum == 0) {
+                    varESemanticWidth[i] = 0;
+                }
+                else {
+                    varESemanticWidth[i] = log(double(numMeta[i])) / logAvgDomain;
+                }
+            }
+        }
+
+        /*
+        for (unsigned int i = 0; i < numMeta.size(); ++i) {
+            cout << i << ":" << numMeta[i] << endl;
+        }
+        cout << endl;
+        for (unsigned int i = 0; i < varSemanticWidth.size(); ++i) {
+            cout << "sw(" << i << ")=" << varSemanticWidth[i] << endl;
+        }
+        */
+
+        double probESemanticWidth = 0;
+        BOOST_FOREACH(double w, varESemanticWidth) {
+            if (w > probESemanticWidth) {
+                probESemanticWidth = w;
+            }
+        }
+
+
+        unsigned int countMeta = 0;
+        unsigned int countAND = 0;
+        BOOST_FOREACH(int i, numMeta) {
+            countMeta += i;
+        }
+        BOOST_FOREACH(int i, numANDMDD) {
+            countAND += i;
+        }
+//        tie(countMeta, countAND) = combined.Size();
         cout << endl;
         cout << "Time=" << timePassed << "s" << endl;
         cout << "Total flat state space=" << totalCard << endl;
-        cout << "Number of AOMDD metanodes=" << numMeta << endl;
-        cout << "Number of AOMDD AND nodes=" << numAND << endl;
-        cout << "Total AOMDD nodes=" << numMeta + numAND << endl;
-        cout << "Compression ratio=" << double(numOR) / numMeta << endl;
+        cout << "Number of AOMDD metanodes=" << countMeta << endl;
+        cout << "Number of AOMDD AND nodes=" << countAND << endl;
+        cout << "Total AOMDD nodes=" << countMeta + countAND << endl;
+        cout << "Compression ratio (wrtOR)=" << double(numOR) / countMeta << endl;
+        cout << "Compression ratio (wrtAND)=" << double(numAND) / countAND << endl;
         cout << "AOMDD Memory (MBytes)=" << combined.MemUsage() << endl;
+        cout << "Effective semantic width=" << probESemanticWidth << endl;
         if (outputToFile) {
             out << endl;
             out << "Time=" << timePassed << "s" << endl;
             out << "Total flat state space=" << totalCard << endl;
-            out << "Number of AOMDD metanodes=" << numMeta << endl;
-            out << "Number of AOMDD AND nodes=" << numAND << endl;
-            out << "Total AOMDD nodes=" << numMeta + numAND << endl;
-            out << "Compression ratio=" << double(numOR) / numMeta;
+            out << "Number of AOMDD metanodes=" << countMeta << endl;
+            out << "Number of AOMDD AND nodes=" << countAND << endl;
+            out << "Total AOMDD nodes=" << countMeta + countAND << endl;
+            out << "Compression ratio (wrtOR)=" << double(numOR) / countMeta << endl;
+            out << "Compression ratio (wrtAND)=" << double(numAND) / countAND << endl;
             out << "AOMDD Memory (MBytes)=" << combined.MemUsage() << endl;
+            out << "Effective semantic width=" << probESemanticWidth << endl;
         }
     }
     if (peMode) {
@@ -431,6 +490,7 @@ int main(int argc, char **argv) {
     unsigned int numANDNodes = NodeManager::GetNodeManager()->GetNumberOfANDNodes();
     unsigned int ocEntries = NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries();
     double utMemUsage = NodeManager::GetNodeManager()->MemUsage();
+    double opMemUsage = NodeManager::GetNodeManager()->OpCacheMemUsage();
     if (uniqueMetaNodes > 0) {
         cout << endl;
         cout << "Number of nodes in cache=" << uniqueMetaNodes << endl;
@@ -438,6 +498,7 @@ int main(int argc, char **argv) {
         cout << "Number of nodes in op-cache=" << ocEntries << endl << endl;
 
         cout << "cache memory (MBytes)=" << utMemUsage << endl;
+        cout << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
         /*
     cout << "(Bucket count):" << NodeManager::GetNodeManager()->utBucketCount() << endl << endl;
     cout << "Bucket sizes:" << endl;
@@ -453,6 +514,7 @@ int main(int argc, char **argv) {
             out << "Number of nodes in op-cache=" << ocEntries << endl << endl;
 
             out << "cache memory (MBytes)=" << utMemUsage << endl;
+            out << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
         }
     }
 

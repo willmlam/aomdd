@@ -26,6 +26,7 @@ TableFunction::TableFunction(const Scope &domainIn,
 }
 
 TableFunction::~TableFunction() {
+    values.clear();
 }
 
 double TableFunction::GetVal(const Assignment &a, bool logOut) const {

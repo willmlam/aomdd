@@ -22,6 +22,8 @@ public:
 
     void AddFunction(const AOMDDFunction *f);
 
+    void PurgeFunctions();
+
     AOMDDFunction *Flatten();
 
     inline int GetBucketSize() const { return functions.size(); }

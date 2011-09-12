@@ -44,6 +44,12 @@ public:
     // parsers
     void parseUAI(std::string filename);
 
+    void FreeMemory() {
+        domains.clear();
+        functions.clear();
+        ordering.clear();
+    }
+
     void Save(std::ostream &out);
 
 };

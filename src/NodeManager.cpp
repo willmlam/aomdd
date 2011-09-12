@@ -155,6 +155,8 @@ WeightedMetaNodeList NodeManager::CreateMetaNode(const Scope &var,
         return temp;
     }
     temp.second *= temp.first[0]->Normalize();
+    return LookupUT(temp);
+    /*
     UniqueTable::iterator it = ut.find(temp.first[0]);
     if (it != ut.end()) {
         return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
@@ -163,6 +165,7 @@ WeightedMetaNodeList NodeManager::CreateMetaNode(const Scope &var,
         ut.insert(temp.first[0]);
         return temp;
     }
+    */
 }
 
 WeightedMetaNodeList NodeManager::CreateMetaNode(int varid, unsigned int card,
@@ -352,6 +355,12 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
         */
         return ocit->second;
     }
+    if (useTempMode) {
+        ocit = opCacheTemp.find(ocEntry);
+        if ( ocit != opCacheTemp.end() ) {
+            return ocit->second;
+        }
+    }
 
     // Base cases
     switch(op) {
@@ -384,8 +393,10 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
             if ( rhs.size() == 0 || lhs->IsTerminal() ) {
                 return WeightedMetaNodeList(MetaNodeList(1, lhs), 1.0);
             }
+            break;
         default:
             assert(false);
+            break;
     }
 
     // Should have detected terminals
@@ -419,6 +430,7 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
                     break;
                 default:
                     assert(false);
+                    break;
             }
             paramSets = GetParamSets(embeddedPT, paramLHS, rhs[0]->GetChildren()[k]->GetChildren());
         }
@@ -492,7 +504,12 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     Scope var;
     var.AddVar(varid, card);
     WeightedMetaNodeList u = CreateMetaNode(var, children);
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
+    if (!useTempMode) {
+//        opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
+    }
+    else {
+//        opCacheTemp.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
+    }
     /*
     cout << "Created cache entry" << endl;
     cout << "keys:";
@@ -526,6 +543,12 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     if ( ocit != opCache.end() ) {
         //Found result in cache
         return ocit->second;
+    }
+    if (useTempMode) {
+        ocit = opCacheTemp.find(ocEntry);
+        if ( ocit != opCacheTemp.end() ) {
+            return ocit->second;
+        }
     }
 
     // Marginalize each subgraph
@@ -609,7 +632,12 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
+    if (!useTempMode) {
+//        opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
+    }
+    else {
+//        opCacheTemp.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
+    }
     return ret;
 }
 
@@ -639,6 +667,12 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
         cout << "Returning: " << ocit->second.get() << endl;
         */
         return ocit->second;
+    }
+    if (useTempMode) {
+        ocit = opCacheTemp.find(ocEntry);
+        if ( ocit != opCacheTemp.end() ) {
+            return ocit->second;
+        }
     }
 
     // Maximize each subgraph
@@ -702,7 +736,12 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
+    if (!useTempMode) {
+//        opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
+    }
+    else {
+//        opCacheTemp.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
+    }
     /*
     cout << "Created cache entry(MAX)" << endl;
     cout << "elimvar:" << elimvar << endl;
@@ -806,8 +845,8 @@ void NodeManager::PrintUniqueTable(ostream &out) const {
 }
 
 void NodeManager::PrintReferenceCount(ostream &out) const {
-    BOOST_FOREACH (MetaNodePtr i, ut) {
-        out << i.get() << ":" << i.use_count() - 1 << endl;
+    BOOST_FOREACH (const MetaNodePtr &i, ut) {
+        out << i.get() << ":" << i.use_count() << endl;
     }
 }
 

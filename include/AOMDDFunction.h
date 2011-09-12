@@ -25,8 +25,6 @@ private:
     WeightedMetaNodeList root;
     const PseudoTree *pt;
 
-    bool fullReduce;
-
 public:
     AOMDDFunction();
     AOMDDFunction(const Scope &domainIn);
@@ -34,7 +32,9 @@ public:
     AOMDDFunction(const Scope &domainIn, const std::vector<double> &valsIn);
     // The pseudo tree is preferably one for the entire problem instance
     AOMDDFunction(const Scope &domainIn, const PseudoTree *pseudoTree,
-            const std::vector<double> &valsIn, bool fr = true);
+            const std::vector<double> &valsIn);
+
+    AOMDDFunction(const AOMDDFunction &f);
 
     virtual double GetVal(const Assignment &a, bool logOut = false) const;
 
@@ -62,6 +62,18 @@ public:
             numAND += numANDTemp;
         }
         return std::pair<unsigned int, unsigned int>(numMeta, numAND);
+    }
+
+    inline std::pair<std::vector<unsigned int>, std::vector<unsigned int> > GetCounts(unsigned int n) const {
+        std::vector<unsigned int> numMeta(n, 0);
+        BOOST_FOREACH(MetaNodePtr m, root.first) {
+            m->GetNumNodesPerVar(numMeta);
+        }
+        std::vector<unsigned int> numAND(n, 0);
+        for (unsigned int i = 0; i < numMeta.size(); ++i) {
+            numAND[i] += numMeta[i] * domain.GetVarCard(i);
+        }
+        return std::pair<std::vector<unsigned int>, std::vector<unsigned int> >(numMeta, numAND);
     }
 
     inline void SetScopeOrdering(const std::list<int> &ordering) { domain.SetOrdering(ordering); }

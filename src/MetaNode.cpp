@@ -293,6 +293,16 @@ pair<unsigned int, unsigned int> MetaNode::NumOfNodes() const {
     return pair<unsigned int, unsigned int>(nodeSet.size(), count);
 }
 
+void MetaNode::GetNumNodesPerVar(vector<unsigned int> &numMeta) const {
+    boost::unordered_set<const MetaNode *> nodeSet;
+    FindUniqueNodes(nodeSet);
+    BOOST_FOREACH(const MetaNode *m, nodeSet) {
+        int vid = m->GetVarID();
+        assert(vid < int(numMeta.size()));
+        numMeta[vid]++;
+    }
+}
+
 double MetaNode::ComputeTotalMemory() const {
     unordered_set<const MetaNode *> nodeSet;
     FindUniqueNodes(nodeSet);

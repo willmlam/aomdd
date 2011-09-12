@@ -128,24 +128,41 @@ struct eqop {
 typedef std::vector<MetaNodePtr> MetaNodeList;
 typedef std::pair<MetaNodeList, double> WeightedMetaNodeList;
 
-//typedef boost::unordered_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+#define USE_SPARSE
+
+#ifdef USE_SPARSE
+typedef google::sparse_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+typedef google::sparse_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
+#else
 typedef google::dense_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
-//typedef google::sparse_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
-//typedef boost::unordered_map<Operation, MetaNodePtr> OperationCache;
 typedef google::dense_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
-//typedef google::sparse_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
+#endif
+
+
+//typedef boost::unordered_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+//typedef boost::unordered_map<Operation, MetaNodePtr> OperationCache;
 typedef std::pair<MetaNodePtr, std::vector<MetaNodePtr> > ApplyParamSet;
 
 class NodeManager {
     UniqueTable ut;
     OperationCache opCache;
+
+    // Used for intermediate operations. Cleared when finished each time
+    UniqueTable utTemp;
+    OperationCache opCacheTemp;
+
+    bool useTempMode;
     NodeManager() {
+#ifndef USE_SPARSE
         MetaNodePtr nullKey(new MetaNode(-1, 0, std::vector<ANDNodePtr>()));
         ut.set_empty_key(nullKey);
+        utTemp.set_empty_key(nullKey);
         Operation nullOpKey;
         opCache.set_empty_key(nullOpKey);
+        opCacheTemp.set_empty_key(nullOpKey);
+#endif
     }
-    NodeManager(NodeManager const&) {
+    NodeManager(NodeManager const&) : useTempMode(false) {
     }
     NodeManager& operator=(NodeManager const&) {
         return *this;
@@ -227,12 +244,41 @@ public:
     void PrintUniqueTable(std::ostream &out) const;
     void PrintReferenceCount(std::ostream &out) const;
 
+    inline void SetTempMode(bool mode) {
+        useTempMode = mode;
+        if (!useTempMode) {
+            utTemp.clear();
+            opCacheTemp.clear();
+        }
+    }
+
+    inline WeightedMetaNodeList LookupUT(WeightedMetaNodeList &temp) {
+        UniqueTable::iterator it = ut.find(temp.first[0]);
+        if (it != ut.end()) {
+            return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
+        }
+        else {
+            if (useTempMode) {
+                it = utTemp.find(temp.first[0]);
+                if (it != utTemp.end()) {
+                    return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
+                }
+                else {
+                    utTemp.insert(temp.first[0]);
+                    return temp;
+                }
+            }
+            ut.insert(temp.first[0]);
+            return temp;
+        }
+    }
+
     inline double MemUsage() const {
         double memUsage = 0;
         BOOST_FOREACH(MetaNodePtr m, ut) {
-            memUsage += m->MemUsage();
+            memUsage += m->MemUsage() + sizeof(m);
         }
-        return memUsage / pow(2.0,20);
+        return (sizeof(ut) + memUsage) / pow(2.0,20);
     }
 
     inline double OpCacheMemUsage() const {
@@ -244,7 +290,7 @@ public:
                 memUsage += sizeof(m);
             }
         }
-        return memUsage / pow(2.0,20);
+        return (sizeof(opCache) + memUsage) / pow(2.0,20);
     }
 
 };

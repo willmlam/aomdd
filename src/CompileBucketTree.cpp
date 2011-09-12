@@ -18,10 +18,9 @@ CompileBucketTree::CompileBucketTree() : compiled(false) {
 
 CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
         const list<int> &orderIn,
-        const map<int, int> &evidIn,
-        bool fr)
-        : pt(ptIn), ordering(orderIn), evidence(evidIn),
-        fullReduce(fr), compiled(false) {
+        const map<int, int> &evidIn, int bucketID)
+        : pt(ptIn), ordering(orderIn), evidence(evidIn), largestBucket(bucketID),
+        compiled(false) {
 
     int numBuckets = ordering.size();
     if (pt->HasDummy()) {
@@ -33,7 +32,7 @@ CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
     const vector<TableFunction> &functions = m.GetFunctions();
     for (unsigned int i = 0; i < functions.size(); i++) {
         int idx = functions[i].GetScope().GetOrdering().back();
-        AOMDDFunction *f = new AOMDDFunction(functions[i].GetScope(), pt, functions[i].GetValues(), fr);
+        AOMDDFunction *f = new AOMDDFunction(functions[i].GetScope(), pt, functions[i].GetValues());
         buckets[idx].AddFunction(f);
     }
     for (unsigned int i = 0; i < buckets.size(); i++) {
@@ -277,7 +276,10 @@ double CompileBucketTree::MPE(bool logOut) {
 
 //            buckets[*rit].PrintDiagrams(cout); cout << endl;
 //            buckets[*rit].PrintFunctionTables(cout); cout << endl;
+            NodeManager::GetNodeManager()->SetTempMode(true);
             AOMDDFunction *message = buckets[*rit].Flatten();
+            NodeManager::GetNodeManager()->SetTempMode(false);
+            buckets[*rit].PurgeFunctions();
             message->SetScopeOrdering(ordering);
             cout << "After flattening" << endl;
 
@@ -302,6 +304,15 @@ double CompileBucketTree::MPE(bool logOut) {
             }
             else {
                 message->Maximize(elim);
+                if (*rit == largestBucket) {
+                    long numMeta, numAND;
+                    tie(numMeta, numAND) = message->Size();
+                    cout << "Largest Message (AOMDD Meta)" << numMeta << endl;
+                    cout << "Largest Message (AOMDD AND)" << numAND << endl;
+                    cout << "Largest Message (AOMDD Total)" << numMeta + numAND << endl;
+                    cout << "Largest Message (AOMDD Memory)" << message->MemUsage() << endl;
+                    cin.get();
+                }
             }
             cout << "After eliminating " << *rit << endl;
 

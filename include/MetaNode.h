@@ -54,8 +54,8 @@ public:
         void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
 
         inline size_t MemUsage() const {
-            size_t mtpSize = sizeof(MetaNodePtr) + sizeof(size_t);
-            return sizeof(weight) + sizeof(children) + (children.size() * mtpSize);
+            size_t mtpSize = sizeof(MetaNodePtr);
+            return sizeof(ANDNode) + (children.size() * mtpSize);
         }
     };
 
@@ -85,6 +85,8 @@ private:
     bool elimValueCached;
 
     void FindUniqueNodes(boost::unordered_set<const MetaNode *> &nodeSet) const;
+    void FindUniqueNodes(boost::unordered_set<const MetaNode *> &nodeSet,
+            std::vector<unsigned int> &numMeta) const;
 
 public:
     MetaNode();
@@ -131,7 +133,13 @@ public:
     void Save(std::ostream &out, std::string prefix = "") const;
     void RecursivePrint(std::ostream &out, std::string prefix) const;
     void RecursivePrint(std::ostream &out) const;
+
+    // Returns a pair (numMeta, numAND)
     std::pair<unsigned int, unsigned int> NumOfNodes() const;
+
+    // Return a vector specifying the number of meta nodes for each variable
+    // (Result is returned by reference)
+    void GetNumNodesPerVar(std::vector<unsigned int> &numMeta) const;
     DirectedGraph GenerateDiagram() const;
 
     void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
@@ -164,10 +172,8 @@ public:
     double ComputeTotalMemory() const;
 
     inline size_t MemUsage() const {
-        size_t apsize = sizeof(ANDNodePtr) + sizeof(size_t);
-        size_t temp = sizeof(varID) + sizeof(card) +
-                sizeof(children) +
-                sizeof(hashVal) + (children.size() * apsize);
+        size_t apsize = sizeof(ANDNodePtr);
+        size_t temp = sizeof(MetaNode) + (children.size() * apsize);
         BOOST_FOREACH(const ANDNodePtr &i, children) {
             temp += i->MemUsage();
         }

@@ -38,6 +38,13 @@ AOMDDFunction *CompileBucket::Flatten() {
     return message;
 }
 
+void CompileBucket::PurgeFunctions() {
+    for (unsigned int i = 0; i < functions.size(); ++i) {
+        delete functions[i];
+    }
+    functions.clear();
+}
+
 void CompileBucket::PrintFunctionScopes(ostream &out) const {
     BOOST_FOREACH(const AOMDDFunction *f, functions) {
         f->GetScope().Save(out); out << endl;

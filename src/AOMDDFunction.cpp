@@ -11,7 +11,7 @@
 using namespace std;
 
 namespace aomdd {
-AOMDDFunction::AOMDDFunction() : fullReduce(true) {
+AOMDDFunction::AOMDDFunction() {
     root = WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetOne()), 1.0);
 }
 AOMDDFunction::AOMDDFunction(const Scope &domainIn) : Function(domainIn) {
@@ -23,8 +23,8 @@ AOMDDFunction::AOMDDFunction(const Scope &domainIn, const std::vector<double> &v
 }
 
 AOMDDFunction::AOMDDFunction(const Scope &domainIn,
-        const PseudoTree *pseudoTree, const std::vector<double> &valsIn, bool fr) :
-    Function(domainIn), pt(pseudoTree), fullReduce(fr) {
+        const PseudoTree *pseudoTree, const std::vector<double> &valsIn) :
+    Function(domainIn), pt(pseudoTree) {
     /*
     if (pt->HasDummy()) {
         Scope s(domain);
@@ -39,13 +39,11 @@ AOMDDFunction::AOMDDFunction(const Scope &domainIn,
         root = mgr->CreateMetaNode(domain, valsIn);
     }
     */
-    if (fullReduce) {
-//        root = mgr->FullReduce(mgr->CreateMetaNode(domain, valsIn));
-        root = mgr->CreateMetaNode(domain, valsIn);
-    }
-    else {
-        root = mgr->CreateMetaNode(domain, valsIn);
-    }
+    root = mgr->CreateMetaNode(domain, valsIn);
+}
+
+AOMDDFunction::AOMDDFunction(const AOMDDFunction &f)
+	: Function(f), root(f.root), pt(f.pt) {
 }
 
 double AOMDDFunction::GetVal(const Assignment &a, bool logOut) const {
