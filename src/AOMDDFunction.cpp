@@ -12,7 +12,9 @@ using namespace std;
 
 namespace aomdd {
 AOMDDFunction::AOMDDFunction() {
-    root = WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetOne()), 1.0);
+    MetaNode **nodelist(new MetaNode*[1]);
+    nodelist[0] = MetaNode::GetOne();
+    root = WeightedMetaNodeList(MetaNodeList(1, nodelist), 1.0);
 }
 AOMDDFunction::AOMDDFunction(const Scope &domainIn) : Function(domainIn) {
 }
@@ -48,7 +50,9 @@ AOMDDFunction::AOMDDFunction(const AOMDDFunction &f)
 
 double AOMDDFunction::GetVal(const Assignment &a, bool logOut) const {
     double value = root.second;
-    BOOST_FOREACH(MetaNodePtr m, root.first) {
+    unsigned int nc = root.first.first;
+    for (unsigned int i = 0; i < nc; ++i) {
+        MetaNode *m = root.first.second[i];
         value *= m->Evaluate(a);
     }
     return logOut ? log10(value) : value;
@@ -63,12 +67,12 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
 //    Save(cout); cout << endl;
 //    rhs.Save(cout); cout << endl;
     Scope s = domain + rhs.GetScope();
-    if (root.first.size() == 1) {
-        if (root.first[0].get() == MetaNode::GetZero().get()) {
+    if (root.first.first == 1) {
+        if (root.first.second[0] == MetaNode::GetZero()) {
             domain = s;
             return;
         }
-        else if (root.first[0].get() == MetaNode::GetOne().get()) {
+        else if (root.first.second[0] == MetaNode::GetOne()) {
             double w = root.second;
             root = rhs.root;
             root.second *= w;
@@ -77,13 +81,13 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
             return;
         }
     }
-    if (rhs.root.first.size() == 1) {
-        if (rhs.root.first[0].get() == MetaNode::GetZero().get()) {
+    if (rhs.root.first.first == 1) {
+        if (rhs.root.first.second[0] == MetaNode::GetZero()) {
             root = rhs.root;
             domain = s;
             return;
         }
-        else if (rhs.root.first[0].get() == MetaNode::GetOne().get()) {
+        else if (rhs.root.first.second[0] == MetaNode::GetOne()) {
             root.second *= rhs.root.second;
             domain = s;
             return;
@@ -122,7 +126,16 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     */
 //    cout << "original lhs: " << root->GetVarID()
 //            << ", original rhs: " << rhs.root->GetVarID() << endl;
-    vector<ApplyParamSet> apsVec = mgr->GetParamSets(embedpt, root.first, rhs.root.first);
+    vector<MetaNode *> lhsVec;
+    vector<MetaNode *> rhsVec;
+
+    for (unsigned int i = 0; i < root.first.first; ++i) {
+        lhsVec.push_back(root.first.second[i]);
+    }
+    for (unsigned int i = 0; i < rhs.root.first.first; ++i) {
+        rhsVec.push_back(rhs.root.first.second[i]);
+    }
+    vector<ApplyParamSet> apsVec = mgr->GetParamSets(embedpt, lhsVec, rhsVec);
     /*
     ApplyParamSet aps;
     if (apsVec.size() == 1) {
@@ -156,35 +169,45 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     cout << endl;
     aps.first->RecursivePrint(cout); cout << endl;
     */
-    root.first.clear();
+//    root.first.clear();
     root.second *= rhs.root.second;
     bool terminalOnly = true;
     bool earlyTerminate = false;
+    vector<MetaNode *> tempResults;
 
     BOOST_FOREACH(ApplyParamSet aps, apsVec) {
         WeightedMetaNodeList subDD = mgr->Apply(aps.first, aps.second, PROD, embedpt);
 
         root.second *= subDD.second;
-        BOOST_FOREACH(MetaNodePtr m, subDD.first) {
-            if (m.get() == MetaNode::GetZero().get()) {
-                root.first.clear();
-                root.first.push_back(m);
+        unsigned int nc = subDD.first.first;
+        for (unsigned int i = 0; i < nc; ++i) {
+            MetaNode *m = subDD.first.second[i];
+            if (m == MetaNode::GetZero()) {
+                tempResults.clear();
+                tempResults.push_back(m);
                 earlyTerminate = true;
                 break;
             }
             if (!m->IsTerminal()) {
                 if (terminalOnly) {
-                    root.first.clear();
+                    tempResults.clear();
                     terminalOnly = false;
                 }
-                root.first.push_back(m);
+                tempResults.push_back(m);
             }
-            else if (root.first.empty()) {
-                root.first.push_back(m);
+            else if (tempResults.empty()) {
+                tempResults.push_back(m);
             }
         }
         if (earlyTerminate) break;
     }
+    delete []root.first.second;
+    root.first.second = new MetaNode*[tempResults.size()];
+    root.first.first = tempResults.size();
+    for (unsigned int i = 0; i < tempResults.size(); ++i) {
+        root.first.second[i] = tempResults[i];
+    }
+
     domain = s;
 }
 
@@ -194,7 +217,7 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     elimVars.Save(cout); cout << endl;
     */
     Scope actualElimVars = domain * elimVars;
-    if (root.first.size() == 1 && root.first[0]->IsTerminal()) {
+    if (root.first.first == 1 && root.first.second[0]->IsTerminal()) {
 //        cout << "Using special terminal case" << endl;
         domain = domain - actualElimVars;
         root.second *= actualElimVars.GetCard();
@@ -214,10 +237,18 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     WeightedMetaNodeList newroot;
     newroot.second = root.second;
     bool sumOpPerformed = false;
-    BOOST_FOREACH(MetaNodePtr m, root.first) {
+    vector<MetaNode *> tempResults;
+    unsigned int nc = root.first.first;
+    for (unsigned int i = 0; i < nc; ++i) {
+        MetaNode *m = root.first.second[i];
         WeightedMetaNodeList l = mgr->Marginalize(m, elimVars, pt->GetTree(), sumOpPerformed);
-        newroot.first.insert(newroot.first.end(), l.first.begin(), l.first.end());
+        tempResults.insert(tempResults.end(), l.first.second, l.first.second+l.first.first);
         newroot.second *= l.second;
+    }
+    newroot.first.first = tempResults.size();
+    newroot.first.second = new MetaNode *[tempResults.size()];
+    for (unsigned int i = 0; i < tempResults.size(); ++i) {
+        newroot.first.second[i] = tempResults[i];
     }
     /*
     if (!sumOpPerformed) {
@@ -233,7 +264,7 @@ void AOMDDFunction::Maximize(const Scope &elimVars, bool mutableIDs) {
     domain.Save(cout); cout << endl;
     elimVars.Save(cout); cout << endl;
     */
-    if (root.first.size() == 1 && root.first[0]->IsTerminal()) {
+    if (root.first.first == 1 && root.first.second[0]->IsTerminal()) {
         domain = domain - elimVars;
         return;
     }
@@ -251,10 +282,18 @@ void AOMDDFunction::Maximize(const Scope &elimVars, bool mutableIDs) {
     */
     WeightedMetaNodeList newroot;
     newroot.second = root.second;
-    BOOST_FOREACH(MetaNodePtr m, root.first) {
+    vector<MetaNode *> tempResults;
+    unsigned int nc = root.first.first;
+    for (unsigned int i = 0; i < nc; ++i) {
+        MetaNode *m = root.first.second[i];
         WeightedMetaNodeList l = mgr->Maximize(m, elimVars, pt->GetTree());
-        newroot.first.insert(newroot.first.end(), l.first.begin(), l.first.end());
+        tempResults.insert(tempResults.end(), l.first.second, l.first.second+l.first.first);
         newroot.second *= l.second;
+    }
+    newroot.first.first = tempResults.size();
+    newroot.first.second = new MetaNode *[tempResults.size()];
+    for (unsigned int i = 0; i < tempResults.size(); ++i) {
+        newroot.first.second[i] = tempResults[i];
     }
     root = newroot;
     domain = domain - elimVars;
@@ -262,7 +301,9 @@ void AOMDDFunction::Maximize(const Scope &elimVars, bool mutableIDs) {
 
 double AOMDDFunction::Maximum(const Assignment &cond) {
     double res = root.second;
-    BOOST_FOREACH(MetaNodePtr m, root.first) {
+    unsigned int nc = root.first.first;
+    for (unsigned int i = 0; i < nc; ++i) {
+        MetaNode *m = root.first.second[i];
         res *= m->Maximum(cond);
     }
     return res;
@@ -270,14 +311,16 @@ double AOMDDFunction::Maximum(const Assignment &cond) {
 
 double AOMDDFunction::Sum(const Assignment &cond) {
     double res = root.second;
-    BOOST_FOREACH(MetaNodePtr m, root.first) {
+    unsigned int nc = root.first.first;
+    for (unsigned int i = 0; i < nc; ++i) {
+        MetaNode *m = root.first.second[i];
         res *= m->Sum(cond);
     }
     return res;
 }
 
 void AOMDDFunction::Condition(const Assignment &cond) {
-    if (root.first.size() == 1 && root.first[0]->IsTerminal()) {
+    if (root.first.first == 1 && root.first.second[0]->IsTerminal()) {
         domain = domain - cond;
         return;
     }
@@ -307,10 +350,18 @@ void AOMDDFunction::Condition(const Assignment &cond) {
     */
     WeightedMetaNodeList newroot;
     newroot.second = root.second;
-    BOOST_FOREACH(MetaNodePtr m, root.first) {
+    vector<MetaNode *> tempResults;
+    unsigned int nc = root.first.first;
+    for (unsigned int i = 0; i < nc; ++i) {
+        MetaNode *m = root.first.second[i];
         WeightedMetaNodeList l = mgr->Condition(m, cond);
-        newroot.first.insert(newroot.first.end(), l.first.begin(), l.first.end());
+        tempResults.insert(tempResults.end(), l.first.second, l.first.second+l.first.first);
         newroot.second *= l.second;
+    }
+    newroot.first.first = tempResults.size();
+    newroot.first.second = new MetaNode *[tempResults.size()];
+    for (unsigned int i = 0; i < tempResults.size(); ++i) {
+        newroot.first.second[i] = tempResults[i];
     }
     root = newroot;
     domain = domain - cond;
@@ -321,7 +372,9 @@ AOMDDFunction::~AOMDDFunction() {
 
 void AOMDDFunction::Save(ostream &out) const {
     cout << "Global Weight: " << root.second << endl;
-    BOOST_FOREACH(MetaNodePtr m, root.first) {
+    unsigned int nc = root.first.first;
+    for (unsigned int i = 0; i < nc; ++i) {
+        MetaNode *m = root.first.second[i];
         m->RecursivePrint(out);
     }
 }

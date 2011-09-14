@@ -31,15 +31,15 @@ public:
     Operation() :
         op(NONE) {
     }
-    Operation(Operator o, MetaNodePtr arg, int vid = 0) :
+    Operation(Operator o, MetaNode* arg, int vid = 0) :
         op(o), varid(vid) {
-        params.insert(size_t(arg.get()));
+        params.insert(size_t(arg));
     }
-    Operation(Operator o, MetaNodePtr arg1, const std::vector<MetaNodePtr> &arg2) :
+    Operation(Operator o, MetaNode* arg1, const std::vector<MetaNode*> &arg2) :
         op(o) {
-        params.insert(size_t(arg1.get()));
+        params.insert(size_t(arg1));
         for (unsigned int i = 0; i < arg2.size(); ++i) {
-            params.insert(size_t(arg2[i].get()));
+            params.insert(size_t(arg2[i]));
         }
     }
 
@@ -69,35 +69,22 @@ size_t hash_value(const Operation &o);
 bool operator==(const Operation &lhs, const Operation &rhs);
 
 struct nodehasher {
-    std::size_t operator()(const MetaNodePtr &node) const {
-        size_t seed = 0;
-        boost::hash_combine(seed, node->GetVarID());
-        boost::hash_combine(seed, node->GetCard());
-        BOOST_FOREACH(const ANDNodePtr &i, node->GetChildren()) {
-            boost::hash_combine(seed, i->GetWeight());
-            BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
-                boost::hash_combine(seed, j.get());
-            }
-        }
-        return seed;
+    std::size_t operator()(const MetaNode *node) const {
+        return node->GetStoredHash();
     }
 };
 
 struct eqnode {
-    bool operator()(const MetaNodePtr &lhs, const MetaNodePtr &rhs) const {
-        if (lhs.get() == MetaNode::GetZero().get() && rhs.get()
-                == MetaNode::GetOne().get())
-            return false;
-        if (rhs.get() == MetaNode::GetZero().get() && lhs.get()
-                == MetaNode::GetOne().get())
+    bool operator()(const MetaNode *lhs, const MetaNode *rhs) const {
+        if ( (lhs == MetaNode::GetZero() && rhs == MetaNode::GetOne()) ||
+                (rhs == MetaNode::GetZero() && lhs == MetaNode::GetOne()) )
             return false;
         if (lhs->GetStoredHash() != rhs->GetStoredHash()) {
             return false;
         }
-        if (lhs->GetVarID() != rhs->GetVarID() || lhs->GetCard() != rhs->GetCard()
-                || lhs->GetChildren().size() != rhs->GetChildren().size())
+        if (lhs->GetVarID() != rhs->GetVarID() || lhs->GetCard() != rhs->GetCard())
             return false;
-        for (unsigned int i = 0; i < lhs->GetChildren().size(); i++) {
+        for (unsigned int i = 0; i < lhs->GetCard(); i++) {
             if (lhs->GetChildren()[i] != rhs->GetChildren()[i])
                 return false;
         }
@@ -125,23 +112,23 @@ struct eqop {
     }
 };
 
-typedef std::vector<MetaNodePtr> MetaNodeList;
+typedef std::pair<unsigned int, MetaNode **> MetaNodeList;
 typedef std::pair<MetaNodeList, double> WeightedMetaNodeList;
 
 #define USE_SPARSE
 
 #ifdef USE_SPARSE
-typedef google::sparse_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+typedef google::sparse_hash_set<MetaNode*, nodehasher, eqnode> UniqueTable;
 typedef google::sparse_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
 #else
-typedef google::dense_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+typedef google::dense_hash_set<MetaNode*, nodehasher, eqnode> UniqueTable;
 typedef google::dense_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
 #endif
 
 
 //typedef boost::unordered_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
 //typedef boost::unordered_map<Operation, MetaNodePtr> OperationCache;
-typedef std::pair<MetaNodePtr, std::vector<MetaNodePtr> > ApplyParamSet;
+typedef std::pair<MetaNode*, std::vector<MetaNode*> > ApplyParamSet;
 
 class NodeManager {
     UniqueTable ut;
@@ -171,16 +158,16 @@ class NodeManager {
     static bool initialized;
     static NodeManager *singleton;
 
-    MetaNodePtr NormalizeHelper(MetaNodePtr root);
+    MetaNode *NormalizeHelper(MetaNode *root);
 
 public:
     static NodeManager *GetNodeManager();
     // Create a metanode from a variable with a children list
     WeightedMetaNodeList CreateMetaNode(const Scope &var,
-            const std::vector<ANDNodePtr> &ch);
+            ANDNode **ch);
 
     WeightedMetaNodeList CreateMetaNode(int varid, unsigned int card,
-            const std::vector<ANDNodePtr> &ch);
+            ANDNode **ch);
 
     // Create a metanode based on a tabular form of the function
     // Variable ordering is defined by the scope
@@ -200,18 +187,18 @@ public:
 
     // Same as above, but single level version, it assumes all the decision
     // diagrams rooted by the children are already fully reduced
-    WeightedMetaNodeList SingleLevelFullReduce(MetaNodePtr node);
+    WeightedMetaNodeList SingleLevelFullReduce(MetaNode *node);
 
-    WeightedMetaNodeList Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
+    WeightedMetaNodeList Apply(MetaNode *lhs, const std::vector<MetaNode *> &rhs, Operator op,
             const DirectedGraph &embeddedPT);
 
     std::vector<ApplyParamSet> GetParamSets(const DirectedGraph &tree,
-            const std::vector<MetaNodePtr> &lhs,
-            const std::vector<MetaNodePtr> &rhs) const;
+            const std::vector<MetaNode *> &lhs,
+            const std::vector<MetaNode *> &rhs) const;
 
-    WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT, bool &sumOpPerformed);
-    WeightedMetaNodeList Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
-    WeightedMetaNodeList Condition(MetaNodePtr root, const Assignment &cond);
+    WeightedMetaNodeList Marginalize(MetaNode *root, const Scope &s, const DirectedGraph &embeddedPT, bool &sumOpPerformed);
+    WeightedMetaNodeList Maximize(MetaNode *root, const Scope &s, const DirectedGraph &embeddedPT);
+    WeightedMetaNodeList Condition(MetaNode *root, const Assignment &cond);
 
     // Normalizes the weights of the immediate AND nodes to sum to 1.
 //    double Normalize(MetaNodePtr root);
@@ -222,7 +209,7 @@ public:
     }
     inline unsigned int GetNumberOfANDNodes() const {
         unsigned int count = 0;
-        BOOST_FOREACH(MetaNodePtr m, ut) {
+        BOOST_FOREACH(MetaNode *m, ut) {
             count += m->GetCard();
         }
         return count;
@@ -242,7 +229,6 @@ public:
     }
 
     void PrintUniqueTable(std::ostream &out) const;
-    void PrintReferenceCount(std::ostream &out) const;
 
     inline void SetTempMode(bool mode) {
         useTempMode = mode;
@@ -253,29 +239,33 @@ public:
     }
 
     inline WeightedMetaNodeList LookupUT(WeightedMetaNodeList &temp) {
-        UniqueTable::iterator it = ut.find(temp.first[0]);
+        UniqueTable::iterator it = ut.find(temp.first.second[0]);
         if (it != ut.end()) {
-            return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
+            MetaNode **nodelist(new MetaNode*[1]);
+            nodelist[0] = *it;
+            return WeightedMetaNodeList(MetaNodeList(1, nodelist), temp.second);
         }
         else {
             if (useTempMode) {
-                it = utTemp.find(temp.first[0]);
+                it = utTemp.find(temp.first.second[0]);
                 if (it != utTemp.end()) {
-                    return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
+                    MetaNode **nodelist(new MetaNode*[1]);
+                    nodelist[0] = *it;
+                    return WeightedMetaNodeList(MetaNodeList(1, nodelist), temp.second);
                 }
                 else {
-                    utTemp.insert(temp.first[0]);
+                    utTemp.insert(temp.first.second[0]);
                     return temp;
                 }
             }
-            ut.insert(temp.first[0]);
+            ut.insert(temp.first.second[0]);
             return temp;
         }
     }
 
     inline double MemUsage() const {
         double memUsage = 0;
-        BOOST_FOREACH(MetaNodePtr m, ut) {
+        BOOST_FOREACH(MetaNode *m, ut) {
             memUsage += m->MemUsage() + sizeof(m);
         }
         return (sizeof(ut) + memUsage) / pow(2.0,20);
@@ -285,8 +275,10 @@ public:
         double memUsage = 0;
         BOOST_FOREACH(OperationCache::value_type i, opCache) {
             memUsage += sizeof(i.first) + i.first.MemUsage();
-            memUsage += sizeof(i.second.first) + sizeof(i.second.second);
-            BOOST_FOREACH(MetaNodePtr m, i.second.first) {
+            memUsage += sizeof(i.second.first.first) + sizeof(i.second.first.second);
+            unsigned int nc = i.second.first.first;
+            for (unsigned int j = 0; j < nc; ++j) {
+                MetaNode *m = i.second.first.second[j];
                 memUsage += sizeof(m);
             }
         }

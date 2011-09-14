@@ -145,18 +145,15 @@ double CompileBucketTree::Prob(bool logOut) {
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
-            /*
-            buckets[*rit].PrintDiagrams(cout); cout << endl;
+//            buckets[*rit].PrintDiagrams(cout); cout << endl;
             buckets[*rit].PrintFunctionTables(cout); cout << endl;
-            */
+
             AOMDDFunction *message = buckets[*rit].Flatten();
             message->SetScopeOrdering(ordering);
             cout << "After flattening" << endl;
 
-            /*
-            message->Save(cout); cout << endl;
+//            message->Save(cout); cout << endl;
             message->PrintAsTable(cout); cout << endl;
-            */
 
             DInEdge ei, ei_end;
             tie(ei, ei_end) = in_edges(*rit, tree);
@@ -177,10 +174,8 @@ double CompileBucketTree::Prob(bool logOut) {
             }
             cout << "After eliminating " << *rit << endl;
 
-            /*
-            message->Save(cout); cout << endl;
+//            message->Save(cout); cout << endl;
             message->PrintAsTable(cout); cout << endl;
-            */
 
             // empty scope, no need to send message, update final result
             if (message->GetScope().IsEmpty()) {
@@ -276,10 +271,10 @@ double CompileBucketTree::MPE(bool logOut) {
 
 //            buckets[*rit].PrintDiagrams(cout); cout << endl;
 //            buckets[*rit].PrintFunctionTables(cout); cout << endl;
-            NodeManager::GetNodeManager()->SetTempMode(true);
+//            NodeManager::GetNodeManager()->SetTempMode(true);
             AOMDDFunction *message = buckets[*rit].Flatten();
-            NodeManager::GetNodeManager()->SetTempMode(false);
-            buckets[*rit].PurgeFunctions();
+//            NodeManager::GetNodeManager()->SetTempMode(false);
+//            buckets[*rit].PurgeFunctions();
             message->SetScopeOrdering(ordering);
             cout << "After flattening" << endl;
 

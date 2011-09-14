@@ -30,19 +30,19 @@ public:
     // Corresponds to weights of assignments
     class ANDNode {
         double weight;
-        std::vector<MetaNodePtr> children;
+        unsigned int numChildren;
+        MetaNode **children;
     public:
         ANDNode();
         virtual ~ANDNode();
 
-        ANDNode(double w, const std::vector<MetaNodePtr> &ch);
+        ANDNode(double w, unsigned int nc, MetaNode **ch);
 
         double GetWeight() const;
         void SetWeight(double w);
 
-        void SetChildren(const std::vector<MetaNodePtr> &ch);
-
-        const std::vector<MetaNodePtr> &GetChildren() const;
+        inline unsigned int GetNumChildren() const { return numChildren; }
+        inline MetaNode **GetChildren() const { return children; }
 
         double Evaluate(const Assignment &a);
 
@@ -51,15 +51,13 @@ public:
         void Save(std::ostream &out, std::string prefix = "") const;
         void RecursivePrint(std::ostream &out, std::string prefix) const;
         void RecursivePrint(std::ostream &out) const;
-        void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
 
         inline size_t MemUsage() const {
-            size_t mtpSize = sizeof(MetaNodePtr);
-            return sizeof(ANDNode) + (children.size() * mtpSize);
+            return sizeof(ANDNode) + (numChildren * sizeof(MetaNode*));
         }
     };
 
-    typedef boost::shared_ptr<ANDNode> ANDNodePtr;
+//    typedef boost::shared_ptr<ANDNode> ANDNodePtr;
 
 private:
     // IDs handled by shared_ptr wrappers
@@ -70,7 +68,8 @@ private:
     int varID;
     unsigned int card;
     // children: ANDNodes
-    std::vector<ANDNodePtr> children;
+//    std::vector<ANDNodePtr> children;
+    ANDNode **children;
 //    double weight;
 
     size_t hashVal;
@@ -78,8 +77,8 @@ private:
     // Used to make terminal nodes singletons
     static bool zeroInit;
     static bool oneInit;
-    static MetaNodePtr terminalZero;
-    static MetaNodePtr terminalOne;
+    static MetaNode *terminalZero;
+    static MetaNode *terminalOne;
 
     double cachedElimValue;
     bool elimValueCached;
@@ -93,8 +92,8 @@ public:
 
     virtual ~MetaNode();
 
-    MetaNode(const Scope &var, const std::vector<ANDNodePtr> &ch);
-    MetaNode(int varidIn, int cardIn, const std::vector<ANDNodePtr> &ch);
+    MetaNode(const Scope &var, ANDNode **ch);
+    MetaNode(int varidIn, int cardIn, ANDNode **ch);
 
     inline int GetVarID() const { return varID; }
 
@@ -105,12 +104,14 @@ public:
     inline void SetWeight(double w) { weight = w; }
     */
 
+    /*
     inline const std::vector<ANDNodePtr> &GetChildren() const { return children; }
     inline void SetChildren(const std::vector<ANDNodePtr> &ch) { children = ch; }
+    */
 
-    inline bool IsDummy() const { return card == 1; }
+    inline ANDNode **GetChildren() const { return children; }
 
-    inline bool IsTerminal() const { return this == GetZero().get() || this == GetOne().get(); }
+    inline bool IsTerminal() const { return this == GetZero() || this == GetOne(); }
 
     inline size_t GetStoredHash() const { return hashVal; }
 
@@ -140,15 +141,12 @@ public:
     // Return a vector specifying the number of meta nodes for each variable
     // (Result is returned by reference)
     void GetNumNodesPerVar(std::vector<unsigned int> &numMeta) const;
-    DirectedGraph GenerateDiagram() const;
-
-    void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
 
     friend size_t hash_value(const MetaNode &node);
 
-    inline static const MetaNodePtr &GetZero() {
+    inline static MetaNode *GetZero() {
         if (!zeroInit) {
-            terminalZero = MetaNodePtr(new MetaNode());
+            terminalZero = new MetaNode();
             terminalZero->varID = -2;
 //            terminalZero->weight = 0;
             zeroInit = true;
@@ -158,9 +156,9 @@ public:
             return terminalZero;
         }
     }
-    inline static const MetaNodePtr &GetOne() {
+    inline static MetaNode *GetOne() {
         if (!oneInit) {
-            terminalOne = MetaNodePtr(new MetaNode());
+            terminalOne = new MetaNode();
             oneInit = true;
             return terminalOne;
         }
@@ -172,23 +170,18 @@ public:
     double ComputeTotalMemory() const;
 
     inline size_t MemUsage() const {
-        size_t apsize = sizeof(ANDNodePtr);
-        size_t temp = sizeof(MetaNode) + (children.size() * apsize);
-        BOOST_FOREACH(const ANDNodePtr &i, children) {
-            temp += i->MemUsage();
+        size_t temp = sizeof(MetaNode) + (card * sizeof(ANDNode*));
+        for (unsigned int i = 0; i < card; ++i) {
+            temp += children[i]->MemUsage();
         }
         return temp;
     }
 
 };
 
-typedef MetaNode::MetaNodePtr MetaNodePtr;
-typedef MetaNode::ANDNodePtr ANDNodePtr;
-
-bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs);
-bool operator!=(const MetaNodePtr &lhs, const MetaNodePtr &rhs);
-bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs);
-bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs);
+//typedef MetaNode::MetaNodePtr MetaNodePtr;
+//typedef MetaNode::ANDNodePtr ANDNodePtr;
+typedef MetaNode::ANDNode ANDNode;
 
 } // end of aomdd namespace
 

@@ -56,7 +56,9 @@ public:
         unsigned int numAND = 0;
         unsigned int numMetaTemp = 0;
         unsigned int numANDTemp = 0;
-        BOOST_FOREACH(MetaNodePtr m, root.first) {
+        unsigned int nc = root.first.first;
+        for (unsigned int i = 0; i < nc; ++i) {
+            MetaNode *m = root.first.second[i];
             tie(numMetaTemp, numANDTemp) = m->NumOfNodes();
             numMeta += numMetaTemp;
             numAND += numANDTemp;
@@ -66,7 +68,9 @@ public:
 
     inline std::pair<std::vector<unsigned int>, std::vector<unsigned int> > GetCounts(unsigned int n) const {
         std::vector<unsigned int> numMeta(n, 0);
-        BOOST_FOREACH(MetaNodePtr m, root.first) {
+        unsigned int nc = root.first.first;
+        for (unsigned int i = 0; i < nc; ++i) {
+            MetaNode *m = root.first.second[i];
             m->GetNumNodesPerVar(numMeta);
         }
         std::vector<unsigned int> numAND(n, 0);
@@ -85,7 +89,9 @@ public:
 
     inline double MemUsage() const {
         double memUsage = 0;
-        BOOST_FOREACH(MetaNodePtr m, root.first) {
+        unsigned int nc = root.first.first;
+        for (unsigned int i = 0; i < nc; ++i) {
+            MetaNode *m = root.first.second[i];
             memUsage += m->ComputeTotalMemory();
         }
         return memUsage;
