@@ -54,8 +54,7 @@ public:
         void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
 
         inline size_t MemUsage() const {
-            size_t mtpSize = sizeof(MetaNodePtr);
-            return sizeof(ANDNode) + (children.size() * mtpSize);
+            return sizeof(ANDNode) + (children.size() * sizeof(MetaNodePtr));
         }
     };
 
@@ -144,7 +143,19 @@ public:
 
     void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
 
-    friend size_t hash_value(const MetaNode &node);
+    friend inline size_t hash_value(const MetaNode &node) {
+        size_t seed = 0;
+        boost::hash_combine(seed, node.varID);
+        boost::hash_combine(seed, node.card);
+        BOOST_FOREACH(const ANDNodePtr &i, node.children) {
+            boost::hash_combine(seed, i->GetWeight());
+            BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
+                boost::hash_combine(seed, j.get());
+            }
+        }
+        return seed;
+
+    }
 
     inline static const MetaNodePtr &GetZero() {
         if (!zeroInit) {
@@ -172,8 +183,7 @@ public:
     double ComputeTotalMemory() const;
 
     inline size_t MemUsage() const {
-        size_t apsize = sizeof(ANDNodePtr);
-        size_t temp = sizeof(MetaNode) + (children.size() * apsize);
+        size_t temp = sizeof(MetaNode) + (children.size() * sizeof(ANDNodePtr));
         BOOST_FOREACH(const ANDNodePtr &i, children) {
             temp += i->MemUsage();
         }
@@ -185,8 +195,8 @@ public:
 typedef MetaNode::MetaNodePtr MetaNodePtr;
 typedef MetaNode::ANDNodePtr ANDNodePtr;
 
-bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs);
-bool operator!=(const MetaNodePtr &lhs, const MetaNodePtr &rhs);
+typedef MetaNode::ANDNode ANDNode;
+
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs);
 bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs);
 

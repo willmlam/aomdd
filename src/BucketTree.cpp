@@ -15,11 +15,15 @@ using namespace std;
 
 BucketTree::BucketTree(const Model &m, const list<int> &orderIn,
         const map<int, int> &evidIn) :
-    ordering(orderIn), evidence(evidIn) {
+    ordering(orderIn), evidence(evidIn), globalWeight(1.0) {
     const vector<TableFunction> &functions = m.GetFunctions();
 
     buckets.resize(ordering.size());
     for (unsigned int i = 0; i < functions.size(); i++) {
+        if (functions[i].GetScope().GetNumVars() == 0) {
+            globalWeight *= functions[i].GetValues()[0];
+            continue;
+        }
         int idx = functions[i].GetScope().GetOrdering().back();
         buckets[idx].AddFunction(&functions[i]);
     }
@@ -27,19 +31,6 @@ BucketTree::BucketTree(const Model &m, const list<int> &orderIn,
 
 BucketTree::~BucketTree() {
 
-}
-
-unsigned long BucketTree::ComputeMaxValuesStored() const {
-    list<int>::const_reverse_iterator rit = ordering.rbegin();
-
-    unsigned int numBuckets = ordering.size();
-
-    unsigned long maxValue = 0;
-
-    for (; rit != ordering.rend(); ++rit) {
-
-    }
-    return maxValue;
 }
 
 double BucketTree::Prob(bool logOut) {
@@ -97,6 +88,12 @@ double BucketTree::Prob(bool logOut) {
             cout << "Sending message from <" << *rit << "> to <" << destBucket << ">" << endl;
             buckets[destBucket].AddFunction(message);
         }
+    }
+    if (logOut) {
+        pr += log10(globalWeight);
+    }
+    else {
+        pr *= globalWeight;
     }
     return pr;
 }
@@ -162,6 +159,12 @@ double BucketTree::MPE(bool logOut) {
             cout << "Sending message from <" << *rit << "> to <" << destBucket << ">" << endl;
             buckets[destBucket].AddFunction(message);
         }
+    }
+    if (logOut) {
+        pr += log10(globalWeight);
+    }
+    else {
+        pr *= globalWeight;
     }
     return pr;
 }

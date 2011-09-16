@@ -33,6 +33,7 @@ public:
     void PrintFunctionScopes(std::ostream &out) const;
     void PrintFunctionTables(std::ostream &out) const;
     void PrintDiagrams(std::ostream &out) const;
+    void PrintDiagramSizes(std::ostream &out) const;
     virtual ~CompileBucket();
 };
 

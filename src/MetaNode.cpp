@@ -82,15 +82,18 @@ void MetaNode::ANDNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDes
 }
 
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
-    if (fabs(lhs->GetWeight() - rhs->GetWeight()) >= TOLERANCE || lhs->GetChildren().size()
-            != rhs->GetChildren().size()) {
+    if (fabs(lhs->GetWeight() - rhs->GetWeight()) >= TOLERANCE ||
+            lhs->GetChildren().size() != rhs->GetChildren().size() ||
+            lhs->GetChildren() != rhs->GetChildren()) {
         return false;
     }
+    /*
     for (unsigned int i = 0; i < lhs->GetChildren().size(); i++) {
         if (lhs->GetChildren()[i].get() != rhs->GetChildren()[i].get()) {
             return false;
         }
     }
+    */
     return true;
 }
 
@@ -329,57 +332,6 @@ void MetaNode::FindUniqueNodes(boost::unordered_set<const MetaNode *> &nodeSet) 
             j->FindUniqueNodes(nodeSet);
         }
     }
-}
-
-size_t hash_value(const MetaNode &node) {
-    size_t seed = 0;
-    boost::hash_combine(seed, node.varID);
-    boost::hash_combine(seed, node.card);
-    BOOST_FOREACH(const ANDNodePtr &i, node.children) {
-        boost::hash_combine(seed, i->GetWeight());
-        BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
-            boost::hash_combine(seed, j.get());
-        }
-    }
-    return seed;
-
-}
-
-size_t hash_value(const MetaNodePtr &node) {
-    size_t seed = 0;
-    boost::hash_combine(seed, node->GetVarID());
-    boost::hash_combine(seed, node->GetCard());
-    BOOST_FOREACH(const ANDNodePtr &i, node->GetChildren()) {
-        boost::hash_combine(seed, i->GetWeight());
-        BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
-            boost::hash_combine(seed, j.get());
-        }
-    }
-    return seed;
-}
-
-bool operator==(const MetaNodePtr &lhs, const MetaNodePtr &rhs) {
-    if (lhs.get() == MetaNode::GetZero().get() && rhs.get()
-            == MetaNode::GetOne().get())
-        return false;
-    if (rhs.get() == MetaNode::GetZero().get() && lhs.get()
-            == MetaNode::GetOne().get())
-        return false;
-    if (lhs->GetStoredHash() != rhs->GetStoredHash()) {
-        return false;
-    }
-    if (lhs->GetVarID() != rhs->GetVarID() || lhs->GetCard() != rhs->GetCard()
-            || lhs->GetChildren().size() != rhs->GetChildren().size())
-        return false;
-    for (unsigned int i = 0; i < lhs->GetChildren().size(); i++) {
-        if (lhs->GetChildren()[i] != rhs->GetChildren()[i])
-            return false;
-    }
-    return true;
-}
-
-bool operator!=(const MetaNodePtr &lhs, const MetaNodePtr &rhs) {
-    return !(lhs == rhs);
 }
 
 

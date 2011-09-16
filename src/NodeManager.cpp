@@ -16,23 +16,6 @@
 namespace aomdd {
 using namespace std;
 
-// Be sure to test to see if sets give the same hash if items are inserted
-// in different orders
-size_t hash_value(const Operation &o) {
-    size_t seed = 0;
-    boost::hash_combine(seed, o.GetOperator());
-    BOOST_FOREACH(ParamSet::value_type i, o.GetParamSet()) {
-        boost::hash_combine(seed, i);
-    }
-    return seed;
-
-}
-bool operator==(const Operation &lhs, const Operation &rhs) {
-    return lhs.GetOperator() == rhs.GetOperator() &&
-            lhs.GetVarID() == rhs.GetVarID() &&
-            lhs.GetParamSet() == rhs.GetParamSet();
-}
-
 // =================
 
 NodeManager *NodeManager::GetNodeManager() {
@@ -348,18 +331,7 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     OperationCache::iterator ocit = opCache.find(ocEntry);
 
     if ( ocit != opCache.end() ) {
-        //Found result in cache
-        /*
-        cout << "lhs: " << lhs.get() << endl;
-        cout << "Returning:" << ocit->second.get() << endl;
-        */
         return ocit->second;
-    }
-    if (useTempMode) {
-        ocit = opCacheTemp.find(ocEntry);
-        if ( ocit != opCacheTemp.end() ) {
-            return ocit->second;
-        }
     }
 
     // Base cases
@@ -504,12 +476,8 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     Scope var;
     var.AddVar(varid, card);
     WeightedMetaNodeList u = CreateMetaNode(var, children);
-    if (!useTempMode) {
-//        opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
-    }
-    else {
-//        opCacheTemp.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
-    }
+
+    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
     /*
     cout << "Created cache entry" << endl;
     cout << "keys:";
@@ -543,12 +511,6 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     if ( ocit != opCache.end() ) {
         //Found result in cache
         return ocit->second;
-    }
-    if (useTempMode) {
-        ocit = opCacheTemp.find(ocEntry);
-        if ( ocit != opCacheTemp.end() ) {
-            return ocit->second;
-        }
     }
 
     // Marginalize each subgraph
@@ -632,12 +594,7 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
-    if (!useTempMode) {
-//        opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    }
-    else {
-//        opCacheTemp.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    }
+    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
     return ret;
 }
 
@@ -667,12 +624,6 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
         cout << "Returning: " << ocit->second.get() << endl;
         */
         return ocit->second;
-    }
-    if (useTempMode) {
-        ocit = opCacheTemp.find(ocEntry);
-        if ( ocit != opCacheTemp.end() ) {
-            return ocit->second;
-        }
     }
 
     // Maximize each subgraph
@@ -736,12 +687,7 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
-    if (!useTempMode) {
-//        opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    }
-    else {
-//        opCacheTemp.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    }
+    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
     /*
     cout << "Created cache entry(MAX)" << endl;
     cout << "elimvar:" << elimvar << endl;

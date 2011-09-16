@@ -26,6 +26,7 @@ class Operation {
     Operator op;
     ParamSet params;
     int varid;
+    size_t hashVal;
 
 public:
     Operation() :
@@ -34,6 +35,7 @@ public:
     Operation(Operator o, MetaNodePtr arg, int vid = 0) :
         op(o), varid(vid) {
         params.insert(size_t(arg.get()));
+        hashVal = hash_value(*this);
     }
     Operation(Operator o, MetaNodePtr arg1, const std::vector<MetaNodePtr> &arg2) :
         op(o) {
@@ -41,6 +43,7 @@ public:
         for (unsigned int i = 0; i < arg2.size(); ++i) {
             params.insert(size_t(arg2[i].get()));
         }
+        hashVal = hash_value(*this);
     }
 
     inline const Operator &GetOperator() const {
@@ -63,23 +66,26 @@ public:
         }
         return memUsage;
     }
+
+    inline size_t GetStoredHash() const {
+        return hashVal;
+    }
+
+    friend inline std::size_t hash_value(const Operation &o) {
+        size_t seed = 0;
+        boost::hash_combine(seed, o.GetOperator());
+        boost::hash_combine(seed, o.GetVarID());
+        BOOST_FOREACH(ParamSet::value_type i, o.GetParamSet()) {
+            boost::hash_combine(seed, i);
+        }
+        return seed;
+    }
 };
 
-size_t hash_value(const Operation &o);
-bool operator==(const Operation &lhs, const Operation &rhs);
 
 struct nodehasher {
     std::size_t operator()(const MetaNodePtr &node) const {
-        size_t seed = 0;
-        boost::hash_combine(seed, node->GetVarID());
-        boost::hash_combine(seed, node->GetCard());
-        BOOST_FOREACH(const ANDNodePtr &i, node->GetChildren()) {
-            boost::hash_combine(seed, i->GetWeight());
-            BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
-                boost::hash_combine(seed, j.get());
-            }
-        }
-        return seed;
+        return node->GetStoredHash();
     }
 };
 
@@ -107,13 +113,7 @@ struct eqnode {
 
 struct ophasher {
     std::size_t operator()(const Operation &o) const {
-        size_t seed = 0;
-        boost::hash_combine(seed, o.GetOperator());
-        boost::hash_combine(seed, o.GetVarID());
-        BOOST_FOREACH(ParamSet::value_type i, o.GetParamSet()) {
-            boost::hash_combine(seed, i);
-        }
-        return seed;
+        return o.GetStoredHash();
     }
 };
 
@@ -147,22 +147,17 @@ class NodeManager {
     UniqueTable ut;
     OperationCache opCache;
 
-    // Used for intermediate operations. Cleared when finished each time
-    UniqueTable utTemp;
-    OperationCache opCacheTemp;
-
-    bool useTempMode;
     NodeManager() {
 #ifndef USE_SPARSE
         MetaNodePtr nullKey(new MetaNode(-1, 0, std::vector<ANDNodePtr>()));
         ut.set_empty_key(nullKey);
-        utTemp.set_empty_key(nullKey);
         Operation nullOpKey;
         opCache.set_empty_key(nullOpKey);
-        opCacheTemp.set_empty_key(nullOpKey);
 #endif
+        MetaNodePtr delKey(new MetaNode(-10, 0, std::vector<ANDNodePtr>()));
+        ut.set_deleted_key(delKey);
     }
-    NodeManager(NodeManager const&) : useTempMode(false) {
+    NodeManager(NodeManager const&) {
     }
     NodeManager& operator=(NodeManager const&) {
         return *this;
@@ -244,30 +239,12 @@ public:
     void PrintUniqueTable(std::ostream &out) const;
     void PrintReferenceCount(std::ostream &out) const;
 
-    inline void SetTempMode(bool mode) {
-        useTempMode = mode;
-        if (!useTempMode) {
-            utTemp.clear();
-            opCacheTemp.clear();
-        }
-    }
-
     inline WeightedMetaNodeList LookupUT(WeightedMetaNodeList &temp) {
         UniqueTable::iterator it = ut.find(temp.first[0]);
         if (it != ut.end()) {
             return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
         }
         else {
-            if (useTempMode) {
-                it = utTemp.find(temp.first[0]);
-                if (it != utTemp.end()) {
-                    return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
-                }
-                else {
-                    utTemp.insert(temp.first[0]);
-                    return temp;
-                }
-            }
             ut.insert(temp.first[0]);
             return temp;
         }
@@ -281,16 +258,27 @@ public:
         return (sizeof(ut) + memUsage) / pow(2.0,20);
     }
 
+    inline void UTGarbageCollect() {
+        UniqueTable::iterator it = ut.begin();
+        for (; it != ut.end(); ++it) {
+            if (it->use_count() == 1) {
+                ut.erase(it);
+            }
+        }
+    }
+
     inline double OpCacheMemUsage() const {
         double memUsage = 0;
         BOOST_FOREACH(OperationCache::value_type i, opCache) {
             memUsage += sizeof(i.first) + i.first.MemUsage();
             memUsage += sizeof(i.second.first) + sizeof(i.second.second);
-            BOOST_FOREACH(MetaNodePtr m, i.second.first) {
-                memUsage += sizeof(m);
-            }
+            memUsage += sizeof(MetaNodePtr) * i.second.first.size();
         }
         return (sizeof(opCache) + memUsage) / pow(2.0,20);
+    }
+
+    inline void PurgeOpCache() {
+        opCache.clear();
     }
 
 };

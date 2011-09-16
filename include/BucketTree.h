@@ -22,13 +22,13 @@ class BucketTree {
     std::vector<int> parents;
     std::list<int> ordering;
     std::map<int, int> evidence;
+
+    double globalWeight;
 public:
     BucketTree(const Model &m, const std::list<int> &orderIn,
             const std::map<int, int> &evidIn);
 
     virtual ~BucketTree();
-
-    unsigned long ComputeMaxValuesStored() const;
 
     double Prob(bool logOut = false);
 

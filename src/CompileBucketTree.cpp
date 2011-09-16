@@ -13,14 +13,14 @@ using namespace std;
 
 namespace aomdd {
 
-CompileBucketTree::CompileBucketTree() : compiled(false) {
+CompileBucketTree::CompileBucketTree() : compiled(false), globalWeight(1.0), maxUTMem(0.0), maxOCMem(0.0) {
 }
 
 CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
         const list<int> &orderIn,
         const map<int, int> &evidIn, int bucketID)
         : pt(ptIn), ordering(orderIn), evidence(evidIn), largestBucket(bucketID),
-        compiled(false) {
+        compiled(false), globalWeight(1.0), maxUTMem(0.0), maxOCMem(0.0) {
 
     int numBuckets = ordering.size();
     if (pt->HasDummy()) {
@@ -32,12 +32,18 @@ CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
     const vector<TableFunction> &functions = m.GetFunctions();
     for (unsigned int i = 0; i < functions.size(); i++) {
         int idx = functions[i].GetScope().GetOrdering().back();
+        if (functions[i].GetScope().GetNumVars() == 0) {
+            globalWeight *= functions[i].GetValues()[0];
+            continue;
+        }
         AOMDDFunction *f = new AOMDDFunction(functions[i].GetScope(), pt, functions[i].GetValues());
         buckets[idx].AddFunction(f);
     }
     for (unsigned int i = 0; i < buckets.size(); i++) {
         initialBucketSizes[i] = buckets[i].GetBucketSize();
     }
+    UpdateMaxUTMem();
+    UpdateMaxOCMem();
 }
 
 AOMDDFunction CompileBucketTree::Compile() {
@@ -56,6 +62,7 @@ AOMDDFunction CompileBucketTree::Compile() {
             buckets[*rit].PrintDiagrams(cout); cout << endl;
             buckets[*rit].PrintFunctionTables(cout); cout << endl;
             */
+            buckets[*rit].PrintDiagramSizes(cout); cout << endl;
 
             AOMDDFunction *message = buckets[*rit].Flatten();
             message->SetScopeOrdering(ordering);
@@ -80,6 +87,7 @@ AOMDDFunction CompileBucketTree::Compile() {
         }
     }
     compiled = true;
+    compiledDD.ReweighRoot(globalWeight);
     return compiledDD;
 }
 
@@ -142,6 +150,10 @@ double CompileBucketTree::Prob(bool logOut) {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
+            UpdateMaxOCMem();
+            UpdateMaxUTMem();
+            NodeManager::GetNodeManager()->PurgeOpCache();
+            NodeManager::GetNodeManager()->UTGarbageCollect();
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
@@ -150,6 +162,7 @@ double CompileBucketTree::Prob(bool logOut) {
             buckets[*rit].PrintFunctionTables(cout); cout << endl;
             */
             AOMDDFunction *message = buckets[*rit].Flatten();
+            buckets[*rit].PurgeFunctions();
             message->SetScopeOrdering(ordering);
             cout << "After flattening" << endl;
 
@@ -174,6 +187,11 @@ double CompileBucketTree::Prob(bool logOut) {
             }
             else {
                 message->Marginalize(elim);
+                if (*rit == largestBucket) {
+                    tie(numMeta, numAND) = message->Size();
+                    numTotal = numMeta + numAND;
+                    mem = message->MemUsage();
+                }
             }
             cout << "After eliminating " << *rit << endl;
 
@@ -187,9 +205,11 @@ double CompileBucketTree::Prob(bool logOut) {
                 Assignment a;
                 if (logOut) {
                     pr += message->GetVal(a, logOut);
+                    delete message;
                 }
                 else {
                     pr *= message->GetVal(a, logOut);
+                    delete message;
                 }
             }
             // Not at root
@@ -203,12 +223,24 @@ double CompileBucketTree::Prob(bool logOut) {
                 Assignment a;
                 if (logOut) {
                     pr += message->GetVal(a, logOut);
+                    delete message;
                 }
                 else {
                     pr *= message->GetVal(a, logOut);
+                    delete message;
                 }
             }
         }
+        if (logOut) {
+            pr += log10(globalWeight);
+        }
+        else {
+            pr *= globalWeight;
+        }
+        UpdateMaxOCMem();
+        UpdateMaxUTMem();
+        NodeManager::GetNodeManager()->PurgeOpCache();
+        NodeManager::GetNodeManager()->UTGarbageCollect();
     }
     return pr;
 }
@@ -271,22 +303,22 @@ double CompileBucketTree::MPE(bool logOut) {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
+            UpdateMaxOCMem();
+            UpdateMaxUTMem();
+            NodeManager::GetNodeManager()->PurgeOpCache();
+            NodeManager::GetNodeManager()->UTGarbageCollect();
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
 //            buckets[*rit].PrintDiagrams(cout); cout << endl;
 //            buckets[*rit].PrintFunctionTables(cout); cout << endl;
-            NodeManager::GetNodeManager()->SetTempMode(true);
             AOMDDFunction *message = buckets[*rit].Flatten();
-            NodeManager::GetNodeManager()->SetTempMode(false);
             buckets[*rit].PurgeFunctions();
             message->SetScopeOrdering(ordering);
             cout << "After flattening" << endl;
 
 //            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
-
-//            if (count-1 == 47) exit(0);
 
             DInEdge ei, ei_end;
             tie(ei, ei_end) = in_edges(*rit, tree);
@@ -305,13 +337,9 @@ double CompileBucketTree::MPE(bool logOut) {
             else {
                 message->Maximize(elim);
                 if (*rit == largestBucket) {
-                    long numMeta, numAND;
                     tie(numMeta, numAND) = message->Size();
-                    cout << "Largest Message (AOMDD Meta)" << numMeta << endl;
-                    cout << "Largest Message (AOMDD AND)" << numAND << endl;
-                    cout << "Largest Message (AOMDD Total)" << numMeta + numAND << endl;
-                    cout << "Largest Message (AOMDD Memory)" << message->MemUsage() << endl;
-                    cin.get();
+                    numTotal = numMeta + numAND;
+                    mem = message->MemUsage();
                 }
             }
             cout << "After eliminating " << *rit << endl;
@@ -324,9 +352,11 @@ double CompileBucketTree::MPE(bool logOut) {
                 Assignment a;
                 if (logOut) {
                     pr += message->GetVal(a, logOut);
+                    delete message;
                 }
                 else {
                     pr *= message->GetVal(a, logOut);
+                    delete message;
                 }
             }
             // Not at root
@@ -340,12 +370,24 @@ double CompileBucketTree::MPE(bool logOut) {
                 Assignment a;
                 if (logOut) {
                     pr += message->GetVal(a, logOut);
+                    delete message;
                 }
                 else {
                     pr *= message->GetVal(a, logOut);
+                    delete message;
                 }
             }
         }
+        if (logOut) {
+            pr += log10(globalWeight);
+        }
+        else {
+            pr *= globalWeight;
+        }
+        UpdateMaxOCMem();
+        UpdateMaxUTMem();
+        NodeManager::GetNodeManager()->PurgeOpCache();
+        NodeManager::GetNodeManager()->UTGarbageCollect();
     }
     return pr;
 }

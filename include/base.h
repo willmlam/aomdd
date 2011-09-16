@@ -32,4 +32,8 @@ const int UNKNOWN_VAL = -1;
 const int ERROR_VAL = -10;
 const double DOUBLE_MIN = -100000000;
 
+// Limits
+const unsigned long OUTPUT_COMPLEXITY_LIMIT = 2048;
+const double MB_LIMIT = 1024;
+
 #endif

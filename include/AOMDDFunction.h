@@ -51,6 +51,10 @@ public:
 
     void Normalize();
 
+    inline void ReweighRoot(double w) {
+        root.second *= w;
+    }
+
     inline std::pair<unsigned int, unsigned int> Size() const {
         unsigned int numMeta = 0;
         unsigned int numAND = 0;

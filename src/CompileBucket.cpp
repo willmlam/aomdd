@@ -33,6 +33,7 @@ AOMDDFunction *CompileBucket::Flatten() {
 //            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
             /* DEBUG */
+            NodeManager::GetNodeManager()->UTGarbageCollect();
         }
     }
     return message;
@@ -62,6 +63,16 @@ void CompileBucket::PrintFunctionTables(ostream &out) const {
 void CompileBucket::PrintDiagrams(ostream &out) const {
     BOOST_FOREACH(const AOMDDFunction *f, functions) {
         f->Save(out); out << endl;
+    }
+    out << endl;
+}
+
+void CompileBucket::PrintDiagramSizes(ostream &out) const {
+    BOOST_FOREACH(const AOMDDFunction *f, functions) {
+        unsigned int numOR;
+        unsigned int numAND;
+        tie(numOR, numAND) = f->Size();
+        out << "m:" << numOR << ", a:" << numAND << endl;
     }
     out << endl;
 }

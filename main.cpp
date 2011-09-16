@@ -17,7 +17,6 @@
 using namespace aomdd;
 using namespace std;
 
-const unsigned long OUTPUT_COMPLEXITY_LIMIT = 2048;
 time_t timeStart, timeEnd;
 double timePassed;
 
@@ -231,7 +230,7 @@ int main(int argc, char **argv) {
     cout << "w=" << pt.GetInducedWidth() << endl;
     cout << "h=" << pt.GetHeight() << endl;
     cout << "k=" << m.GetMaxDomain() << endl;
-    cout << "Number of functions=" << m.GetScopes().size() << endl;
+    cout << "Number of functions=" << m.GetScopes().size() << endl << endl;
 
     if (outputToFile) {
         out << endl << "Problem information:" << endl;
@@ -239,7 +238,7 @@ int main(int argc, char **argv) {
         out << "w=" << pt.GetInducedWidth() << endl;
         out << "h=" << pt.GetHeight() << endl;
         out << "k=" << m.GetMaxDomain() << endl;
-        out << "Number of functions=" << m.GetScopes().size() << endl;
+        out << "Number of functions=" << m.GetScopes().size() << endl << endl;
     }
 
     // Compute CM-graph space
@@ -264,19 +263,21 @@ int main(int argc, char **argv) {
         numAND += totalSpace;
     }
 
-    BOOST_FOREACH(int v, pt.GetContexts()[bucketID]) {
-        cout << completeScope.GetVarCard(v) << endl;
-    }
-
+    cout << "CM AO Graph Information:" << endl;
     cout << "Number of OR nodes=" << numOR << endl;
     cout << "Number of AND nodes=" << numAND << endl;
     cout << "Total CM nodes=" << numOR + numAND << endl << endl;
+
+    cout << "Space information:" << endl;
     cout << "Largest message size=" << largestMessageSize << endl;
     cout << "Memory (MBytes)=" << (double)largestMessageSize * 8 / pow(2.0, 20) << endl << endl;
     if (outputToFile) {
+        out << "CM AO Graph Information:" << endl;
         out << "Number of OR nodes=" << numOR << endl;
         out << "Number of AND nodes=" << numAND << endl;
         out << "Total CM nodes=" << numOR + numAND << endl << endl;
+
+        out << "Space information:" << endl;
         out << "Largest message size=" << largestMessageSize << endl << endl;
         out << "Memory (MBytes)=" << (double)largestMessageSize * 8 / pow(2.0, 20) << endl << endl;
     }
@@ -304,18 +305,56 @@ int main(int argc, char **argv) {
     BucketTree *bt = NULL;
 
     if (vbeMode) {
+        cout << "Starting vanilla BE..." << endl;
+        if (double(largestMessageSize) * 8 / pow(2.0, 20) > MB_LIMIT) {
+            cout << "Largest message exceeds memory bound." << endl;
+            if (outputToFile) {
+                out << "Largest message exceeds memory bound." << endl;
+            }
+            return 0;
+        }
         bt = new BucketTree(m, ordering, evidence);
     }
     else {
+        cout << "Starting AOMDD-BE..." << endl;
         cbt = new CompileBucketTree(m, &pt, ordering, evidence, bucketID);
+        unsigned int uniqueMetaNodes = NodeManager::GetNodeManager()->GetNumberOfNodes();
+        unsigned int numANDNodes = NodeManager::GetNodeManager()->GetNumberOfANDNodes();
+//        unsigned int ocEntries = NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries();
+        double utMemUsage = NodeManager::GetNodeManager()->MemUsage();
+//        double opMemUsage = NodeManager::GetNodeManager()->OpCacheMemUsage();
+        if (uniqueMetaNodes > 0) {
+            cout << endl;
+            cout << "Initial Number of nodes in cache=" << uniqueMetaNodes << endl;
+            cout << "Initial Number of AND nodes in cache=" << numANDNodes << endl;
+            //        cout << "Number of nodes in op-cache=" << ocEntries << endl << endl;
+
+            cout << "Initial cache memory (MBytes)=" << utMemUsage << endl << endl;
+            //        cout << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
+            /*
+    cout << "(Bucket count):" << NodeManager::GetNodeManager()->utBucketCount() << endl << endl;
+    cout << "Bucket sizes:" << endl;
+    NodeManager::GetNodeManager()->PrintUTBucketSizes(); cout << endl;
+    cout << "Number of nodes in op-cache: "
+            << NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries() << endl << endl;
+    cout << "(Bucket count):" << NodeManager::GetNodeManager()->ocBucketCount() << endl << endl;
+             */
+            if (outputToFile) {
+                out << endl;
+                out << "Initial Number of nodes in cache=" << uniqueMetaNodes << endl;
+                out << "Initial Number of AND nodes in cache=" << numANDNodes << endl;
+                //            out << "Number of nodes in op-cache=" << ocEntries << endl << endl;
+
+                out << "Initial cache memory (MBytes)=" << utMemUsage << endl << endl;
+                //            out << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
+            }
+        }
     }
 
     AOMDDFunction combined;
-    cout << "Before:" << sizeof(combined) << endl;
     if (compileMode) {
         time(&timeStart);
         combined = cbt->Compile();
-        cout << "After:" << sizeof(combined) << endl;
         /*
         if (!evidence.empty()) {
             Assignment cond;
@@ -421,6 +460,18 @@ int main(int argc, char **argv) {
         }
         else {
             pr = cbt->Prob(logMode);
+            cout << endl;
+            cout << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
+            cout << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
+            cout << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+            cout << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
+            if (outputToFile) {
+                out << endl;
+                out << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
+                out << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
+                out << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+                out << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
+            }
         }
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
@@ -442,6 +493,18 @@ int main(int argc, char **argv) {
         }
         else {
             pr = cbt->MPE(logMode);
+            cout << endl;
+            cout << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
+            cout << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
+            cout << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+            cout << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
+            if (outputToFile) {
+                out << endl;
+                out << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
+                out << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
+                out << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+                out << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
+            }
         }
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
@@ -488,17 +551,17 @@ int main(int argc, char **argv) {
 
     unsigned int uniqueMetaNodes = NodeManager::GetNodeManager()->GetNumberOfNodes();
     unsigned int numANDNodes = NodeManager::GetNodeManager()->GetNumberOfANDNodes();
-    unsigned int ocEntries = NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries();
+//    unsigned int ocEntries = NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries();
     double utMemUsage = NodeManager::GetNodeManager()->MemUsage();
-    double opMemUsage = NodeManager::GetNodeManager()->OpCacheMemUsage();
+//    double opMemUsage = NodeManager::GetNodeManager()->OpCacheMemUsage();
     if (uniqueMetaNodes > 0) {
         cout << endl;
         cout << "Number of nodes in cache=" << uniqueMetaNodes << endl;
         cout << "Number of AND nodes in cache=" << numANDNodes << endl;
-        cout << "Number of nodes in op-cache=" << ocEntries << endl << endl;
+//        cout << "Number of nodes in op-cache=" << ocEntries << endl << endl;
 
-        cout << "cache memory (MBytes)=" << utMemUsage << endl;
-        cout << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
+        cout << "cache memory (MBytes)=" << utMemUsage << endl << endl;
+//        cout << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
         /*
     cout << "(Bucket count):" << NodeManager::GetNodeManager()->utBucketCount() << endl << endl;
     cout << "Bucket sizes:" << endl;
@@ -511,16 +574,30 @@ int main(int argc, char **argv) {
             out << endl;
             out << "Number of nodes in cache=" << uniqueMetaNodes << endl;
             out << "Number of AND nodes in cache=" << numANDNodes << endl;
-            out << "Number of nodes in op-cache=" << ocEntries << endl << endl;
+//            out << "Number of nodes in op-cache=" << ocEntries << endl << endl;
 
-            out << "cache memory (MBytes)=" << utMemUsage << endl;
-            out << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
+            out << "cache memory (MBytes)=" << utMemUsage << endl << endl;
+//            out << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
         }
     }
+    NodeManager::GetNodeManager()->PrintReferenceCount(cout);
 
     if (bt) delete bt;
-    if (cbt) delete cbt;
-
+    if (cbt) {
+        cout << "MAX UT mem=" << cbt->GetMaxUTMem() << endl;
+        cout << "MAX OC mem=" << cbt->GetMaxOCMem() << endl;
+        if (outputToFile) {
+            out << "MAX UT mem=" << cbt->GetMaxUTMem() << endl;
+            out << "MAX OC mem=" << cbt->GetMaxOCMem() << endl;
+        }
+        delete cbt;
+    }
     cin.get();
+    cout << endl << endl;
+    cout << "Number of nodes in op-cache: "
+            << NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries() << endl << endl;
+    NodeManager::GetNodeManager()->PurgeOpCache();
+    NodeManager::GetNodeManager()->PrintReferenceCount(cout);
+
     return 0;
 }
