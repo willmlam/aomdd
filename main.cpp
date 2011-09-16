@@ -580,7 +580,6 @@ int main(int argc, char **argv) {
 //            out << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
         }
     }
-    NodeManager::GetNodeManager()->PrintReferenceCount(cout);
 
     if (bt) delete bt;
     if (cbt) {
@@ -597,7 +596,6 @@ int main(int argc, char **argv) {
     cout << "Number of nodes in op-cache: "
             << NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries() << endl << endl;
     NodeManager::GetNodeManager()->PurgeOpCache();
-    NodeManager::GetNodeManager()->PrintReferenceCount(cout);
 
     return 0;
 }
