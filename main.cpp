@@ -278,7 +278,7 @@ int main(int argc, char **argv) {
         out << "Total CM nodes=" << numOR + numAND << endl << endl;
 
         out << "Space information:" << endl;
-        out << "Largest message size=" << largestMessageSize << endl << endl;
+        out << "Largest message size=" << largestMessageSize << endl;
         out << "Memory (MBytes)=" << (double)largestMessageSize * 8 / pow(2.0, 20) << endl << endl;
     }
 
@@ -496,13 +496,13 @@ int main(int argc, char **argv) {
             cout << endl;
             cout << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
             cout << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
-            cout << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+            cout << "Largest Message (AOMDD Total)=" << cbt->GetLargestNumTotal() << endl;
             cout << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
             if (outputToFile) {
                 out << endl;
                 out << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
                 out << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
-                out << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+                out << "Largest Message (AOMDD Total)=" << cbt->GetLargestNumTotal() << endl;
                 out << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
             }
         }
