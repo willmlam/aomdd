@@ -591,10 +591,5 @@ int main(int argc, char **argv) {
         }
         delete cbt;
     }
-    cout << endl << endl;
-    cout << "Number of nodes in op-cache: "
-            << NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries() << endl << endl;
-    NodeManager::GetNodeManager()->PurgeOpCache();
-
     return 0;
 }
