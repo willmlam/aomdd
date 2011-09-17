@@ -20,7 +20,7 @@ enum Operator {
     PROD, SUM, MAX, REDUCE, MARGINALIZE, NONE
 };
 
-typedef boost::unordered_multiset<size_t> ParamSet;
+typedef boost::unordered_multiset<MetaNode*> ParamSet;
 
 class Operation {
     Operator op;
@@ -34,14 +34,14 @@ public:
     }
     Operation(Operator o, MetaNodePtr arg, int vid = 0) :
         op(o), varid(vid) {
-        params.insert(size_t(arg.get()));
+        params.insert(arg.get());
         hashVal = hash_value(*this);
     }
     Operation(Operator o, MetaNodePtr arg1, const std::vector<MetaNodePtr> &arg2) :
         op(o) {
-        params.insert(size_t(arg1.get()));
+        params.insert(arg1.get());
         for (unsigned int i = 0; i < arg2.size(); ++i) {
-            params.insert(size_t(arg2[i].get()));
+            params.insert(arg2[i].get());
         }
         hashVal = hash_value(*this);
     }
@@ -60,10 +60,9 @@ public:
 
     inline double MemUsage() const {
         double memUsage = 0;
-        memUsage += sizeof(op) + sizeof(params) + sizeof(varid);
-        BOOST_FOREACH(ParamSet::value_type m, params) {
-            memUsage += sizeof(m);
-        }
+        memUsage += sizeof(op) + sizeof(params) +
+                sizeof(varid) +
+                (params.size() * sizeof(ParamSet::value_type));
         return memUsage;
     }
 
