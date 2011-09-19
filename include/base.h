@@ -34,6 +34,6 @@ const double DOUBLE_MIN = -100000000;
 
 // Limits
 const unsigned long OUTPUT_COMPLEXITY_LIMIT = 2048;
-const double MB_LIMIT = 1024;
+const double MB_LIMIT = 2048;
 
 #endif
