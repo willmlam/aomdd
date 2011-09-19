@@ -33,9 +33,6 @@ AOMDDFunction *CompileBucket::Flatten() {
 //            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
             /* DEBUG */
-            if (NodeManager::GetNodeManager()->OpCacheMemUsage() > MB_LIMIT) {
-                NodeManager::GetNodeManager()->PurgeOpCache();
-            }
             NodeManager::GetNodeManager()->UTGarbageCollect();
         }
     }
