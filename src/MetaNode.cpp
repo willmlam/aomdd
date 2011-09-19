@@ -318,7 +318,9 @@ double MetaNode::ComputeTotalMemory() const {
 }
 
 void MetaNode::FindUniqueNodes(boost::unordered_set<const MetaNode *> &nodeSet) const {
-    if (IsTerminal()) return;
+    if (IsTerminal()) {
+        return;
+    }
     unsigned int oldSize = nodeSet.size();
     nodeSet.insert(this);
 

@@ -27,7 +27,6 @@ class Operation {
     ParamSet params;
     int varid;
     size_t hashVal;
-
 public:
     Operation() :
         op(NONE) {
@@ -252,17 +251,23 @@ public:
     inline double MemUsage() const {
         double memUsage = 0;
         BOOST_FOREACH(MetaNodePtr m, ut) {
-            memUsage += m->MemUsage() + sizeof(m);
+            memUsage += m->MemUsage();
         }
-        return (sizeof(ut) + memUsage) / pow(2.0,20);
+        return memUsage / pow(2.0,20);
     }
 
     inline void UTGarbageCollect() {
         UniqueTable::iterator it = ut.begin();
-        for (; it != ut.end(); ++it) {
-            if (it->use_count() == 1) {
-                ut.erase(it);
+        bool done = false;
+        while (!done) {
+            done = true;
+            for (; it != ut.end(); ++it) {
+                if (it->use_count() == 1) {
+                    done = false;
+                    ut.erase(it);
+                }
             }
+            if (!done) it = ut.begin();
         }
     }
 

@@ -560,7 +560,7 @@ int main(int argc, char **argv) {
         cout << "Number of AND nodes in cache=" << numANDNodes << endl;
 //        cout << "Number of nodes in op-cache=" << ocEntries << endl << endl;
 
-        cout << "cache memory (MBytes)=" << utMemUsage << endl << endl;
+        cout << "UT memory (MBytes)=" << utMemUsage << endl << endl;
 //        cout << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
         /*
     cout << "(Bucket count):" << NodeManager::GetNodeManager()->utBucketCount() << endl << endl;
@@ -576,7 +576,7 @@ int main(int argc, char **argv) {
             out << "Number of AND nodes in cache=" << numANDNodes << endl;
 //            out << "Number of nodes in op-cache=" << ocEntries << endl << endl;
 
-            out << "cache memory (MBytes)=" << utMemUsage << endl << endl;
+            out << "UT memory (MBytes)=" << utMemUsage << endl << endl;
 //            out << "op-cache memory (MBytes)=" << opMemUsage << endl << endl;
         }
     }

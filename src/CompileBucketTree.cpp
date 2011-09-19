@@ -55,6 +55,15 @@ AOMDDFunction CompileBucketTree::Compile() {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
+            UpdateMaxOCMem();
+            UpdateMaxUTMem();
+
+            if (NodeManager::GetNodeManager()->OpCacheMemUsage() > MB_LIMIT) {
+                NodeManager::GetNodeManager()->PurgeOpCache();
+            }
+            // Try this for now (is it worth it for full compilation?)
+            NodeManager::GetNodeManager()->UTGarbageCollect();
+
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
@@ -62,9 +71,9 @@ AOMDDFunction CompileBucketTree::Compile() {
             buckets[*rit].PrintDiagrams(cout); cout << endl;
             buckets[*rit].PrintFunctionTables(cout); cout << endl;
             */
-            buckets[*rit].PrintDiagramSizes(cout); cout << endl;
 
             AOMDDFunction *message = buckets[*rit].Flatten();
+            buckets[*rit].PurgeFunctions();
             message->SetScopeOrdering(ordering);
 
             /*
@@ -85,6 +94,10 @@ AOMDDFunction CompileBucketTree::Compile() {
                 compiledDD = *message;
             }
         }
+        UpdateMaxOCMem();
+        UpdateMaxUTMem();
+        NodeManager::GetNodeManager()->PurgeOpCache();
+        NodeManager::GetNodeManager()->UTGarbageCollect();
     }
     compiled = true;
     compiledDD.ReweighRoot(globalWeight);
