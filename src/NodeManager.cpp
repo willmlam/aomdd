@@ -486,6 +486,12 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     }
     cout << endl << "res:" << u.get() << endl;
     */
+
+    // Purge if op cache is too large
+    if (NodeManager::GetNodeManager()->OpCacheMemUsage() > MB_LIMIT) {
+        NodeManager::GetNodeManager()->PurgeOpCache();
+    }
+
     return u;
 }
 
