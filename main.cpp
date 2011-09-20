@@ -583,11 +583,13 @@ int main(int argc, char **argv) {
 
     if (bt) delete bt;
     if (cbt) {
-        cout << "MAX UT mem=" << cbt->GetMaxUTMem() << endl;
-        cout << "MAX OC mem=" << cbt->GetMaxOCMem() << endl;
+        double maxUT = NodeManager::GetNodeManager()->GetMaxUTMemUsage();
+        double maxOC = NodeManager::GetNodeManager()->GetMaxOCMemUsage();
+        cout << "MAX UT mem=" << maxUT << endl;
+        cout << "MAX OC mem=" << maxOC << endl;
         if (outputToFile) {
-            out << "MAX UT mem=" << cbt->GetMaxUTMem() << endl;
-            out << "MAX OC mem=" << cbt->GetMaxOCMem() << endl;
+            out << "MAX UT mem=" << maxUT << endl;
+            out << "MAX OC mem=" << maxOC << endl;
         }
         delete cbt;
     }

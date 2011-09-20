@@ -145,6 +145,11 @@ class NodeManager {
     UniqueTable ut;
     OperationCache opCache;
 
+    double utMemUsage;
+    double maxUTMemUsage;
+    double opCacheMemUsage;
+    double maxOpCacheMemUsage;
+
     NodeManager() {
 #ifndef USE_SPARSE
         MetaNodePtr nullKey(new MetaNode(-1, 0, std::vector<ANDNodePtr>()));
@@ -154,6 +159,11 @@ class NodeManager {
 #endif
         MetaNodePtr delKey(new MetaNode(-10, 0, std::vector<ANDNodePtr>()));
         ut.set_deleted_key(delKey);
+
+        utMemUsage = MemUsage();
+        maxUTMemUsage = MemUsage();
+        opCacheMemUsage = OpCacheMemUsage();
+        maxOpCacheMemUsage = OpCacheMemUsage();
     }
     NodeManager(NodeManager const&) {
     }
@@ -244,6 +254,8 @@ public:
         }
         else {
             ut.insert(temp.first[0]);
+            utMemUsage += temp.first[0]->MemUsage() / pow(2.0, 20);
+            if (utMemUsage > maxUTMemUsage) maxUTMemUsage = utMemUsage;
             return temp;
         }
     }
@@ -283,7 +295,11 @@ public:
 
     inline void PurgeOpCache() {
         opCache.clear();
+        opCacheMemUsage = OpCacheMemUsage();
     }
+
+    inline double GetMaxUTMemUsage() const { return maxUTMemUsage; }
+    inline double GetMaxOCMemUsage() const { return maxOpCacheMemUsage; }
 
 };
 

@@ -34,9 +34,6 @@ class CompileBucketTree {
     long numMeta, numAND, numTotal;
     double mem;
 
-    double maxUTMem;
-    double maxOCMem;
-
     void ResetBuckets();
 
 public:
@@ -55,18 +52,6 @@ public:
     inline long GetLargestNumAND() { return numAND; }
     inline long GetLargestNumTotal() { return numTotal; }
     inline double GetLargestMem() { return mem; }
-
-    inline void UpdateMaxUTMem() {
-        double utMem = NodeManager::GetNodeManager()->MemUsage();
-        if (utMem > maxUTMem) maxUTMem = utMem;
-    }
-    inline double GetMaxUTMem() { return maxUTMem; }
-
-    inline void UpdateMaxOCMem() {
-        double ocMem = NodeManager::GetNodeManager()->OpCacheMemUsage();
-        if (ocMem > maxOCMem) maxOCMem = ocMem;
-    }
-    inline double GetMaxOCMem() { return maxOCMem; }
 
     void PrintBucketFunctionScopes(std::ostream &out) const;
     void PrintBuckets(std::ostream &out) const;

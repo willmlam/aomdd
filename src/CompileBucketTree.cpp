@@ -13,14 +13,14 @@ using namespace std;
 
 namespace aomdd {
 
-CompileBucketTree::CompileBucketTree() : compiled(false), globalWeight(1.0), maxUTMem(0.0), maxOCMem(0.0) {
+CompileBucketTree::CompileBucketTree() : compiled(false), globalWeight(1.0) {
 }
 
 CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
         const list<int> &orderIn,
         const map<int, int> &evidIn, int bucketID)
         : pt(ptIn), ordering(orderIn), evidence(evidIn), largestBucket(bucketID),
-        compiled(false), globalWeight(1.0), maxUTMem(0.0), maxOCMem(0.0) {
+        compiled(false), globalWeight(1.0) {
 
     int numBuckets = ordering.size();
     if (pt->HasDummy()) {
@@ -42,8 +42,6 @@ CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
     for (unsigned int i = 0; i < buckets.size(); i++) {
         initialBucketSizes[i] = buckets[i].GetBucketSize();
     }
-    UpdateMaxUTMem();
-    UpdateMaxOCMem();
 }
 
 AOMDDFunction CompileBucketTree::Compile() {
@@ -55,9 +53,6 @@ AOMDDFunction CompileBucketTree::Compile() {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
-            UpdateMaxOCMem();
-            UpdateMaxUTMem();
-
             if (NodeManager::GetNodeManager()->OpCacheMemUsage() > MB_LIMIT) {
                 NodeManager::GetNodeManager()->PurgeOpCache();
             }
@@ -94,8 +89,6 @@ AOMDDFunction CompileBucketTree::Compile() {
                 compiledDD = *message;
             }
         }
-        UpdateMaxOCMem();
-        UpdateMaxUTMem();
         NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
@@ -163,8 +156,6 @@ double CompileBucketTree::Prob(bool logOut) {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
-            UpdateMaxOCMem();
-            UpdateMaxUTMem();
             NodeManager::GetNodeManager()->PurgeOpCache();
             NodeManager::GetNodeManager()->UTGarbageCollect();
             cout << "Combining functions in bucket " << *rit;
@@ -250,8 +241,6 @@ double CompileBucketTree::Prob(bool logOut) {
         else {
             pr *= globalWeight;
         }
-        UpdateMaxOCMem();
-        UpdateMaxUTMem();
         NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
@@ -316,8 +305,6 @@ double CompileBucketTree::MPE(bool logOut) {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
-            UpdateMaxOCMem();
-            UpdateMaxUTMem();
             NodeManager::GetNodeManager()->PurgeOpCache();
             NodeManager::GetNodeManager()->UTGarbageCollect();
             cout << "Combining functions in bucket " << *rit;
@@ -397,8 +384,6 @@ double CompileBucketTree::MPE(bool logOut) {
         else {
             pr *= globalWeight;
         }
-        UpdateMaxOCMem();
-        UpdateMaxUTMem();
         NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
@@ -427,7 +412,6 @@ void CompileBucketTree::ResetBuckets() {
 }
 
 CompileBucketTree::~CompileBucketTree() {
-    // TODO Auto-generated destructor stub
 }
 
 } // end of aomdd namespace
