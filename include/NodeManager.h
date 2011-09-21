@@ -59,8 +59,7 @@ public:
 
     inline double MemUsage() const {
         double memUsage = 0;
-        memUsage += sizeof(op) + sizeof(params) +
-                sizeof(varid) +
+        memUsage += sizeof(Operation) +
                 (params.size() * sizeof(ParamSet::value_type));
         return memUsage;
     }
@@ -149,6 +148,8 @@ class NodeManager {
     double maxUTMemUsage;
     double opCacheMemUsage;
     double maxOpCacheMemUsage;
+
+    double MBLimit;
 
     NodeManager() {
 #ifndef USE_SPARSE
@@ -260,12 +261,15 @@ public:
         }
     }
 
+    inline void SetMBLimit(double m) { MBLimit = m; }
+    inline double GetMBLimit() { return MBLimit; }
+
     inline double MemUsage() const {
         double memUsage = 0;
         BOOST_FOREACH(MetaNodePtr m, ut) {
             memUsage += m->MemUsage();
         }
-        return memUsage / pow(2.0,20);
+        return (sizeof(ut) + memUsage) / pow(2.0,20);
     }
 
     inline void UTGarbageCollect() {
@@ -281,13 +285,14 @@ public:
             }
             if (!done) it = ut.begin();
         }
+        utMemUsage = MemUsage();
     }
 
     inline double OpCacheMemUsage() const {
         double memUsage = 0;
         BOOST_FOREACH(OperationCache::value_type i, opCache) {
-            memUsage += sizeof(i.first) + i.first.MemUsage();
-            memUsage += sizeof(i.second.first) + sizeof(i.second.second);
+            memUsage += sizeof(i) + i.first.MemUsage();
+            memUsage += sizeof(i.second);
             memUsage += sizeof(MetaNodePtr) * i.second.first.size();
         }
         return (sizeof(opCache) + memUsage) / pow(2.0,20);
@@ -298,6 +303,8 @@ public:
         opCacheMemUsage = OpCacheMemUsage();
     }
 
+    inline double GetUTMemUsage() const { return utMemUsage; }
+    inline double GetOCMemUsage() const { return opCacheMemUsage; }
     inline double GetMaxUTMemUsage() const { return maxUTMemUsage; }
     inline double GetMaxOCMemUsage() const { return maxOpCacheMemUsage; }
 

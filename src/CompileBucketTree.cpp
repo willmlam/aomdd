@@ -53,11 +53,10 @@ AOMDDFunction CompileBucketTree::Compile() {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
-            if (NodeManager::GetNodeManager()->OpCacheMemUsage() > MB_LIMIT) {
-                NodeManager::GetNodeManager()->PurgeOpCache();
-            }
             // Try this for now (is it worth it for full compilation?)
             NodeManager::GetNodeManager()->UTGarbageCollect();
+
+            cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
 
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
@@ -156,7 +155,6 @@ double CompileBucketTree::Prob(bool logOut) {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
-            NodeManager::GetNodeManager()->PurgeOpCache();
             NodeManager::GetNodeManager()->UTGarbageCollect();
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
@@ -241,7 +239,6 @@ double CompileBucketTree::Prob(bool logOut) {
         else {
             pr *= globalWeight;
         }
-        NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
     return pr;
@@ -305,8 +302,8 @@ double CompileBucketTree::MPE(bool logOut) {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
-            NodeManager::GetNodeManager()->PurgeOpCache();
             NodeManager::GetNodeManager()->UTGarbageCollect();
+            cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
@@ -384,7 +381,6 @@ double CompileBucketTree::MPE(bool logOut) {
         else {
             pr *= globalWeight;
         }
-        NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
     return pr;

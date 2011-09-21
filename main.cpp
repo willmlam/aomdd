@@ -19,6 +19,7 @@ using namespace std;
 
 time_t timeStart, timeEnd;
 double timePassed;
+double MBLimit = 2048;
 
 list<int> parseOrder(string filename) {
     ifstream infile(filename.c_str());
@@ -102,6 +103,10 @@ bool ParseCommandLine(int argc, char **argv) {
                 if (++i >= argc) return false;
                 outputResultFile = string(argv[i]);
             }
+            else if (token.substr(1, len-1) == "mlimit") {
+                if (++i >= argc) return false;
+                MBLimit = atof(argv[i]);
+            }
             else if (token.substr(1, len-1) == "c") {
                 compileMode = true;
             }
@@ -178,6 +183,7 @@ int main(int argc, char **argv) {
         cout << "  -log             output results in log space" << endl;
         cout << endl;
         cout << "Other options:" << endl;
+        cout << "  -mlimit          specify memory limit (MB)" << endl;
         cout << "  -outcompile      output compiled AOMDD" << endl;
         cout << "  -vbespace        compute space needed by vanilla bucket elimination" << endl;
         return 0;
@@ -304,9 +310,14 @@ int main(int argc, char **argv) {
     CompileBucketTree *cbt = NULL;
     BucketTree *bt = NULL;
 
+    cout << "MB Limit=" << MBLimit << endl;
+    if (outputToFile) {
+        out << "MB Limit=" << MBLimit << endl;
+    }
+
     if (vbeMode) {
         cout << "Starting vanilla BE..." << endl;
-        if (double(largestMessageSize) * 8 / pow(2.0, 20) > MB_LIMIT) {
+        if (double(largestMessageSize) * 8 / pow(2.0, 20) > MBLimit) {
             cout << "Largest message exceeds memory bound." << endl;
             if (outputToFile) {
                 out << "Largest message exceeds memory bound." << endl;
@@ -316,6 +327,7 @@ int main(int argc, char **argv) {
         bt = new BucketTree(m, ordering, evidence);
     }
     else {
+        NodeManager::GetNodeManager()->SetMBLimit(MBLimit);
         cout << "Starting AOMDD-BE..." << endl;
         cbt = new CompileBucketTree(m, &pt, ordering, evidence, bucketID);
         unsigned int uniqueMetaNodes = NodeManager::GetNodeManager()->GetNumberOfNodes();

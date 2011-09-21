@@ -478,7 +478,7 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     WeightedMetaNodeList u = CreateMetaNode(var, children);
 
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
-    opCacheMemUsage += ocEntry.MemUsage() + (sizeof(u.first) + sizeof(u.second) + (u.first.size() * sizeof(MetaNodePtr))) / pow(2.0, 20);
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(u) + (u.first.size() * sizeof(MetaNodePtr))) / pow(2.0, 20);
     if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
     /*
     cout << "Created cache entry" << endl;
@@ -490,7 +490,7 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     */
 
     // Purge if op cache is too large
-    if (opCacheMemUsage > MB_LIMIT) {
+    if (opCacheMemUsage > MBLimit) {
         NodeManager::GetNodeManager()->PurgeOpCache();
     }
 
@@ -603,7 +603,7 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    opCacheMemUsage += ocEntry.MemUsage() + (sizeof(ret.first) + sizeof(ret.second) + (ret.first.size() * sizeof(MetaNodePtr))) / pow(2.0,20);
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / pow(2.0,20);
     if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
     return ret;
 }
@@ -698,7 +698,7 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    opCacheMemUsage += ocEntry.MemUsage() + (sizeof(ret.first) + sizeof(ret.second) + (ret.first.size() * sizeof(MetaNodePtr))) / pow(2.0,20);
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / pow(2.0,20);
     if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
     /*
     cout << "Created cache entry(MAX)" << endl;
