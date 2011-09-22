@@ -493,6 +493,10 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     if (opCacheMemUsage > MBLimit) {
         NodeManager::GetNodeManager()->PurgeOpCache();
     }
+    if (utMemUsage > MBLimit) {
+        cout << "Unique Table reached memory limit." << endl;
+        exit(0);
+    }
 
     return u;
 }
