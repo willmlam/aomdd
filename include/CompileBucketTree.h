@@ -56,6 +56,14 @@ public:
     void PrintBucketFunctionScopes(std::ostream &out) const;
     void PrintBuckets(std::ostream &out) const;
     virtual ~CompileBucketTree();
+
+    inline double SelfMemUsage() {
+        double mem = 0.0;
+        for (unsigned int i = 0; i < buckets.size(); ++i) {
+            mem += buckets[i].SelfMemUsage();
+        }
+        return mem + sizeof(*this);
+    }
 };
 
 }

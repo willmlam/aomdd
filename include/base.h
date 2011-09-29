@@ -32,6 +32,8 @@ const int UNKNOWN_VAL = -1;
 const int ERROR_VAL = -10;
 const double DOUBLE_MIN = -100000000;
 
+const int MB_PER_BYTE = 1048576;
+
 // Limits
 const unsigned long OUTPUT_COMPLEXITY_LIMIT = 2048;
 const double MB_LIMIT = 2048;

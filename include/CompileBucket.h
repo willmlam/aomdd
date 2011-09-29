@@ -35,6 +35,14 @@ public:
     void PrintDiagrams(std::ostream &out) const;
     void PrintDiagramSizes(std::ostream &out) const;
     virtual ~CompileBucket();
+
+    inline double SelfMemUsage() {
+        double mem = 0.0;
+        for (unsigned int i = 0; i < functions.size(); ++i) {
+            mem += functions[i]->SelfMemUsage();
+        }
+        return mem;
+    }
 };
 
 } // end of aomdd namespace

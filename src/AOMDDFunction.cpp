@@ -186,6 +186,7 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
         if (earlyTerminate) break;
     }
     domain = s;
+    NodeManager::GetNodeManager()->UTGarbageCollect();
 }
 
 void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
@@ -226,6 +227,7 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     */
     root = newroot;
     domain = domain - actualElimVars;
+    NodeManager::GetNodeManager()->UTGarbageCollect();
 }
 
 void AOMDDFunction::Maximize(const Scope &elimVars, bool mutableIDs) {
@@ -258,6 +260,7 @@ void AOMDDFunction::Maximize(const Scope &elimVars, bool mutableIDs) {
     }
     root = newroot;
     domain = domain - elimVars;
+    NodeManager::GetNodeManager()->UTGarbageCollect();
 }
 
 double AOMDDFunction::Maximum(const Assignment &cond) {

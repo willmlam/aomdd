@@ -150,6 +150,7 @@ class NodeManager {
     double maxOpCacheMemUsage;
 
     double MBLimit;
+    double OCMBLimit;
 
     NodeManager() {
 #ifndef USE_SPARSE
@@ -255,7 +256,7 @@ public:
         }
         else {
             ut.insert(temp.first[0]);
-            utMemUsage += temp.first[0]->MemUsage() / pow(2.0, 20);
+            utMemUsage += temp.first[0]->MemUsage() / MB_PER_BYTE;
             if (utMemUsage > maxUTMemUsage) maxUTMemUsage = utMemUsage;
             return temp;
         }
@@ -264,12 +265,15 @@ public:
     inline void SetMBLimit(double m) { MBLimit = m; }
     inline double GetMBLimit() { return MBLimit; }
 
+    inline void SetOCMBLimit(double m) { OCMBLimit = m; }
+    inline double GetOCMBLimit() { return OCMBLimit; }
+
     inline double MemUsage() const {
         double memUsage = 0;
         BOOST_FOREACH(MetaNodePtr m, ut) {
             memUsage += m->MemUsage();
         }
-        return (sizeof(ut) + memUsage) / pow(2.0,20);
+        return (sizeof(ut) + memUsage) / MB_PER_BYTE;
     }
 
     inline void UTGarbageCollect() {
@@ -280,11 +284,13 @@ public:
             for (; it != ut.end(); ++it) {
                 if (it->use_count() == 1) {
                     done = false;
+//                    utMemUsage -= (*it)->MemUsage() / MB_PER_BYTE;
                     ut.erase(it);
                 }
             }
             if (!done) it = ut.begin();
         }
+        ut.resize(0);
         utMemUsage = MemUsage();
     }
 
@@ -295,11 +301,12 @@ public:
             memUsage += sizeof(i.second);
             memUsage += sizeof(MetaNodePtr) * i.second.first.size();
         }
-        return (sizeof(opCache) + memUsage) / pow(2.0,20);
+        return (sizeof(opCache) + memUsage) / MB_PER_BYTE;
     }
 
     inline void PurgeOpCache() {
         opCache.clear();
+        opCache.resize(0);
         opCacheMemUsage = OpCacheMemUsage();
     }
 

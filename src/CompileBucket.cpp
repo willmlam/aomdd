@@ -33,7 +33,6 @@ AOMDDFunction *CompileBucket::Flatten() {
 //            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
             /* DEBUG */
-            NodeManager::GetNodeManager()->UTGarbageCollect();
         }
     }
     return message;

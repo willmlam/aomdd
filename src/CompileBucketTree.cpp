@@ -302,8 +302,8 @@ double CompileBucketTree::MPE(bool logOut) {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
-            NodeManager::GetNodeManager()->UTGarbageCollect();
             cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
+            cin.get();
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
@@ -381,7 +381,6 @@ double CompileBucketTree::MPE(bool logOut) {
         else {
             pr *= globalWeight;
         }
-        NodeManager::GetNodeManager()->UTGarbageCollect();
     }
     return pr;
 }

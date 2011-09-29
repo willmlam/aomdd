@@ -478,8 +478,8 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     WeightedMetaNodeList u = CreateMetaNode(var, children);
 
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
-    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(u) + (u.first.size() * sizeof(MetaNodePtr))) / pow(2.0, 20);
-    if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(u) + (u.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
+    if (GetOCMemUsage() > maxOpCacheMemUsage) maxOpCacheMemUsage = GetOCMemUsage();
     /*
     cout << "Created cache entry" << endl;
     cout << "keys:";
@@ -490,7 +490,7 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     */
 
     // Purge if op cache is too large
-    if (opCacheMemUsage > MBLimit) {
+    if (opCacheMemUsage > OCMBLimit) {
         NodeManager::GetNodeManager()->PurgeOpCache();
     }
     if (utMemUsage > MBLimit) {
@@ -607,8 +607,8 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / pow(2.0,20);
-    if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
+    if (GetOCMemUsage() > maxOpCacheMemUsage) maxOpCacheMemUsage = GetOCMemUsage();
     return ret;
 }
 
@@ -702,8 +702,8 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     var.AddVar(varid, card);
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / pow(2.0,20);
-    if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
+    if (GetOCMemUsage() > maxOpCacheMemUsage) maxOpCacheMemUsage = GetOCMemUsage();
     /*
     cout << "Created cache entry(MAX)" << endl;
     cout << "elimvar:" << elimvar << endl;

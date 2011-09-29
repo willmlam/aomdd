@@ -19,7 +19,8 @@ using namespace std;
 
 time_t timeStart, timeEnd;
 double timePassed;
-double MBLimit = 2048;
+double MBLimit = 8192;
+double OCMBLimit = 2048;
 
 list<int> parseOrder(string filename) {
     ifstream infile(filename.c_str());
@@ -103,9 +104,13 @@ bool ParseCommandLine(int argc, char **argv) {
                 if (++i >= argc) return false;
                 outputResultFile = string(argv[i]);
             }
-            else if (token.substr(1, len-1) == "mlimit") {
+            else if (token.substr(1, len-1) == "mlim") {
                 if (++i >= argc) return false;
                 MBLimit = atof(argv[i]);
+            }
+            else if (token.substr(1, len-1) == "oclim") {
+                if (++i >= argc) return false;
+                OCMBLimit = atof(argv[i]);
             }
             else if (token.substr(1, len-1) == "c") {
                 compileMode = true;
@@ -183,7 +188,8 @@ int main(int argc, char **argv) {
         cout << "  -log             output results in log space" << endl;
         cout << endl;
         cout << "Other options:" << endl;
-        cout << "  -mlimit          specify memory limit (MB)" << endl;
+        cout << "  -mlim            specify memory limit (MB) for nodes" << endl;
+        cout << "  -oclim           specify memory limit (MB) for operations" << endl;
         cout << "  -outcompile      output compiled AOMDD" << endl;
         cout << "  -vbespace        compute space needed by vanilla bucket elimination" << endl;
         return 0;
@@ -311,8 +317,10 @@ int main(int argc, char **argv) {
     BucketTree *bt = NULL;
 
     cout << "MB Limit=" << MBLimit << endl;
+    cout << "OC MB Limit=" << OCMBLimit << endl;
     if (outputToFile) {
         out << "MB Limit=" << MBLimit << endl;
+        out << "OC MB Limit=" << OCMBLimit << endl;
     }
 
     if (vbeMode) {
@@ -328,6 +336,7 @@ int main(int argc, char **argv) {
     }
     else {
         NodeManager::GetNodeManager()->SetMBLimit(MBLimit);
+        NodeManager::GetNodeManager()->SetOCMBLimit(OCMBLimit);
         cout << "Starting AOMDD-BE..." << endl;
         cbt = new CompileBucketTree(m, &pt, ordering, evidence, bucketID);
         unsigned int uniqueMetaNodes = NodeManager::GetNodeManager()->GetNumberOfNodes();
