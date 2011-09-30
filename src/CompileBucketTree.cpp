@@ -155,7 +155,7 @@ double CompileBucketTree::Prob(bool logOut) {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
-            NodeManager::GetNodeManager()->UTGarbageCollect();
+            cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
@@ -192,7 +192,7 @@ double CompileBucketTree::Prob(bool logOut) {
                 if (*rit == largestBucket) {
                     tie(numMeta, numAND) = message->Size();
                     numTotal = numMeta + numAND;
-                    mem = message->MemUsage();
+                    mem = message->MemUsage() / MB_PER_BYTE;
                 }
             }
             cout << "After eliminating " << *rit << endl;
@@ -239,6 +239,7 @@ double CompileBucketTree::Prob(bool logOut) {
         else {
             pr *= globalWeight;
         }
+        NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
     return pr;
@@ -303,7 +304,6 @@ double CompileBucketTree::MPE(bool logOut) {
 
         for (; rit != ordering.rend(); ++rit) {
             cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
-            cin.get();
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
@@ -336,7 +336,7 @@ double CompileBucketTree::MPE(bool logOut) {
                 if (*rit == largestBucket) {
                     tie(numMeta, numAND) = message->Size();
                     numTotal = numMeta + numAND;
-                    mem = message->MemUsage();
+                    mem = message->MemUsage() / MB_PER_BYTE;
                 }
             }
             cout << "After eliminating " << *rit << endl;
@@ -374,6 +374,8 @@ double CompileBucketTree::MPE(bool logOut) {
                     delete message;
                 }
             }
+            NodeManager::GetNodeManager()->PurgeOpCache();
+            NodeManager::GetNodeManager()->UTGarbageCollect();
         }
         if (logOut) {
             pr += log10(globalWeight);

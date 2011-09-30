@@ -479,7 +479,13 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
 
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
     opCacheMemUsage += (ocEntry.MemUsage() + sizeof(u) + (u.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
-    if (GetOCMemUsage() > maxOpCacheMemUsage) maxOpCacheMemUsage = GetOCMemUsage();
+
+    // Purge if op cache is too large
+    if (opCacheMemUsage > OCMBLimit) {
+        NodeManager::GetNodeManager()->PurgeOpCache();
+    }
+
+    if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
     /*
     cout << "Created cache entry" << endl;
     cout << "keys:";
@@ -489,10 +495,6 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     cout << endl << "res:" << u.get() << endl;
     */
 
-    // Purge if op cache is too large
-    if (opCacheMemUsage > OCMBLimit) {
-        NodeManager::GetNodeManager()->PurgeOpCache();
-    }
     if (utMemUsage > MBLimit) {
         cout << "Unique Table reached memory limit." << endl;
         exit(0);
@@ -608,7 +610,13 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
     opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
-    if (GetOCMemUsage() > maxOpCacheMemUsage) maxOpCacheMemUsage = GetOCMemUsage();
+
+    // Purge if op cache is too large
+    if (opCacheMemUsage > OCMBLimit) {
+        NodeManager::GetNodeManager()->PurgeOpCache();
+    }
+
+    if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
     return ret;
 }
 
@@ -703,7 +711,13 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
     opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
-    if (GetOCMemUsage() > maxOpCacheMemUsage) maxOpCacheMemUsage = GetOCMemUsage();
+
+    // Purge if op cache is too large
+    if (opCacheMemUsage > OCMBLimit) {
+        NodeManager::GetNodeManager()->PurgeOpCache();
+    }
+
+    if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
     /*
     cout << "Created cache entry(MAX)" << endl;
     cout << "elimvar:" << elimvar << endl;

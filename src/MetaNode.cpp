@@ -313,7 +313,6 @@ double MetaNode::ComputeTotalMemory() const {
     BOOST_FOREACH(const MetaNode *m, nodeSet) {
         memUsage += m->MemUsage();
     }
-    memUsage /= pow(2.0, 20);
     return memUsage;
 }
 
