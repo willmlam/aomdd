@@ -201,6 +201,8 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
         root.second *= actualElimVars.GetCard();
         return;
     }
+
+    int elimvar = actualElimVars.GetOrdering().front();
     /*
     if (fullReduce) {
         root = mgr->FullReduce(mgr->Marginalize(root, elimVars, pt->GetTree()));
@@ -215,10 +217,49 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     WeightedMetaNodeList newroot;
     newroot.second = root.second;
     bool sumOpPerformed = false;
+    // Build an "elim chain"
+    // From the elim variable, trace the parents until it hits one of the metanodes of the root
+    // If it isn't reached, no need to marginalize
+    // otherwise, pass the chain in.
+    // It will also guide the marginalization to directly go to the nodes to be eliminated
+
+    DirectedGraph elimChain;
+    DInEdge ei, ei_end;
+    tie(ei, ei_end) = in_edges(elimvar, pt->GetTree());
+    int chainRoot = elimvar;
+
+    // Hackish way to add a vertex to the graph
+    add_edge(chainRoot, chainRoot+1, elimChain);
+    remove_edge(chainRoot, chainRoot+1, elimChain);
+
+    bool chainDone = false;
     BOOST_FOREACH(MetaNodePtr m, root.first) {
-        WeightedMetaNodeList l = mgr->Marginalize(m, elimVars, pt->GetTree(), sumOpPerformed);
-        newroot.first.insert(newroot.first.end(), l.first.begin(), l.first.end());
-        newroot.second *= l.second;
+        if (chainRoot == m->GetVarID()) {
+            chainDone = true;
+        }
+    }
+    while (!chainDone && ei != ei_end) {
+        int current = target(*ei, pt->GetTree());
+        chainRoot = source(*ei, pt->GetTree());
+        add_edge(chainRoot, current, elimChain);
+        BOOST_FOREACH(MetaNodePtr m, root.first) {
+	        if (chainRoot == m->GetVarID()) {
+	            chainDone = true;
+	        }
+        }
+        tie(ei, ei_end) = in_edges(chainRoot, pt->GetTree());
+    }
+
+    cout << endl;
+    BOOST_FOREACH(MetaNodePtr m, root.first) {
+        if (m->GetVarID() == chainRoot) {
+            WeightedMetaNodeList l = mgr->Marginalize(m, elimVars, elimChain, sumOpPerformed);
+            newroot.first.insert(newroot.first.end(), l.first.begin(), l.first.end());
+            newroot.second *= l.second;
+        }
+        else {
+            newroot.first.push_back(m);
+        }
     }
     /*
     if (!sumOpPerformed) {

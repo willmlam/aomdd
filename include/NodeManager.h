@@ -214,7 +214,7 @@ public:
             const std::vector<MetaNodePtr> &lhs,
             const std::vector<MetaNodePtr> &rhs) const;
 
-    WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT, bool &sumOpPerformed);
+    WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &elimChain, bool &sumOpPerformed);
     WeightedMetaNodeList Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
     WeightedMetaNodeList Condition(MetaNodePtr root, const Assignment &cond);
 

@@ -168,10 +168,8 @@ double CompileBucketTree::Prob(bool logOut) {
             message->SetScopeOrdering(ordering);
             cout << "After flattening" << endl;
 
-            /*
-            message->Save(cout); cout << endl;
-            message->PrintAsTable(cout); cout << endl;
-            */
+//            message->Save(cout); cout << endl;
+//            message->PrintAsTable(cout); cout << endl;
 
             DInEdge ei, ei_end;
             tie(ei, ei_end) = in_edges(*rit, tree);
@@ -197,10 +195,8 @@ double CompileBucketTree::Prob(bool logOut) {
             }
             cout << "After eliminating " << *rit << endl;
 
-            /*
-            message->Save(cout); cout << endl;
-            message->PrintAsTable(cout); cout << endl;
-            */
+//            message->Save(cout); cout << endl;
+//            message->PrintAsTable(cout); cout << endl;
 
             // empty scope, no need to send message, update final result
             if (message->GetScope().IsEmpty()) {

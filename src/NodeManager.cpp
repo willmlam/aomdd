@@ -509,7 +509,7 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
 // Current bug: have to check for the case where the node is not present,
 // but is a child of a node that is being marginalized.
 WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
-        const DirectedGraph &embeddedpt, bool &sumOpPerformed) {
+        const DirectedGraph &elimChain, bool &sumOpPerformed) {
     if (root.get() == MetaNode::GetZero().get()) {
         return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetZero()), 0.0);
     }
@@ -535,26 +535,29 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
         vector<MetaNodePtr> newMetaNodes;
         bool terminalOnly = true;
         double weight = 1.0;
-        bool checkForMargVar = false;
         bool foundMargVar = false;
 
         DEdge ei, ei_end;
 
-        tie(ei, ei_end) = out_edges(varid, embeddedpt);
-        while(ei != ei_end) {
-            if (int(target(*ei, embeddedpt)) == elimvar) {
-                checkForMargVar = true;
-                break;
-            }
-            ei++;
+        vector<int> possibleNextMarg;
+        tie(ei, ei_end) = out_edges(varid, elimChain);
+        while (ei != ei_end) {
+            int child = target(*ei, elimChain);
+            possibleNextMarg.push_back(child);
+            tie(ei, ei_end) = out_edges(child, elimChain);
         }
 
-
         BOOST_FOREACH(MetaNodePtr j, metaNodes) {
-            if (checkForMargVar && j->GetVarID() == elimvar) {
-                foundMargVar = true;
+            BOOST_FOREACH(int k, possibleNextMarg) {
+                if (j->GetVarID() == k) {
+                    foundMargVar = true;
+                }
             }
-            WeightedMetaNodeList newMetaNodeList = Marginalize(j, s, embeddedpt, sumOpPerformed);
+            if (!foundMargVar) {
+                newMetaNodes.push_back(j);
+                continue;
+            }
+            WeightedMetaNodeList newMetaNodeList = Marginalize(j, s, elimChain, sumOpPerformed);
             /*
             cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
             paramSets[i].first->RecursivePrint(cout); cout << endl;
@@ -578,7 +581,7 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
                 }
             }
         }
-        if (checkForMargVar && !foundMargVar) {
+        if (varid != elimvar && !foundMargVar) {
             weight *= s.GetVarCard(elimvar);
         }
         ANDNodePtr newANDNode(new MetaNode::ANDNode(i->GetWeight() * weight, newMetaNodes));

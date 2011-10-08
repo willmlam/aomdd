@@ -218,10 +218,12 @@ double MetaNode::Evaluate(const Assignment &a) const {
     else if (this == GetOne().get()) {
         return 1;
     }
+    /*
     // Handle dummy variable case
     else if (card == 1) {
         return children[0]->Evaluate(a);
     }
+    */
     else {
         int idx = a.GetVal(varID);
         assert(idx >= 0);

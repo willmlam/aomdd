@@ -49,22 +49,27 @@ double BucketTree::Prob(bool logOut) {
         cout << "Combining functions in bucket " << *rit;
         cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 //        buckets[*rit].PrintFunctionTables(cout); cout << endl;
+        /*
         TableFunction *message = buckets[*rit].Flatten(ordering);
         cout << "After flattening" << endl;
+        */
+        TableFunction *message;
 //        message->PrintAsTable(cout); cout << endl;
         Scope elim;
-        elim.AddVar(*rit, message->GetScope().GetVarCard(*rit));
+        elim.AddVar(*rit, buckets[*rit].GetScope().GetVarCard(*rit));
         map<int, int>::iterator eit = evidence.find(*rit);
         if (eit != evidence.end()) {
             Assignment cond(elim);
             cond.SetVal(*rit, eit->second);
 //            cout << "Conditioning" << endl;
-            message->Condition(cond);
+            message = buckets[*rit].FastCondition(ordering, cond);
+	        cout << "After flattening" << endl;
 
         }
         else {
 //            cout << "Marginalizing" << endl;
-            message->Marginalize(elim);
+            message = buckets[*rit].FastSumElimination(ordering, elim);
+	        cout << "After flattening" << endl;
         }
         cout << "After eliminating " << *rit << endl;
 //        message->PrintAsTable(cout); cout << endl;

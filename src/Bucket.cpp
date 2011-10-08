@@ -59,7 +59,78 @@ TableFunction *Bucket::FlattenFast(const list<int> &ordering) {
     assert(newValues.size() == newDomain.GetCard());
     TableFunction *message = new TableFunction(newDomain, newValues);
     return message;
+}
 
+TableFunction *Bucket::FastSumElimination(const list<int> &ordering, const Scope &elimVar) {
+    if (functions.size() == 0)
+        return new TableFunction();
+    Scope newDomain;
+    for (unsigned int i = 0; i < functions.size(); ++i) {
+        newDomain = newDomain + functions[i]->GetScope();
+    }
+    newDomain = newDomain - elimVar;
+    newDomain.SetOrdering(ordering);
+    //unsigned int card = newDomain.GetCard();
+    vector<double> newValues;
+    Assignment a(newDomain);
+    Assignment e(elimVar);
+    a.SetAllVal(0);
+    e.SetAllVal(0);
+    vector<Assignment> fAssign;
+    for (unsigned int i = 0; i < functions.size(); ++i) {
+        fAssign.push_back(Assignment(functions[i]->GetScope()));
+    }
+    int idx = 0;
+    do {
+        newValues.push_back(0);
+        do {
+            double combVal = 1;
+            for (unsigned int i = 0; i < functions.size(); ++i) {
+                fAssign[i].SetAssign(a);
+                fAssign[i].SetAssign(e);
+                combVal *= functions[i]->GetVal(fAssign[i]);
+            }
+            newValues.back() += combVal;
+        } while(e.Iterate());
+        idx++;
+    } while (a.Iterate());
+    assert(newValues.size() == newDomain.GetCard());
+    TableFunction *message = new TableFunction(newDomain, newValues);
+    return message;
+}
+
+TableFunction *Bucket::FastCondition(const list<int> &ordering, const Assignment &cond) {
+    if (functions.size() == 0)
+        return new TableFunction();
+    Scope newDomain;
+    for (unsigned int i = 0; i < functions.size(); ++i) {
+        newDomain = newDomain + functions[i]->GetScope();
+    }
+    newDomain = newDomain - cond;
+    newDomain.SetOrdering(ordering);
+    //unsigned int card = newDomain.GetCard();
+    vector<double> newValues;
+    Assignment a(newDomain);
+    a.SetAllVal(0);
+    vector<Assignment> fAssign;
+    for (unsigned int i = 0; i < functions.size(); ++i) {
+        fAssign.push_back(Assignment(functions[i]->GetScope()));
+    }
+    int idx = 0;
+    do {
+        newValues.push_back(0);
+            double combVal = 1;
+            for (unsigned int i = 0; i < functions.size(); ++i) {
+                fAssign[i].SetAssign(a);
+                fAssign[i].SetAssign(cond);
+                combVal *= functions[i]->GetVal(fAssign[i]);
+            }
+        newValues.push_back(combVal);
+        idx++;
+    } while (a.Iterate());
+    assert(newValues.size() == newDomain.GetCard());
+    TableFunction *message = new TableFunction(newDomain, newValues);
+    return message;
 }
 
 Bucket::~Bucket() {
