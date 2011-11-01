@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
         cout << "  -mlim            specify memory limit (MB) for nodes" << endl;
         cout << "  -oclim           specify memory limit (MB) for operations" << endl;
         cout << "  -outcompile      output compiled AOMDD" << endl;
-        cout << "  -vbespace        compute space needed by vanilla bucket elimination" << endl;
+        cout << "  -vbespace        compute space needed by vanilla bucket elimination (only)" << endl;
         return 0;
     }
 
@@ -325,7 +325,7 @@ int main(int argc, char **argv) {
 
     if (vbeMode) {
         cout << "Starting vanilla BE..." << endl;
-        if (double(largestMessageSize) * 8 / pow(2.0, 20) > MBLimit) {
+        if (double(largestMessageSize) * 8 / pow(2.0, 20) > MBLimit && !vbeSpace) {
             cout << "Largest message exceeds memory bound." << endl;
             if (outputToFile) {
                 out << "Largest message exceeds memory bound." << endl;
@@ -333,6 +333,13 @@ int main(int argc, char **argv) {
             return 0;
         }
         bt = new BucketTree(m, ordering, evidence);
+	    if (vbeSpace) {
+	        cout << "Simulating for max number of entries..." << endl;
+	        long maxEntries = bt->ComputeMaxEntriesInMemory();
+	        cout << "Max entries: " << maxEntries << endl;
+	        cout << "Max entries (MB): " << maxEntries * 8 / pow(2.0, 20) << endl;
+	        return 0;
+	    }
     }
     else {
         NodeManager::GetNodeManager()->SetMBLimit(MBLimit);
@@ -477,7 +484,7 @@ int main(int argc, char **argv) {
         double pr;
         time(&timeStart);
         if (vbeMode) {
-            pr = bt->Prob(logMode);
+                pr = bt->Prob(logMode);
         }
         else {
             pr = cbt->Prob(logMode);

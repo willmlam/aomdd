@@ -19,9 +19,15 @@ namespace aomdd {
 
 class BucketTree {
     std::vector<Bucket> buckets;
+    std::vector<Scope> bucketScopes;
     std::vector<int> parents;
     std::list<int> ordering;
     std::map<int, int> evidence;
+
+	// The index stores the sum of the #entries from the incoming messages.
+    std::vector<unsigned long> messageSizes;
+
+    Scope s;
 
     double globalWeight;
 public:
@@ -33,6 +39,8 @@ public:
     double Prob(bool logOut = false);
 
     double MPE(bool logOut = false);
+
+    unsigned long ComputeMaxEntriesInMemory();
 
     void Save(std::ostream &out);
 

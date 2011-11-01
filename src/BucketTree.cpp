@@ -19,13 +19,18 @@ BucketTree::BucketTree(const Model &m, const list<int> &orderIn,
     const vector<TableFunction> &functions = m.GetFunctions();
 
     buckets.resize(ordering.size());
+    bucketScopes.resize(ordering.size());
+    messageSizes.resize(ordering.size());
     for (unsigned int i = 0; i < functions.size(); i++) {
+        s = s + m.GetScopes()[i];
         if (functions[i].GetScope().GetNumVars() == 0) {
             globalWeight *= functions[i].GetValues()[0];
             continue;
         }
         int idx = functions[i].GetScope().GetOrdering().back();
         buckets[idx].AddFunction(&functions[i]);
+        bucketScopes[idx] = bucketScopes[idx] + functions[i].GetScope();
+        messageSizes[idx] += functions[i].GetValues().size();
     }
 }
 
@@ -174,6 +179,34 @@ double BucketTree::MPE(bool logOut) {
     return pr;
 }
 
+unsigned long BucketTree::ComputeMaxEntriesInMemory() {
+    list<int>::reverse_iterator rit = ordering.rbegin();
+    int numBuckets = ordering.size();
+    unsigned long maxEntries = 0;
+    for (int i = 0; i < numBuckets; ++i) {
+        maxEntries += messageSizes[i];
+    }
+
+    for (; rit != ordering.rend(); ++rit) {
+        Scope bScope = bucketScopes[*rit];
+        Scope elimScope;
+        elimScope.AddVar(*rit, s.GetVarCard(*rit));
+        bScope = bScope - elimScope;
+        bScope.SetOrdering(ordering);
+        if (bScope.GetNumVars() == 0) {
+            cout << "Sending message from <" << *rit << "> to final result" << endl;
+        }
+        else {
+            int destBucket = bScope.GetOrdering().back();
+            cout << "Sending message from <" << *rit << "> to <" << destBucket << ">" << endl;
+            bucketScopes[destBucket] = bucketScopes[destBucket] + bScope;
+        }
+        maxEntries -= messageSizes[*rit];
+        maxEntries += bScope.GetCard();
+    }
+    return maxEntries;
+}
+
 void BucketTree::Save(ostream &out) {
     list<int>::reverse_iterator rit = ordering.rbegin();
     for (; rit != ordering.rend(); ++rit) {
@@ -184,4 +217,3 @@ void BucketTree::Save(ostream &out) {
 }
 
 } // end of aomdd namespace
-
