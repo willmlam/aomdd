@@ -12,7 +12,7 @@ using namespace std;
 
 namespace aomdd {
 
-CompileBucket::CompileBucket() {
+CompileBucket::CompileBucket() : weight(1.0) {
 }
 
 void CompileBucket::AddFunction(const AOMDDFunction *f) {
@@ -35,6 +35,7 @@ AOMDDFunction *CompileBucket::Flatten() {
             /* DEBUG */
         }
     }
+    message->ReweighRoot(weight);
     return message;
 }
 

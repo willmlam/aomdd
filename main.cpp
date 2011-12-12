@@ -3,6 +3,7 @@
 #include "AOMDDFunction.h"
 #include "BucketTree.h"
 #include "CompileBucketTree.h"
+#include "DDMiniBucketTree.h"
 #include "utils.h"
 #include "base.h"
 #include "Model.h"
@@ -21,6 +22,8 @@ time_t timeStart, timeEnd;
 double timePassed;
 double MBLimit = 8192;
 double OCMBLimit = 2048;
+
+unsigned long mbeSizeBound = 0;
 
 list<int> parseOrder(string filename) {
     ifstream infile(filename.c_str());
@@ -71,6 +74,7 @@ map<int, int> parseEvidence(string filename) {
 
 string inputFile, orderFile, evidFile, dotFile, outputResultFile;
 bool compileMode, peMode, mpeMode, vbeMode, logMode;
+bool miniBucketMode;
 bool outCompile;
 bool verifyVals;
 bool vbeSpace;
@@ -112,6 +116,10 @@ bool ParseCommandLine(int argc, char **argv) {
                 if (++i >= argc) return false;
                 OCMBLimit = atof(argv[i]);
             }
+            else if (token.substr(1, len-1) == "mbebound") {
+                if (++i >= argc) return false;
+                mbeSizeBound = atol(argv[i]);
+            }
             else if (token.substr(1, len-1) == "c") {
                 compileMode = true;
             }
@@ -123,6 +131,9 @@ bool ParseCommandLine(int argc, char **argv) {
             }
             else if (token.substr(1, len-1) == "vbe") {
                 vbeMode = true;
+            }
+            else if (token.substr(1, len-1) == "mbe") {
+                miniBucketMode = true;
             }
             else if (token.substr(1, len-1) == "log") {
                 logMode = true;
@@ -164,7 +175,6 @@ int main(int argc, char **argv) {
     cout << "====================================================" << endl;
     cout << "AOMDD-BE Compiler v0.1" << endl;
     cout << "  by William Lam, UC Irvine <willmlam@ics.uci.edu>" << endl;
-    cout << "    (original algorithm by Robert Mateescu)" << endl;
     cout << "====================================================" << endl;
     cout << endl;
 
@@ -184,6 +194,8 @@ int main(int argc, char **argv) {
         cout << "  -c               compile full AOMDD" << endl;
         cout << "  -pe              compute P(e)" << endl;
         cout << "  -mpe             compute MPE(e) cost" << endl;
+        cout << "  -mbe             use minibucket approximation" << endl;
+        cout << "  -mbebound        size bound for minibuckets" << endl;
         cout << "  -vbe             use vanilla bucket elimination" << endl;
         cout << "  -log             output results in log space" << endl;
         cout << endl;
@@ -315,6 +327,7 @@ int main(int argc, char **argv) {
 
     CompileBucketTree *cbt = NULL;
     BucketTree *bt = NULL;
+    DDMiniBucketTree *mbt = NULL;
 
     cout << "MB Limit=" << MBLimit << endl;
     cout << "OC MB Limit=" << OCMBLimit << endl;
@@ -344,8 +357,14 @@ int main(int argc, char **argv) {
     else {
         NodeManager::GetNodeManager()->SetMBLimit(MBLimit);
         NodeManager::GetNodeManager()->SetOCMBLimit(OCMBLimit);
-        cout << "Starting AOMDD-BE..." << endl;
-        cbt = new CompileBucketTree(m, &pt, ordering, evidence, bucketID);
+        if (miniBucketMode) {
+	        cout << "Starting AOMDD-MBE..." << endl;
+	        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeSizeBound);
+        }
+        else {
+	        cout << "Starting AOMDD-BE..." << endl;
+	        cbt = new CompileBucketTree(m, &pt, ordering, evidence, bucketID);
+        }
         unsigned int uniqueMetaNodes = NodeManager::GetNodeManager()->GetNumberOfNodes();
         unsigned int numANDNodes = NodeManager::GetNodeManager()->GetNumberOfANDNodes();
 //        unsigned int ocEntries = NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries();
@@ -486,6 +505,21 @@ int main(int argc, char **argv) {
         if (vbeMode) {
                 pr = bt->Prob(logMode);
         }
+        else if (miniBucketMode) {
+            pr = mbt->Query(PE, logMode);
+            cout << endl;
+            cout << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
+            cout << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
+            cout << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
+            cout << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
+            if (outputToFile) {
+                out << endl;
+                out << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
+                out << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
+                out << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
+                out << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
+            }
+        }
         else {
             pr = cbt->Prob(logMode);
             cout << endl;
@@ -518,6 +552,21 @@ int main(int argc, char **argv) {
         time(&timeStart);
         if (vbeMode) {
             pr = bt->MPE(logMode);
+        }
+        else if (miniBucketMode) {
+            pr = mbt->Query(MPE, logMode);
+            cout << endl;
+            cout << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
+            cout << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
+            cout << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
+            cout << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
+            if (outputToFile) {
+                out << endl;
+                out << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
+                out << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
+                out << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
+                out << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
+            }
         }
         else {
             pr = cbt->MPE(logMode);
@@ -610,7 +659,7 @@ int main(int argc, char **argv) {
     }
 
     if (bt) delete bt;
-    if (cbt) {
+    if (cbt || mbt) {
         double maxUT = NodeManager::GetNodeManager()->GetMaxUTMemUsage();
         double maxOC = NodeManager::GetNodeManager()->GetMaxOCMemUsage();
         cout << "MAX UT mem=" << maxUT << endl;
@@ -619,7 +668,10 @@ int main(int argc, char **argv) {
             out << "MAX UT mem=" << maxUT << endl;
             out << "MAX OC mem=" << maxOC << endl;
         }
-        delete cbt;
+        if (cbt)
+	        delete cbt;
+        if (mbt)
+            delete mbt;
     }
     return 0;
 }

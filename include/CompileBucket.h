@@ -17,6 +17,7 @@ namespace aomdd {
 class CompileBucket {
     Scope s;
     std::vector<const AOMDDFunction*> functions;
+    double weight;
 public:
     CompileBucket();
 
@@ -42,6 +43,10 @@ public:
             mem += functions[i]->SelfMemUsage();
         }
         return mem;
+    }
+
+    inline void Reweigh(double w) {
+        weight *= w;
     }
 };
 

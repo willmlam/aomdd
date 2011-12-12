@@ -733,6 +733,116 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     return ret;
 }
 
+// Sets each AND node of variables to marginalize to be the result of minimizing
+// the respective MetaNode children of each AND node. Redundancy can be
+// resolved outside.
+WeightedMetaNodeList NodeManager::Minimize(MetaNodePtr root, const Scope &s,
+        const DirectedGraph &embeddedpt) {
+    if (root.get() == MetaNode::GetZero().get()) {
+        return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetZero()), 0.0);
+    }
+    else if (root.get() == MetaNode::GetOne().get()) {
+        return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetOne()), 1.0);
+    }
+    int varid = root->GetVarID();
+    int card = root->GetCard();
+    int elimvar = s.GetOrdering().front();
+
+    Operation ocEntry(MIN, root, elimvar);
+    OperationCache::iterator ocit = opCache.find(ocEntry);
+    if ( ocit != opCache.end() ) {
+        //Found result in cache
+        /*
+        cout << "operator: " << ocit->first.GetOperator() << endl;
+        cout << "root: " << root.get() << endl;
+        cout << "elimvar: " << elimvar << endl;
+        cout << "Returning: " << ocit->second.get() << endl;
+        */
+        return ocit->second;
+    }
+
+    // Minimize each subgraph
+    const vector<ANDNodePtr> &andNodes = root->GetChildren();
+    vector<ANDNodePtr> newANDNodes;
+    BOOST_FOREACH(ANDNodePtr i, andNodes) {
+        const vector<MetaNodePtr> &metaNodes = i->GetChildren();
+        vector<MetaNodePtr> newMetaNodes;
+        bool terminalOnly = true;
+        double weight = 1.0;
+        BOOST_FOREACH(MetaNodePtr j, metaNodes) {
+            WeightedMetaNodeList newMetaNodeList = Minimize(j, s, embeddedpt);
+            /*
+            cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
+            paramSets[i].first->RecursivePrint(cout); cout << endl;
+            cout << "SubDD:" << "(" << varid << "," << k << ")" << endl;
+            subDD->RecursivePrint(cout); cout << endl;
+            */
+
+            // Note: would have to modify for other operators
+            weight *= newMetaNodeList.second;
+            BOOST_FOREACH(MetaNodePtr m, newMetaNodeList.first) {
+                if (!m->IsTerminal()) {
+                    if (terminalOnly) {
+                        newMetaNodes.clear();
+                        terminalOnly = false;
+                    }
+                    newMetaNodes.push_back(m);
+                }
+                else if (newMetaNodes.empty()) {
+                    newMetaNodes.push_back(m);
+                }
+            }
+        }
+        ANDNodePtr newANDNode(new MetaNode::ANDNode(i->GetWeight() * weight, newMetaNodes));
+        newANDNodes.push_back(newANDNode);
+    }
+
+    // If the root is to be maximized
+    if (s.VarExists(varid)) {
+        // Assume node resides at bottom
+        double weight = DOUBLE_MAX;
+        for (unsigned int i = 0; i < newANDNodes.size(); ++i) {
+            double temp = newANDNodes[i]->GetWeight();
+            if (temp < weight) {
+                weight = temp;
+            }
+        }
+        newANDNodes.clear();
+        vector<MetaNodePtr> newMetaNodes;
+        if (weight == 0) {
+            newMetaNodes.push_back(MetaNode::GetZero());
+        } else {
+            newMetaNodes.push_back(MetaNode::GetOne());
+        }
+        ANDNodePtr newAND(new MetaNode::ANDNode(weight, newMetaNodes));
+        for (unsigned int i = 0; i < andNodes.size(); ++i) {
+            newANDNodes.push_back(newAND);
+        }
+    }
+    Scope var;
+    var.AddVar(varid, card);
+    WeightedMetaNodeList ret = CreateMetaNode(var, newANDNodes);
+    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
+
+    // Purge if op cache is too large
+    if (opCacheMemUsage > OCMBLimit) {
+        NodeManager::GetNodeManager()->PurgeOpCache();
+    }
+
+    if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
+    /*
+    cout << "Created cache entry(MAX)" << endl;
+    cout << "elimvar:" << elimvar << endl;
+    cout << "keys:";
+    BOOST_FOREACH(size_t k, entryKey.GetParamSet()) {
+        cout << " " << (void*)k;
+    }
+    cout << endl << "res:" << ret.get() << endl;
+    */
+    return ret;
+}
+
 WeightedMetaNodeList NodeManager::Condition(MetaNodePtr root, const Assignment &cond) {
     if (root.get() == MetaNode::GetOne().get()) {
         return WeightedMetaNodeList(MetaNodeList(1, root), 1.0);

@@ -44,6 +44,7 @@ public:
     void Multiply(const AOMDDFunction &rhs);
     void Marginalize(const Scope &elimVars, bool mutableIDs = true);
     void Maximize(const Scope &elimVars, bool mutableIDs = true);
+    void Minimize(const Scope &elimVars, bool mutableIDs = true);
     void Condition(const Assignment &cond);
 
     double Maximum(const Assignment &cond);
@@ -53,6 +54,15 @@ public:
 
     inline void ReweighRoot(double w) {
         root.second *= w;
+    }
+
+    inline double GetRootWeight() const {
+        return root.second;
+    }
+
+    inline bool IsConstantValue() const {
+        assert(root.first.size() != 0);
+        return root.first.size() == 1 && root.first[0]->IsTerminal();
     }
 
     inline std::pair<unsigned int, unsigned int> Size() const {

@@ -241,6 +241,13 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     while (!chainDone && ei != ei_end) {
         int current = target(*ei, pt->GetTree());
         chainRoot = source(*ei, pt->GetTree());
+
+        // keep traversing up if variable is not in the scope of this function
+        while (!domain.VarExists(chainRoot)) {
+            DInEdge e, e_end;
+            tie(e, e_end) = in_edges(chainRoot, pt->GetTree());
+            chainRoot = source(*e, pt->GetTree());
+        }
         add_edge(chainRoot, current, elimChain);
         BOOST_FOREACH(MetaNodePtr m, root.first) {
 	        if (chainRoot == m->GetVarID()) {
@@ -296,6 +303,39 @@ void AOMDDFunction::Maximize(const Scope &elimVars, bool mutableIDs) {
     newroot.second = root.second;
     BOOST_FOREACH(MetaNodePtr m, root.first) {
         WeightedMetaNodeList l = mgr->Maximize(m, elimVars, pt->GetTree());
+        newroot.first.insert(newroot.first.end(), l.first.begin(), l.first.end());
+        newroot.second *= l.second;
+    }
+    root = newroot;
+    domain = domain - elimVars;
+    NodeManager::GetNodeManager()->UTGarbageCollect();
+}
+
+void AOMDDFunction::Minimize(const Scope &elimVars, bool mutableIDs) {
+    /*
+    domain.Save(cout); cout << endl;
+    elimVars.Save(cout); cout << endl;
+    */
+    if (root.first.size() == 1 && root.first[0]->IsTerminal()) {
+        domain = domain - elimVars;
+        return;
+    }
+    /*
+    if (fullReduce) {
+        root = mgr->FullReduce(mgr->Maximize(root, elimVars, pt->GetTree()));
+//        root = mgr->Maximize(root, elimVars, pt->GetTree());
+        domain = domain - elimVars;
+        if (mutableIDs && root->IsDummy() && !domain.IsEmpty() && !domain.VarExists(root->GetVarID())) {
+            int newDummyID = domain.GetOrdering().front();
+            cout << "Changing dummy id " << "<" << root->GetVarID() << "> to <" << newDummyID << ">" << endl;
+            root = mgr->CreateMetaNode(newDummyID, 1.0, root->GetChildren());
+        }
+    }
+    */
+    WeightedMetaNodeList newroot;
+    newroot.second = root.second;
+    BOOST_FOREACH(MetaNodePtr m, root.first) {
+        WeightedMetaNodeList l = mgr->Minimize(m, elimVars, pt->GetTree());
         newroot.first.insert(newroot.first.end(), l.first.begin(), l.first.end());
         newroot.second *= l.second;
     }

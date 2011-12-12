@@ -17,7 +17,7 @@
 namespace aomdd {
 
 enum Operator {
-    PROD, SUM, MAX, REDUCE, MARGINALIZE, NONE
+    PROD, SUM, MAX, MIN, REDUCE, MARGINALIZE, NONE
 };
 
 typedef boost::unordered_multiset<MetaNode*> ParamSet;
@@ -216,6 +216,7 @@ public:
 
     WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &elimChain, bool &sumOpPerformed);
     WeightedMetaNodeList Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    WeightedMetaNodeList Minimize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
     WeightedMetaNodeList Condition(MetaNodePtr root, const Assignment &cond);
 
     // Normalizes the weights of the immediate AND nodes to sum to 1.

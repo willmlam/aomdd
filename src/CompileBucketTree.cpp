@@ -111,38 +111,6 @@ double CompileBucketTree::Prob(bool logOut) {
         pr = compiledDD.Sum(a);
         if (logOut) pr = log10(pr);
 
-        /*
-        AOMDDFunction probFunction(compiledDD);
-        const DirectedGraph &tree = pt->GetTree();
-
-        list<int>::reverse_iterator rit = ordering.rbegin();
-        int numBuckets = ordering.size();
-        int count = 1;
-
-        for (; rit != ordering.rend(); ++rit) {
-            DInEdge ei, ei_end;
-            tie(ei, ei_end) = in_edges(*rit, tree);
-            Scope elim;
-            int card = probFunction.GetScope().GetVarCard(*rit);
-            elim.AddVar(*rit, card);
-            cout << "Eliminating <" << *rit
-                    << "> (" << count++ << " of " << numBuckets << ")" << endl;
-            map<int, int>::iterator eit = evidence.find(*rit);
-            if (eit != evidence.end()) {
-                Assignment cond(elim);
-                cond.SetVal(*rit, eit->second);
-                probFunction.Condition(cond);
-            }
-            else {
-                probFunction.Marginalize(elim, false);
-            }
-            // At root
-            if (ei == ei_end) {
-                Assignment a;
-                pr = probFunction.GetVal(a, logOut);
-            }
-        }
-        */
     }
 
     // Otherwise, compile, but eliminate variables along the way
@@ -210,6 +178,13 @@ double CompileBucketTree::Prob(bool logOut) {
                     delete message;
                 }
             }
+            // message is a constant value
+            else if (false &&message->IsConstantValue() && ei != ei_end) {
+                int parent = source(*ei, tree);
+                cout << "Removing irrelevant bucket" << endl;
+                buckets[parent].Reweigh(message->GetRootWeight());
+                delete message;
+            }
             // Not at root
             else if (ei != ei_end) {
                 int parent = source(*ei, tree);
@@ -256,37 +231,6 @@ double CompileBucketTree::MPE(bool logOut) {
         pr = compiledDD.Maximum(a);
         if (logOut) pr = log10(pr);
 
-        /*
-        const DirectedGraph &tree = pt->GetTree();
-        AOMDDFunction probFunction(compiledDD);
-        list<int>::reverse_iterator rit = ordering.rbegin();
-        int numBuckets = ordering.size();
-        int count = 1;
-
-        for (; rit != ordering.rend(); ++rit) {
-            DInEdge ei, ei_end;
-            tie(ei, ei_end) = in_edges(*rit, tree);
-            Scope elim;
-            int card = probFunction.GetScope().GetVarCard(*rit);
-            elim.AddVar(*rit, card);
-            cout << "Eliminating <" << *rit
-                    << "> (" << count++ << " of " << numBuckets << ")" << endl;
-            map<int, int>::iterator eit = evidence.find(*rit);
-            if (eit != evidence.end()) {
-                Assignment cond(elim);
-                cond.SetVal(*rit, eit->second);
-                probFunction.Condition(cond);
-            }
-            else {
-                probFunction.Maximize(elim, false);
-            }
-            // At root
-            if (ei == ei_end) {
-                Assignment a;
-                pr = probFunction.GetVal(a, logOut);
-            }
-        }
-        */
     }
 
     // Otherwise, compile, but eliminate variables along the way

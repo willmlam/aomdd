@@ -31,6 +31,7 @@
 const int UNKNOWN_VAL = -1;
 const int ERROR_VAL = -10;
 const double DOUBLE_MIN = -100000000;
+const double DOUBLE_MAX = 100000000;
 
 const int MB_PER_BYTE = 1048576;
 
