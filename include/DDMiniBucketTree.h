@@ -35,6 +35,8 @@ class DDMiniBucketTree {
     long numMeta, numAND, numTotal;
     double mem;
 
+    PartitionMetric metric;
+
     void ResetBuckets();
 
 public:
@@ -55,6 +57,10 @@ public:
     inline long GetLargestNumAND() { return numAND; }
     inline long GetLargestNumTotal() { return numTotal; }
     inline double GetLargestMem() { return mem; }
+
+    inline void SetParitionMetric (PartitionMetric m) {
+        metric = m;
+    }
 
     void PrintBucketFunctionScopes(std::ostream &out) const;
     void PrintBuckets(std::ostream &out) const;

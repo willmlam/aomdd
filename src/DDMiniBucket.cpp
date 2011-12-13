@@ -43,6 +43,74 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
     // TO DO
     if (metric == I_BOUND) {
         // check function scopes
+        list<LongIntPair> functionAritys;
+        Scope combined;
+
+        for (unsigned int i = 0; i < functions.size(); ++i) {
+            combined = combined + functions[i]->GetScope();
+            unsigned int numVars = functions[i]->GetScope().GetNumVars();
+            if (numVars > bound) {
+                cout << "Warning: function arity exceeds bound! Increasing i-bound" << endl;
+                bound = numVars;
+            }
+            functionAritys.push_back(LongIntPair(numVars, i));
+            cout << "Function " << i << " arity: " << numVars << endl;
+        }
+        functionAritys.sort(CompareLongIntPair);
+
+        cout << "Combined bucket arity: " << combined.GetNumVars();
+        cout << "Bound: " << bound << endl;
+
+        if (bound > 0 && combined.GetNumVars() > bound) {
+            /*
+            list<unsigned int> unassigned;
+            for (unsigned int i = 0; i < functionAritys.size(); ++i) {
+                unassigned.push_back(functionAritys[i].second);
+            }
+            */
+            vector< vector<int> > partitions;
+            partitions.push_back(vector<int>());
+            int curPartition = 0;
+            Scope partScope;
+            while (!functionAritys.empty()) {
+                list<LongIntPair>::iterator it = functionAritys.begin();
+                for (; it != functionAritys.end(); ++it) {
+                    Scope tempScope = partScope + functions[it->second]->GetScope();
+                    if (tempScope.GetNumVars() <= bound) {
+                        partScope = tempScope;
+                        partitions[curPartition].push_back(it->second);
+                        break;
+                    }
+                }
+                if (it != functionAritys.end()) {
+                    functionAritys.erase(it);
+                }
+                else {
+                    cout << "Creating new partition" << endl;
+                    curPartition++;
+                    partitions.push_back(vector<int>());
+                    partScope.Clear();
+                }
+            }
+
+            // generate messages for each partition
+            for (unsigned int i = 0; i < partitions.size(); ++i) {
+                messages.push_back(new AOMDDFunction(*functions[partitions[i][0]]));
+                // for each function in the partition
+                for (unsigned int j = 1; j < partitions[i].size(); ++j) {
+                    messages[i]->Multiply(*functions[partitions[i][j]]);
+                }
+            }
+            cerr << "Created " << partitions.size() << " partitions." << endl;
+        }
+        else {
+            // just do the standard apply loop
+            messages.push_back(new AOMDDFunction(*functions[0]));
+            for (unsigned int i = 1; i < functions.size(); ++i) {
+                messages[0]->Multiply(*functions[i]);
+            }
+        }
+
     }
     else if (metric == DIAGRAM_SIZE) {
         // calculate upper bound on non-partitioned diagram size

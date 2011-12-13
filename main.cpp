@@ -24,6 +24,7 @@ double MBLimit = 8192;
 double OCMBLimit = 2048;
 
 unsigned long mbeSizeBound = 0;
+unsigned long mbeIBound = 0;
 
 list<int> parseOrder(string filename) {
     ifstream infile(filename.c_str());
@@ -120,6 +121,10 @@ bool ParseCommandLine(int argc, char **argv) {
                 if (++i >= argc) return false;
                 mbeSizeBound = atol(argv[i]);
             }
+            else if (token.substr(1, len-1) == "mbeibound") {
+                if (++i >= argc) return false;
+                mbeIBound = atol(argv[i]);
+            }
             else if (token.substr(1, len-1) == "c") {
                 compileMode = true;
             }
@@ -196,6 +201,7 @@ int main(int argc, char **argv) {
         cout << "  -mpe             compute MPE(e) cost" << endl;
         cout << "  -mbe             use minibucket approximation" << endl;
         cout << "  -mbebound        size bound for minibuckets" << endl;
+        cout << "  -mbeibound       i-bound for minibuckets" << endl;
         cout << "  -vbe             use vanilla bucket elimination" << endl;
         cout << "  -log             output results in log space" << endl;
         cout << endl;
@@ -359,7 +365,18 @@ int main(int argc, char **argv) {
         NodeManager::GetNodeManager()->SetOCMBLimit(OCMBLimit);
         if (miniBucketMode) {
 	        cout << "Starting AOMDD-MBE..." << endl;
-	        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeSizeBound);
+	        if (mbeSizeBound > 0) {
+		        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeSizeBound);
+		        mbt->SetParitionMetric(DIAGRAM_SIZE);
+	        }
+	        else if (mbeIBound > 0) {
+		        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeIBound);
+		        mbt->SetParitionMetric(I_BOUND);
+	        }
+	        else {
+	            cerr << "No bound set, exiting..." << endl;
+	            exit(0);
+	        }
         }
         else {
 	        cout << "Starting AOMDD-BE..." << endl;

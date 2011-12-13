@@ -69,6 +69,11 @@ inline bool Scope::RemoveVar(int i) {
     return false;
 }
 
+inline void Scope::Clear() {
+    varCard.clear();
+    ordering.clear();
+}
+
 inline bool Scope::VarExists(int i) const {
     return varCard.find(i) != varCard.end();
 }

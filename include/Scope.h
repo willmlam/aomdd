@@ -29,6 +29,9 @@ public:
     // Remove the variable
     virtual bool RemoveVar(int i);
 
+    // Clear the scope
+    virtual void Clear();
+
     // Check if a variable exists in the scope
     virtual bool VarExists(int i) const;
 

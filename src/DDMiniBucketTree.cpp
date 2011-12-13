@@ -42,6 +42,7 @@ DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
     for (unsigned int i = 0; i < buckets.size(); i++) {
         initialBucketSizes[i] = buckets[i].GetBucketSize();
         buckets[i].SetBound(bound);
+        buckets[i].SetParitionMetric(metric);
     }
     numMeta = 0;
     numAND = 0;
@@ -153,7 +154,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
             /*
             buckets[*rit].PrintDiagrams(cout); cout << endl;
             */
-            buckets[*rit].PrintFunctionTables(cout); cout << endl;
+//            buckets[*rit].PrintFunctionTables(cout); cout << endl;
 //            AOMDDFunction *message = buckets[*rit].Flatten();
             vector<AOMDDFunction *> messages = buckets[*rit].GenerateMessages();
             buckets[*rit].PurgeFunctions();
@@ -172,8 +173,8 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                 AOMDDFunction *message = messages[i];
                 cout << "Message partition " << i << endl;
                 message->PrintAsTable(cout);
-                if (encPart)
-	                cin.get();
+//                if (encPart)
+//	                cin.get();
 
                 DInEdge ei, ei_end;
                 tie(ei, ei_end) = in_edges(*rit, tree);
@@ -220,7 +221,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                 cout << "After eliminating " << *rit << endl;
 
                 //            message->Save(cout); cout << endl;
-                            message->PrintAsTable(cout); cout << endl;
+//                            message->PrintAsTable(cout); cout << endl;
 
                 // empty scope, no need to send message, update final result
                 if (newScope.IsEmpty()) {
