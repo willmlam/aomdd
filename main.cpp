@@ -367,12 +367,10 @@ int main(int argc, char **argv) {
 	        cout << "Starting AOMDD-MBE..." << endl;
 	        if (mbeSizeBound > 0) {
 		        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeSizeBound);
-		        cout << DIAGRAM_SIZE << endl;
 		        mbt->SetPartitionMetric(DIAGRAM_SIZE);
 	        }
 	        else if (mbeIBound > 0) {
 		        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeIBound);
-		        cout << I_BOUND << endl;
 		        mbt->SetPartitionMetric(I_BOUND);
 	        }
 	        else {

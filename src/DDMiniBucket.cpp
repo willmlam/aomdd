@@ -37,14 +37,11 @@ void DDMiniBucket::PurgeFunctions() {
 vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
     vector<AOMDDFunction*> messages;
     if (functions.size() == 0) {
-        cout << "No functions in bucket, returning empty message vector." << endl;
+//        cout << "No functions in bucket, returning empty message vector." << endl;
         return messages;
     }
 
-    // TO DO
-    cout << "Metric: " << metric << endl;
     if (metric == I_BOUND) {
-        cout << "in i-bound case" << endl;
         // check function scopes
         list<LongIntPair> functionAritys;
         Scope combined;
@@ -53,16 +50,18 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
             combined = combined + functions[i]->GetScope();
             unsigned int numVars = functions[i]->GetScope().GetNumVars();
             if (numVars > bound) {
-                cout << "Warning: function arity exceeds bound! Increasing i-bound" << endl;
+//                cout << "Warning: function arity exceeds bound! Increasing i-bound" << endl;
                 bound = numVars;
             }
             functionAritys.push_back(LongIntPair(numVars, i));
-            cout << "Function " << i << " arity: " << numVars << endl;
+//            cout << "Function " << i << " arity: " << numVars << endl;
         }
         functionAritys.sort(CompareLongIntPair);
 
+        /*
         cout << "Combined bucket output arity: " << combined.GetNumVars() - 1;
         cout << ", Bound: " << bound << endl;
+        */
 
         if (bound > 0 && combined.GetNumVars() > bound) {
             /*
@@ -72,7 +71,7 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
             }
             */
             vector< vector<int> > partitions;
-            cout << "Creating new partition" << endl;
+//            cout << "Creating new partition" << endl;
             partitions.push_back(vector<int>());
             int curPartition = 0;
             Scope partScope;
@@ -90,7 +89,7 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
                     functionAritys.erase(it);
                 }
                 else {
-                    cout << "Creating new partition" << endl;
+//                    cout << "Creating new partition" << endl;
                     curPartition++;
                     partitions.push_back(vector<int>());
                     partScope.Clear();
@@ -105,7 +104,7 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
                     messages[i]->Multiply(*functions[partitions[i][j]]);
                 }
             }
-            cerr << "Created " << partitions.size() << " partitions." << endl;
+//            cerr << "Created " << partitions.size() << " partitions." << endl;
         }
         else {
             // just do the standard apply loop
@@ -126,13 +125,13 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
             int numMeta, numAND;
             tie(numMeta, numAND) = functions[i]->Size();
             functionSizes.push_back(LongIntPair(numMeta+numAND, i));
-            cout << "Function " << i << " size" << numMeta + numAND << endl;
+//            cout << "Function " << i << " size" << numMeta + numAND << endl;
             size *= numMeta + numAND;
         }
         functionSizes.sort(CompareLongIntPair);
 
-        cout << "Estimated combined bucket size: " << size << endl;
-        cout << "Bound: " << bound << endl;
+//        cout << "Estimated combined bucket size: " << size << endl;
+//        cout << "Bound: " << bound << endl;
 
         // partition if size is > bound
         if (bound > 0 && size > bound) {
@@ -165,7 +164,7 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
                 } while (!found && it != functionSizes.end());
 
                 if (!found) {
-                    cerr << "Creating a new partition." << endl;
+//                    cerr << "Creating a new partition." << endl;
                     ++curPartition;
                     partitions.push_back(vector<int>());
                 }
@@ -179,7 +178,7 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
                     messages[i]->Multiply(*functions[partitions[i][j]]);
                 }
             }
-            cerr << "Created " << partitions.size() << " partitions." << endl;
+//            cerr << "Created " << partitions.size() << " partitions." << endl;
         }
         else {
             // just do the standard apply loop

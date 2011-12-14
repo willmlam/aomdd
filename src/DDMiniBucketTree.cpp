@@ -148,9 +148,13 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
         bool encPart = false;
 
         for (; rit != ordering.rend(); ++rit) {
+            cout << "." ;
+            cout.flush();
+            /*
             cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
+            */
 
             /*
             buckets[*rit].PrintDiagrams(cout); cout << endl;
@@ -161,7 +165,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
             for (unsigned int i = 0; i < messages.size(); ++i) {
 	            messages[i]->SetScopeOrdering(ordering);
             }
-            cout << "After flattening" << endl;
+//            cout << "After flattening" << endl;
 
 //            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
@@ -217,7 +221,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                         mem += tmem;
                     }
                 }
-                cout << "After eliminating " << *rit << endl;
+//                cout << "After eliminating " << *rit << endl;
 
                 //            message->Save(cout); cout << endl;
 //                            message->PrintAsTable(cout); cout << endl;
@@ -237,11 +241,12 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                 // Not at root
                 else {
                     int parent = newScope.GetOrdering().back();
-                    cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
+//                    cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
                     buckets[parent].AddFunction(message);
                 }
             }
         }
+        cout << "done."<< endl;
         if (logOut) {
             pr += log10(globalWeight);
         }
