@@ -30,6 +30,8 @@ DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
     buckets.resize(numBuckets);
     initialBucketSizes.resize(numBuckets);
     const vector<TableFunction> &functions = m.GetFunctions();
+
+
     for (unsigned int i = 0; i < functions.size(); i++) {
         int idx = functions[i].GetScope().GetOrdering().back();
         if (functions[i].GetScope().GetNumVars() == 0) {
@@ -42,7 +44,6 @@ DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
     for (unsigned int i = 0; i < buckets.size(); i++) {
         initialBucketSizes[i] = buckets[i].GetBucketSize();
         buckets[i].SetBound(bound);
-        buckets[i].SetParitionMetric(metric);
     }
     numMeta = 0;
     numAND = 0;
@@ -153,9 +154,8 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
 
             /*
             buckets[*rit].PrintDiagrams(cout); cout << endl;
+            buckets[*rit].PrintFunctionTables(cout); cout << endl;
             */
-//            buckets[*rit].PrintFunctionTables(cout); cout << endl;
-//            AOMDDFunction *message = buckets[*rit].Flatten();
             vector<AOMDDFunction *> messages = buckets[*rit].GenerateMessages();
             buckets[*rit].PurgeFunctions();
             for (unsigned int i = 0; i < messages.size(); ++i) {
@@ -171,8 +171,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
             // will need to repeat for each partition start here
             for (unsigned int i = 0; i < messages.size(); ++i) {
                 AOMDDFunction *message = messages[i];
-                cout << "Message partition " << i << endl;
-                message->PrintAsTable(cout);
+//                message->PrintAsTable(cout);
 //                if (encPart)
 //	                cin.get();
 
@@ -198,7 +197,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                         message->Marginalize(elim);
                     }
                     else if (q == MPE || (q == PE && i > 0)) {
-                        message->Minimize(elim);
+                        message->Maximize(elim);
                     }
                     else {
                         cerr << "Invalid query type!" << endl;

@@ -30,6 +30,8 @@
 // Constants
 const int UNKNOWN_VAL = -1;
 const int ERROR_VAL = -10;
+const int EMPTY_KEY = -20;
+const int DELETED_KEY = -30;
 const double DOUBLE_MIN = -100000000;
 const double DOUBLE_MAX = 100000000;
 

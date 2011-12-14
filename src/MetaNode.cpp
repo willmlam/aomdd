@@ -123,7 +123,7 @@ MetaNode::MetaNode(int varidIn, int cardIn, const vector<ANDNodePtr> &ch) :
     // Scope must be over one variable
     // All assignments must be specified
     hashVal = hash_value(*this);
-    assert(card == children.size());
+    assert(card == children.size() || children.size() == 1);
 }
 
 MetaNode::~MetaNode() {

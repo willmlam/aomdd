@@ -21,6 +21,7 @@ class Model {
 protected:
     int numVars;
     int maxDomain;
+    std::vector<Scope> scopes;
     std::vector<int> domains;
     std::vector<TableFunction> functions;
     std::list<int> ordering;
@@ -36,7 +37,9 @@ public:
         return functions;
     }
 
-    std::vector<Scope> GetScopes() const;
+    inline const std::vector<Scope> &GetScopes() const {
+        return scopes;
+    }
 
 
     void SetOrdering(const std::list<int> &orderIn);
@@ -45,6 +48,7 @@ public:
     void parseUAI(std::string filename);
 
     void FreeMemory() {
+        scopes.clear();
         domains.clear();
         functions.clear();
         ordering.clear();

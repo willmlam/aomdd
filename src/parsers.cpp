@@ -37,7 +37,6 @@ void Model::parseUAI(string filename) {
     int nf = 0;
     int intBuffer = 0;
     double doubleBuffer = 0;
-    vector<Scope> fScopes;
 
     // Parse type
     infile >> type;
@@ -68,17 +67,17 @@ void Model::parseUAI(string filename) {
             newScope.AddVar(intBuffer, domains[intBuffer]);
         }
         newScope.SetOrdering(ordering);
-        fScopes.push_back(newScope);
+        scopes.push_back(newScope);
     }
 
     // Parse function tables
     for (int i = 0; i < nf; i++) {
         infile >> intBuffer;
         int scopeSize = intBuffer;
-        assert(scopeSize == int(fScopes[i].GetCard()));
+        assert(scopeSize == int(scopes[i].GetCard()));
 //        TableFunction newFunction(fScopes[i]);
-        functions.push_back(TableFunction(fScopes[i]));
-        Assignment a(fScopes[i]);
+        functions.push_back(TableFunction(scopes[i]));
+        Assignment a(scopes[i]);
         a.SetAllVal(0);
         int count = 0;
         do {

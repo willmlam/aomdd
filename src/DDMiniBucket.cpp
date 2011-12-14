@@ -37,11 +37,14 @@ void DDMiniBucket::PurgeFunctions() {
 vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
     vector<AOMDDFunction*> messages;
     if (functions.size() == 0) {
+        cout << "No functions in bucket, returning empty message vector." << endl;
         return messages;
     }
 
     // TO DO
+    cout << "Metric: " << metric << endl;
     if (metric == I_BOUND) {
+        cout << "in i-bound case" << endl;
         // check function scopes
         list<LongIntPair> functionAritys;
         Scope combined;
@@ -58,8 +61,8 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
         }
         functionAritys.sort(CompareLongIntPair);
 
-        cout << "Combined bucket arity: " << combined.GetNumVars();
-        cout << "Bound: " << bound << endl;
+        cout << "Combined bucket output arity: " << combined.GetNumVars() - 1;
+        cout << ", Bound: " << bound << endl;
 
         if (bound > 0 && combined.GetNumVars() > bound) {
             /*
@@ -69,6 +72,7 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
             }
             */
             vector< vector<int> > partitions;
+            cout << "Creating new partition" << endl;
             partitions.push_back(vector<int>());
             int curPartition = 0;
             Scope partScope;
@@ -76,7 +80,7 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
                 list<LongIntPair>::iterator it = functionAritys.begin();
                 for (; it != functionAritys.end(); ++it) {
                     Scope tempScope = partScope + functions[it->second]->GetScope();
-                    if (tempScope.GetNumVars() <= bound) {
+                    if (tempScope.GetNumVars() <= bound + 1) {
                         partScope = tempScope;
                         partitions[curPartition].push_back(it->second);
                         break;
@@ -184,6 +188,10 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
                 messages[0]->Multiply(*functions[i]);
             }
         }
+    }
+    else {
+        cout << "No metric set! Exiting..." << endl;
+        exit(0);
     }
     return messages;
 }

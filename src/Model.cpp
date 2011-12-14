@@ -17,17 +17,10 @@ using namespace std;
 Model::Model() : numVars(0), maxDomain(0) {
 }
 
-vector<Scope> Model::GetScopes() const {
-    vector<Scope> ret;
-    for (unsigned int i = 0; i < functions.size(); ++i) {
-        ret.push_back(functions[i].GetScope());
-    }
-    return ret;
-}
-
 void Model::SetOrdering(const list<int> &orderIn) {
     ordering = orderIn;
     for (unsigned int i = 0; i < functions.size(); ++i) {
+        scopes[i].SetOrdering(ordering);
         functions[i].SetOrdering(ordering);
     }
 }

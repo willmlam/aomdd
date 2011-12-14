@@ -35,7 +35,7 @@ public:
     // This generates the messages before elimination
     std::vector<AOMDDFunction *> GenerateMessages();
 
-    inline void SetParitionMetric(PartitionMetric m) {
+    inline void SetPartitionMetric(PartitionMetric m) {
         metric = m;
     }
 

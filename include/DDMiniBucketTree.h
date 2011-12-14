@@ -58,8 +58,11 @@ public:
     inline long GetLargestNumTotal() { return numTotal; }
     inline double GetLargestMem() { return mem; }
 
-    inline void SetParitionMetric (PartitionMetric m) {
+    inline void SetPartitionMetric (PartitionMetric m) {
         metric = m;
+        for (unsigned int i = 0; i < buckets.size(); ++i) {
+            buckets[i].SetPartitionMetric(metric);
+        }
     }
 
     void PrintBucketFunctionScopes(std::ostream &out) const;

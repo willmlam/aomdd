@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
         cout << endl;
         cout << "Other options:" << endl;
         cout << "  -mlim            specify memory limit (MB) for nodes" << endl;
-        cout << "  -oclim           specify memory limit (MB) for operations" << endl;
+//        cout << "  -oclim           specify memory limit (MB) for operations" << endl;
         cout << "  -outcompile      output compiled AOMDD" << endl;
         cout << "  -vbespace        compute space needed by vanilla bucket elimination (only)" << endl;
         return 0;
@@ -363,22 +363,29 @@ int main(int argc, char **argv) {
     else {
         NodeManager::GetNodeManager()->SetMBLimit(MBLimit);
         NodeManager::GetNodeManager()->SetOCMBLimit(OCMBLimit);
-        if (miniBucketMode) {
+        if (miniBucketMode && (mbeSizeBound > 0 || mbeIBound > 0)) {
 	        cout << "Starting AOMDD-MBE..." << endl;
 	        if (mbeSizeBound > 0) {
 		        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeSizeBound);
-		        mbt->SetParitionMetric(DIAGRAM_SIZE);
+		        cout << DIAGRAM_SIZE << endl;
+		        mbt->SetPartitionMetric(DIAGRAM_SIZE);
 	        }
 	        else if (mbeIBound > 0) {
 		        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeIBound);
-		        mbt->SetParitionMetric(I_BOUND);
+		        cout << I_BOUND << endl;
+		        mbt->SetPartitionMetric(I_BOUND);
 	        }
 	        else {
+	            // should not get here
 	            cerr << "No bound set, exiting..." << endl;
 	            exit(0);
 	        }
         }
         else {
+            if (miniBucketMode) {
+                cout << "No bound set, switching to standard BE." << endl;
+                miniBucketMode = false;
+            }
 	        cout << "Starting AOMDD-BE..." << endl;
 	        cbt = new CompileBucketTree(m, &pt, ordering, evidence, bucketID);
         }
