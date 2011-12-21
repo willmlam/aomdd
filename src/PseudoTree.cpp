@@ -17,6 +17,19 @@ using namespace std;
 PseudoTree::PseudoTree() {
 }
 
+PseudoTree::PseudoTree(const Model &m) {
+    Graph g(m.GetNumVars(), m.GetScopes());
+    g.InduceEdges(m.GetOrdering());
+    inducedWidth = g.GetInducedWidth();
+    s = m.GetCompleteScope();
+    context.resize(s.GetNumVars());
+    DFSGenerator(g);
+    ComputeContext(g);
+    if (hasDummy) {
+        s.AddVar(root, 1);
+    }
+}
+
 PseudoTree::PseudoTree(const Graph &inducedGraph, const Scope &sIn)
 : inducedWidth(inducedGraph.GetInducedWidth()), s(sIn), hasDummy(false) {
     context.resize(s.GetNumVars());

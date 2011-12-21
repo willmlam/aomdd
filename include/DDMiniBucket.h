@@ -43,6 +43,10 @@ public:
         bound = b;
     }
 
+    inline const std::vector<const AOMDDFunction *> &GetFunctions() const {
+        return functions;
+    }
+
     inline int GetBucketSize() const { return functions.size(); }
 
     inline void ResizeBucket(int n) { functions.resize(n); }

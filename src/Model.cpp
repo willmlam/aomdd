@@ -25,6 +25,18 @@ void Model::SetOrdering(const list<int> &orderIn) {
     }
 }
 
+void Model::AddFunction(const Scope &s, const vector<double> &vals) {
+    assert(s.GetCard() == vals.size());
+    functions.push_back(TableFunction(s));
+    Assignment a(s);
+    a.SetAllVal(0);
+    int i = 0;
+    do {
+        functions.back().SetVal(a, vals[i++]);
+    } while (a.Iterate());
+    completeScope = completeScope + s;
+}
+
 void Model::Save(ostream &out) {
     for (unsigned int i = 0; i < functions.size(); ++i) {
         functions[i].Save(out);

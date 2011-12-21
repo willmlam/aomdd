@@ -14,6 +14,7 @@
 #include "utils.h"
 #include "Graph.h"
 #include "Scope.h"
+#include "Model.h"
 
 // Should take in an induced graph
 
@@ -114,6 +115,8 @@ class PseudoTree {
     std::vector<std::set<int> > context;
 public:
     PseudoTree();
+
+    PseudoTree(const Model &m);
     // Assumes graph is an induced graph...
     PseudoTree(const Graph &inducedGraph, const Scope &sIn);
     virtual ~PseudoTree();

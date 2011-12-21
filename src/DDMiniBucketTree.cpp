@@ -17,9 +17,8 @@ DDMiniBucketTree::DDMiniBucketTree() : compiled(false), globalWeight(1.0) {
 }
 
 DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
-        const list<int> &orderIn,
         const map<int, int> &evidIn, int bucketID, unsigned long bound)
-        : pt(ptIn), ordering(orderIn), evidence(evidIn), largestBucket(bucketID),
+        : pt(ptIn), ordering(m.GetOrdering()), evidence(evidIn), largestBucket(bucketID),
         compiled(false), globalWeight(1.0) {
 
     int numBuckets = ordering.size();
@@ -28,6 +27,7 @@ DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
     }
 
     buckets.resize(numBuckets);
+    interMessages.resize(numBuckets);
     initialBucketSizes.resize(numBuckets);
     const vector<TableFunction> &functions = m.GetFunctions();
 
@@ -141,8 +141,8 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
     else {
         ResetBuckets();
         list<int>::reverse_iterator rit = ordering.rbegin();
-        int numBuckets = ordering.size();
-        int count = 1;
+//        int numBuckets = ordering.size();
+//        int count = 1;
 
         const DirectedGraph &tree = pt->GetTree();
         bool encPart = false;
@@ -161,7 +161,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
             buckets[*rit].PrintFunctionTables(cout); cout << endl;
             */
             vector<AOMDDFunction *> messages = buckets[*rit].GenerateMessages();
-            buckets[*rit].PurgeFunctions();
+                buckets[*rit].PurgeFunctions();
             for (unsigned int i = 0; i < messages.size(); ++i) {
 	            messages[i]->SetScopeOrdering(ordering);
             }
@@ -242,21 +242,37 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                 else {
                     int parent = newScope.GetOrdering().back();
 //                    cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
+                    interMessages[parent].push_back(new AOMDDFunction(*message));
                     buckets[parent].AddFunction(message);
                 }
             }
         }
         cout << "done."<< endl;
+        treeCompiled = true;
         if (logOut) {
             pr += log10(globalWeight);
         }
         else {
             pr *= globalWeight;
         }
-        NodeManager::GetNodeManager()->PurgeOpCache();
+//        NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
+    if (logOut)
+        logPR = pr;
+    else
+        logPR = log10(pr);
     return pr;
+}
+
+double DDMiniBucketTree::GetHeur(int var, const Assignment &a) const {
+    double h = 1;
+    if (!treeCompiled) return h;
+    assert(var >= 0 && var < int(buckets.size()));
+    BOOST_FOREACH(const AOMDDFunction *f, interMessages[var]) {
+        h *= f->GetVal(a);
+    }
+    return h;
 }
 
 void DDMiniBucketTree::PrintBucketFunctionScopes(ostream &out) const {

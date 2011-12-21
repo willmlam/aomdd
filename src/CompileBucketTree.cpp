@@ -187,6 +187,8 @@ double CompileBucketTree::Prob(bool logOut) {
             }
             // Not at root
             else if (ei != ei_end) {
+                int bParent = message->GetScope().GetOrdering().back();
+                cout << "True bParent: " << bParent << endl;
                 int parent = source(*ei, tree);
                 cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
                 buckets[parent].AddFunction(message);

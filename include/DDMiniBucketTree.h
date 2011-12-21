@@ -20,6 +20,7 @@ enum QueryType {PE, MPE};
 
 class DDMiniBucketTree {
     std::vector<DDMiniBucket> buckets;
+    std::vector< std::vector<const AOMDDFunction *> > interMessages;
     const PseudoTree *pt;
     std::list<int> ordering;
     std::map<int, int> evidence;
@@ -36,6 +37,9 @@ class DDMiniBucketTree {
     double mem;
 
     PartitionMetric metric;
+    bool keepFunctions;
+    bool treeCompiled;
+    double logPR;
 
     void ResetBuckets();
 
@@ -43,7 +47,6 @@ public:
     DDMiniBucketTree();
     DDMiniBucketTree(const Model &m,
             const PseudoTree *ptIn,
-            const std::list<int> &orderIn,
             const std::map<int, int> &evidIn, int bucketID, unsigned long bound);
 
     // Hmm...compiling with mini buckets to get an approximate structure?
@@ -63,6 +66,24 @@ public:
         for (unsigned int i = 0; i < buckets.size(); ++i) {
             buckets[i].SetPartitionMetric(metric);
         }
+    }
+
+    inline void SetBound(unsigned long bound) {
+        for (unsigned int i = 0; i < buckets.size(); i++) {
+            buckets[i].SetBound(bound);
+        }
+    }
+
+    inline void SetKeepFunctions (bool flag) {
+        keepFunctions = flag;
+    }
+
+    // Get heuristic estimate of assignment, can only be used when functions are kept
+    // assignment is the complete scope.
+    double GetHeur(int var, const Assignment &a) const;
+
+    double GetUB() const {
+        return logPR;
     }
 
     void PrintBucketFunctionScopes(std::ostream &out) const;

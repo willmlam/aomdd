@@ -247,10 +247,7 @@ int main(int argc, char **argv) {
     m.SetOrdering(ordering);
 
     Graph g(m.GetNumVars(), m.GetScopes());
-    Scope completeScope = m.GetScopes()[0];
-    for (unsigned int i = 1; i < m.GetScopes().size(); ++i) {
-        completeScope = completeScope + m.GetScopes()[i];
-    }
+    const Scope &completeScope = m.GetCompleteScope();
     g.InduceEdges(ordering);
     PseudoTree pt(g, completeScope);
 
@@ -366,11 +363,11 @@ int main(int argc, char **argv) {
         if (miniBucketMode && (mbeSizeBound > 0 || mbeIBound > 0)) {
 	        cout << "Starting AOMDD-MBE..." << endl;
 	        if (mbeSizeBound > 0) {
-		        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeSizeBound);
+		        mbt = new DDMiniBucketTree(m, &pt, evidence, bucketID, mbeSizeBound);
 		        mbt->SetPartitionMetric(DIAGRAM_SIZE);
 	        }
 	        else if (mbeIBound > 0) {
-		        mbt = new DDMiniBucketTree(m, &pt, ordering, evidence, bucketID, mbeIBound);
+		        mbt = new DDMiniBucketTree(m, &pt, evidence, bucketID, mbeIBound);
 		        mbt->SetPartitionMetric(I_BOUND);
 	        }
 	        else {

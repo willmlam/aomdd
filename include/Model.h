@@ -21,6 +21,7 @@ class Model {
 protected:
     int numVars;
     int maxDomain;
+    Scope completeScope;
     std::vector<Scope> scopes;
     std::vector<int> domains;
     std::vector<TableFunction> functions;
@@ -44,8 +45,18 @@ public:
 
     void SetOrdering(const std::list<int> &orderIn);
 
+    inline const std::list<int> &GetOrdering() const {
+        return ordering;
+    }
+
+    inline const Scope &GetCompleteScope() const {
+        return completeScope;
+    }
+
     // parsers
     void parseUAI(std::string filename);
+
+    void AddFunction(const Scope &s, const std::vector<double>& values);
 
     void FreeMemory() {
         scopes.clear();

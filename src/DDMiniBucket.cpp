@@ -124,7 +124,7 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
         for (unsigned int i = 0; i < functions.size(); ++i) {
             int numMeta, numAND;
             tie(numMeta, numAND) = functions[i]->Size();
-            functionSizes.push_back(LongIntPair(numMeta+numAND, i));
+            functionSizes.push_back(LongIntPair(numMeta+numAND+1, i));
 //            cout << "Function " << i << " size" << numMeta + numAND << endl;
             size *= numMeta + numAND;
         }

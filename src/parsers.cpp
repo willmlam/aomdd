@@ -67,6 +67,7 @@ void Model::parseUAI(string filename) {
             newScope.AddVar(intBuffer, domains[intBuffer]);
         }
         newScope.SetOrdering(ordering);
+        completeScope = completeScope + newScope;
         scopes.push_back(newScope);
     }
 
