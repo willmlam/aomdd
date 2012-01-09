@@ -14,7 +14,8 @@ Scope::Scope(const Scope &s) :
 
 Scope::Scope(const Scope &lhs, const Scope &rhs, oper op) {
     if (!lhs.HasConsistentCard(rhs)) {
-        throw GenericException("Inconsistent scopes");
+        cerr << "Inconsistent scopes" << endl;
+        exit(0);
     }
     else {
         *this = lhs;
@@ -131,8 +132,10 @@ void Scope::SetOrdering(const list<int> &newOrdering) {
         if (VarExists(*it))
             tempOrdering.push_back(*it);
     }
-    if (tempOrdering.size() != ordering.size())
-        throw GenericException("Inconsistent ordering");
+    if (tempOrdering.size() != ordering.size()) {
+        cerr<< "Inconsistent ordering" << endl;
+        exit(0);
+    }
     ordering = tempOrdering;
 }
 

@@ -1,5 +1,5 @@
-#ifndef _UTILS_H_
-#define _UTILS_H_
+#ifndef _UTILS_H_AOMDD
+#define _UTILS_H_AOMDD
 
 #include "base.h"
 #include "graphbase.h"

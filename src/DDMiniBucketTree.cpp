@@ -26,8 +26,10 @@ DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
         ordering.push_front(numBuckets++);
     }
 
+    bucketSource.resize(numBuckets);
     buckets.resize(numBuckets);
-    interMessages.resize(numBuckets);
+    intermediate.resize(numBuckets);
+    augmented.resize(numBuckets);
     initialBucketSizes.resize(numBuckets);
     const vector<TableFunction> &functions = m.GetFunctions();
 
@@ -40,6 +42,7 @@ DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
         }
         AOMDDFunction *f = new AOMDDFunction(functions[i].GetScope(), pt, functions[i].GetValues());
         buckets[idx].AddFunction(f);
+        bucketSource[idx].push_back(idx);
     }
     for (unsigned int i = 0; i < buckets.size(); i++) {
         initialBucketSizes[i] = buckets[i].GetBucketSize();
@@ -103,7 +106,7 @@ AOMDDFunction DDMiniBucketTree::Compile() {
                 }
             }
         }
-        NodeManager::GetNodeManager()->PurgeOpCache();
+//        NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
     compiled = true;
@@ -139,6 +142,13 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
 
     // Otherwise, compile, but eliminate variables along the way
     else {
+        // FOR DEBUGGING 
+        vector< vector<int> > augSource;
+        vector< vector<int> > intSource;
+        augSource.resize(buckets.size());
+        intSource.resize(buckets.size());
+        // *****
+
         ResetBuckets();
         list<int>::reverse_iterator rit = ordering.rbegin();
 //        int numBuckets = ordering.size();
@@ -148,7 +158,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
         bool encPart = false;
 
         for (; rit != ordering.rend(); ++rit) {
-            cout << "." ;
+            cout << ".";
             cout.flush();
             /*
             cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
@@ -160,6 +170,39 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
             buckets[*rit].PrintDiagrams(cout); cout << endl;
             buckets[*rit].PrintFunctionTables(cout); cout << endl;
             */
+#ifdef DEBUG
+        // DEBUGGING OUTPUT OF AUG/INT
+        const vector<const AOMDDFunction *> &bFun = buckets[*rit].GetFunctions(); 
+        cout << "$ Bucket" << *rit << ": [";
+
+        bool ff = true;
+        for (unsigned int i = 0; i < bFun.size(); ++i) {
+            list<int> ordering = bFun[i]->GetScope().GetOrdering();
+            ordering.sort();
+            list<int>::iterator itV = ordering.begin();
+            if (ff) {
+                cout << "f-" << bucketSource[*rit][i] << ":(";
+                ff = false;
+            }
+            else {
+                cout << " ,f-" << bucketSource[*rit][i] << ":(";
+            }
+            bool first = true;
+            for (; itV != ordering.end(); ++itV) {
+                if (first) {
+                    cout << *itV;
+                    first = false;
+                }
+                else {
+                    cout << "," << *itV;
+                }
+            }
+            cout << ")";
+        }
+        cout << "]" << endl;
+        // END DEBUG
+#endif
+
             vector<AOMDDFunction *> messages = buckets[*rit].GenerateMessages();
                 buckets[*rit].PurgeFunctions();
             for (unsigned int i = 0; i < messages.size(); ++i) {
@@ -231,24 +274,109 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                     Assignment a;
                     if (logOut) {
                         pr += message->GetVal(a, logOut);
-                        delete message;
+                        if (pt->HasDummy()) {
+                            int dest = pt->GetRoot();
+                            augmented[dest].push_back(message);
+                            augSource[dest].push_back(*rit);
+                        }
+                        else {
+                            delete message;
+                        }
                     }
                     else {
                         pr *= message->GetVal(a, logOut);
-                        delete message;
+                        if (pt->HasDummy()) {
+                            int dest = pt->GetRoot();
+                            augmented[dest].push_back(message);
+                            augSource[dest].push_back(*rit);
+                        }
+                        else {
+                            delete message;
+                        }
                     }
                 }
                 // Not at root
                 else {
-                    int parent = newScope.GetOrdering().back();
+                    int dest = newScope.GetOrdering().back();
 //                    cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
-                    interMessages[parent].push_back(new AOMDDFunction(*message));
-                    buckets[parent].AddFunction(message);
+                    int parent = source(*ei, tree);
+                    while (parent != dest && ei != ei_end) {
+                        intSource[parent].push_back(*rit);
+                        intermediate[parent].push_back(new AOMDDFunction(*message));
+                        tie(ei, ei_end) = in_edges(parent, tree);
+                        parent = source(*ei, tree);
+                    }
+                    augSource[dest].push_back(*rit);
+                    augmented[dest].push_back(new AOMDDFunction(*message));
+                    buckets[dest].AddFunction(message);
+                    bucketSource[dest].push_back(*rit);
                 }
             }
         }
         cout << "done."<< endl;
         treeCompiled = true;
+
+        /*
+        // DEBUGGING OUTPUT OF AUG/INT
+
+        for (unsigned int i = 0; i < augmented.size(); ++i) {
+            cout << "$ AUG" << i << ": [";
+            const vector <const AOMDDFunction *> &aug = augmented[i];
+            bool ff = true;
+            for (unsigned int j = 0; j < aug.size(); ++j) {
+                list<int> ordering = aug[j]->GetScope().GetOrdering();
+                ordering.sort();
+                list<int>::iterator itV = ordering.begin();
+                if (ff) {
+                    cout << "f-" << augSource[i][j] << ":(";
+                    ff = false;
+                }
+                else {
+                    cout << " ,f-" << augSource[i][j] << ":(";
+                }
+                bool first = true;
+                for (; itV != ordering.end(); ++itV) {
+                    if (first) {
+                        cout << *itV;
+                        first = false;
+                    }
+                    else {
+                        cout << "," << *itV;
+                    }
+                }
+                cout << ")";
+            }
+            ff = true;
+            cout << "] + [";
+            const vector <const AOMDDFunction *> &interm = intermediate[i];
+            for (unsigned int j = 0; j < interm.size(); ++j) {
+                list<int> ordering = interm[j]->GetScope().GetOrdering();
+                ordering.sort();
+                list<int>::iterator itV = ordering.begin();
+                if (ff) {
+                    cout << "f-" << intSource[i][j] << ":(";
+                    ff = false;
+                }
+                else {
+                    cout << " ,f-" << intSource[i][j] << ":(";
+                }
+                bool first = true;
+                for (; itV != ordering.end(); ++itV) {
+                    if (first) {
+                        cout << *itV;
+                        first = false;
+                    }
+                    else {
+                        cout << "," << *itV;
+                    }
+                }
+                cout << ")";
+            }
+            cout << "]" << endl;
+        }
+        // END DEBUG
+         */
+
         if (logOut) {
             pr += log10(globalWeight);
         }
@@ -262,6 +390,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
         logPR = pr;
     else
         logPR = log10(pr);
+    cout << "log P(e) = " << pr << endl;
     return pr;
 }
 
@@ -269,7 +398,10 @@ double DDMiniBucketTree::GetHeur(int var, const Assignment &a) const {
     double h = 1;
     if (!treeCompiled) return h;
     assert(var >= 0 && var < int(buckets.size()));
-    BOOST_FOREACH(const AOMDDFunction *f, interMessages[var]) {
+    BOOST_FOREACH(const AOMDDFunction *f, intermediate[var]) {
+        h *= f->GetVal(a);
+    }
+    BOOST_FOREACH(const AOMDDFunction *f, augmented[var]) {
         h *= f->GetVal(a);
     }
     return h;

@@ -293,17 +293,38 @@ class dense_hash_set {
   // For maximum flexibility, this does not assume a particular
   // file type (though it will probably be a FILE *).  We just pass
   // the fp through to rep.
-  template <typename OUTPUT>
-  bool write_metadata(OUTPUT *fp)       { return rep.write_metadata(fp); }
 
-  template <typename INPUT>
-  bool read_metadata(INPUT *fp)         { return rep.read_metadata(fp); }
+  // If your keys and values are simple enough, you can pass this
+  // serializer to serialize()/unserialize().  "Simple enough" means
+  // value_type is a POD type that contains no pointers.  Note,
+  // however, we don't try to normalize endianness.
+  typedef typename ht::NopointerSerializer NopointerSerializer;
 
-  template <typename OUTPUT>
-  bool write_nopointer_data(OUTPUT *fp) { return rep.write_nopointer_data(fp); }
+  // serializer: a class providing operator()(OUTPUT*, const value_type&)
+  //    (writing value_type to OUTPUT).  You can specify a
+  //    NopointerSerializer object if appropriate (see above).
+  // fp: either a FILE*, OR an ostream*/subclass_of_ostream*, OR a
+  //    pointer to a class providing size_t Write(const void*, size_t),
+  //    which writes a buffer into a stream (which fp presumably
+  //    owns) and returns the number of bytes successfully written.
+  //    Note basic_ostream<not_char> is not currently supported.
+  template <typename ValueSerializer, typename OUTPUT>
+  bool serialize(ValueSerializer serializer, OUTPUT* fp) {
+    return rep.serialize(serializer, fp);
+  }
 
-  template <typename INPUT>
-  bool read_nopointer_data(INPUT *fp)   { return rep.read_nopointer_data(fp); }
+  // serializer: a functor providing operator()(INPUT*, value_type*)
+  //    (reading from INPUT and into value_type).  You can specify a
+  //    NopointerSerializer object if appropriate (see above).
+  // fp: either a FILE*, OR an istream*/subclass_of_istream*, OR a
+  //    pointer to a class providing size_t Read(void*, size_t),
+  //    which reads into a buffer from a stream (which fp presumably
+  //    owns) and returns the number of bytes successfully read.
+  //    Note basic_istream<not_char> is not currently supported.
+  template <typename ValueSerializer, typename INPUT>
+  bool unserialize(ValueSerializer serializer, INPUT* fp) {
+    return rep.unserialize(serializer, fp);
+  }
 };
 
 template <class Val, class HashFcn, class EqualKey, class Alloc>

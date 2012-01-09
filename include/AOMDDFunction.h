@@ -10,11 +10,11 @@
 #ifndef AOMDDFUNCTION_H_
 #define AOMDDFUNCTION_H_
 
-#include "Function.h"
+#include "./Function.h"
 #include "MetaNode.h"
 #include "graphbase.h"
 #include "NodeManager.h"
-#include "PseudoTree.h"
+#include "./PseudoTree.h"
 
 namespace aomdd {
 

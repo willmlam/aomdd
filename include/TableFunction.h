@@ -33,8 +33,7 @@ public:
 
     virtual bool SetVal(const Assignment &a, double val);
 
-    virtual void SetOrdering(const std::list<int> &ordering)
-            throw (GenericException);
+    virtual void SetOrdering(const std::list<int> &ordering);
 
     // Specify the variables to project onto
     virtual void Project(const Scope &s);

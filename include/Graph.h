@@ -9,8 +9,8 @@
 
 // Constructs the moral graph of a graphical model, given its scopes
 
-#ifndef GRAPH_H_
-#define GRAPH_H_
+#ifndef GRAPH_H_AOMDD
+#define GRAPH_H_AOMDD
 
 #include "base.h"
 #include "graphbase.h"

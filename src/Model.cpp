@@ -19,14 +19,18 @@ Model::Model() : numVars(0), maxDomain(0) {
 
 void Model::SetOrdering(const list<int> &orderIn) {
     ordering = orderIn;
-    for (unsigned int i = 0; i < functions.size(); ++i) {
+    for (unsigned int i = 0; i < scopes.size(); ++i) {
         scopes[i].SetOrdering(ordering);
+    }
+    for (unsigned int i = 0; i < functions.size(); ++i) {
         functions[i].SetOrdering(ordering);
     }
+    completeScope.SetOrdering(ordering);
 }
 
 void Model::AddFunction(const Scope &s, const vector<double> &vals) {
     assert(s.GetCard() == vals.size());
+    scopes.push_back(s);
     functions.push_back(TableFunction(s));
     Assignment a(s);
     a.SetAllVal(0);

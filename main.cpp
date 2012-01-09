@@ -648,7 +648,8 @@ int main(int argc, char **argv) {
     unsigned int uniqueMetaNodes = NodeManager::GetNodeManager()->GetNumberOfNodes();
     unsigned int numANDNodes = NodeManager::GetNodeManager()->GetNumberOfANDNodes();
 //    unsigned int ocEntries = NodeManager::GetNodeManager()->GetNumberOfOpCacheEntries();
-    double utMemUsage = NodeManager::GetNodeManager()->MemUsage();
+//    double utMemUsage = NodeManager::GetNodeManager()->MemUsage();
+    double utMemUsage = NodeManager::GetNodeManager()->GetUTMemUsage();
 //    double opMemUsage = NodeManager::GetNodeManager()->OpCacheMemUsage();
     if (uniqueMetaNodes > 0) {
         cout << endl;

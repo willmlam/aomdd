@@ -1,5 +1,3 @@
-#ifndef _BASE_H_
-#define _BASE_H_
 
 // Data structures
 #include <vector>
@@ -21,11 +19,11 @@
 #include <sstream>
 #include <cassert>
 
-// Exceptions
-#include "GenericException.hpp"
-
 // Special Boost tools
 #include <boost/foreach.hpp>
+
+#ifndef _BASE_H_
+#define _BASE_H_
 
 // Constants
 const int UNKNOWN_VAL = -1;
@@ -35,10 +33,11 @@ const int DELETED_KEY = -30;
 const double DOUBLE_MIN = -100000000;
 const double DOUBLE_MAX = 100000000;
 
-const int MB_PER_BYTE = 1048576;
+const double MB_PER_BYTE = 1048576;
 
 // Limits
 const unsigned long OUTPUT_COMPLEXITY_LIMIT = 2048;
 const double MB_LIMIT = 2048;
+
 
 #endif

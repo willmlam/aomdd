@@ -1,8 +1,7 @@
-#ifndef FUNCTION_H_
-#define FUNCTION_H_
+#ifndef FUNCTION_H_AOMDD
+#define FUNCTION_H_AOMDD
 
 #include "Scope.h"
-#include "GenericException.hpp"
 #include "base.h"
 
 namespace aomdd {

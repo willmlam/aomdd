@@ -15,6 +15,7 @@
 #include "base.h"
 #include "graphbase.h"
 #include "Scope.h"
+#include <boost/foreach.hpp>
 
 namespace aomdd {
 

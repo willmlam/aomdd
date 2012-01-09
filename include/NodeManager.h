@@ -17,8 +17,14 @@
 namespace aomdd {
 
 enum Operator {
-    PROD, SUM, MAX, MIN, REDUCE, MARGINALIZE, NONE
-};
+    PROD, 
+    SUM, 
+    MAX, 
+    MIN, 
+    REDUCE, 
+    MARGINALIZE, 
+    NO_OP
+    };
 
 typedef boost::unordered_multiset<MetaNode*> ParamSet;
 
@@ -29,7 +35,7 @@ class Operation {
     size_t hashVal;
 public:
     Operation() :
-        op(NONE) {
+        op(NO_OP) {
     }
     Operation(Operator o, MetaNodePtr arg, int vid = 0) :
         op(o), varid(vid) {
@@ -125,19 +131,25 @@ struct eqop {
 typedef std::vector<MetaNodePtr> MetaNodeList;
 typedef std::pair<MetaNodeList, double> WeightedMetaNodeList;
 
+// pick a hash implementation
 #define USE_SPARSE
 
 #ifdef USE_SPARSE
 typedef google::sparse_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
 typedef google::sparse_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
-#else
+#endif
+
+#ifdef USE_DENSE
 typedef google::dense_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
 typedef google::dense_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
 #endif
 
+#ifdef USE_BOOSTHASH
+typedef boost::unordered_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
+typedef boost::unordered_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
+#endif
 
-//typedef boost::unordered_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
-//typedef boost::unordered_map<Operation, MetaNodePtr> OperationCache;
+
 typedef std::pair<MetaNodePtr, std::vector<MetaNodePtr> > ApplyParamSet;
 
 class NodeManager {
@@ -153,19 +165,23 @@ class NodeManager {
     double OCMBLimit;
 
     NodeManager() {
-#ifndef USE_SPARSE
+#if defined USE_SPARSE | defined USE_DENSE
+        MetaNodePtr delKey(new MetaNode(-10, 0, std::vector<ANDNodePtr>()));
+//        ut.set_deleted_key(delKey);
+#endif
+#ifdef USE_DENSE
         MetaNodePtr nullKey(new MetaNode(-1, 0, std::vector<ANDNodePtr>()));
         ut.set_empty_key(nullKey);
         Operation nullOpKey;
         opCache.set_empty_key(nullOpKey);
 #endif
-        MetaNodePtr delKey(new MetaNode(-10, 0, std::vector<ANDNodePtr>()));
-        ut.set_deleted_key(delKey);
 
         utMemUsage = MemUsage();
         maxUTMemUsage = MemUsage();
         opCacheMemUsage = OpCacheMemUsage();
         maxOpCacheMemUsage = OpCacheMemUsage();
+
+        MBLimit = 2048;
     }
     NodeManager(NodeManager const&) {
     }
@@ -250,18 +266,8 @@ public:
     void PrintUniqueTable(std::ostream &out) const;
     void PrintReferenceCount(std::ostream &out) const;
 
-    inline WeightedMetaNodeList LookupUT(WeightedMetaNodeList &temp) {
-        UniqueTable::iterator it = ut.find(temp.first[0]);
-        if (it != ut.end()) {
-            return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
-        }
-        else {
-            ut.insert(temp.first[0]);
-            utMemUsage += temp.first[0]->MemUsage() / MB_PER_BYTE;
-            if (utMemUsage > maxUTMemUsage) maxUTMemUsage = utMemUsage;
-            return temp;
-        }
-    }
+    WeightedMetaNodeList LookupUT(WeightedMetaNodeList &temp);
+
 
     inline void SetMBLimit(double m) { MBLimit = m; }
     inline double GetMBLimit() { return MBLimit; }
@@ -269,15 +275,10 @@ public:
     inline void SetOCMBLimit(double m) { OCMBLimit = m; }
     inline double GetOCMBLimit() { return OCMBLimit; }
 
-    inline double MemUsage() const {
-        double memUsage = 0;
-        BOOST_FOREACH(MetaNodePtr m, ut) {
-            memUsage += m->MemUsage();
-        }
-        return (sizeof(ut) + memUsage) / MB_PER_BYTE;
-    }
+    double MemUsage() const;
 
     inline void UTGarbageCollect() {
+        if (utMemUsage <= MBLimit ) return;
         UniqueTable::iterator it = ut.begin();
         bool done = false;
         while (!done) {
@@ -291,23 +292,19 @@ public:
             }
             if (!done) it = ut.begin();
         }
-        ut.resize(0);
+#if defined USE_SPARSE | defined USE_DENSE
+//        ut.resize(0);
+#endif
         utMemUsage = MemUsage();
     }
 
-    inline double OpCacheMemUsage() const {
-        double memUsage = 0;
-        BOOST_FOREACH(OperationCache::value_type i, opCache) {
-            memUsage += sizeof(i) + i.first.MemUsage();
-            memUsage += sizeof(i.second);
-            memUsage += sizeof(MetaNodePtr) * i.second.first.size();
-        }
-        return (sizeof(opCache) + memUsage) / MB_PER_BYTE;
-    }
+    double OpCacheMemUsage() const;
 
     inline void PurgeOpCache() {
         opCache.clear();
+#if defined USE_SPARSE | defined USE_DENSE
         opCache.resize(0);
+#endif
         opCacheMemUsage = OpCacheMemUsage();
     }
 

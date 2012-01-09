@@ -11,7 +11,7 @@
 #include "NodeManager.h"
 #include "utils.h"
 
-#define MAX(a, b) (a > b ? a : b)
+#define MAX_FUN(a, b) (a > b ? a : b)
 
 namespace aomdd {
 using namespace std;
@@ -28,6 +28,7 @@ NodeManager *NodeManager::GetNodeManager() {
         return singleton;
     }
 }
+
 
 vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
         const vector<MetaNodePtr> &lhs, const vector<MetaNodePtr> &rhs) const {
@@ -432,7 +433,7 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
                     weight += rhsWeight;
                     break;
                 case MAX:
-                    weight = MAX(weight, rhsWeight);
+                    weight = MAX_FUN(weight, rhsWeight);
                     break;
                 default:
                     assert(false);
@@ -968,6 +969,39 @@ WeightedMetaNodeList NodeManager::Condition(MetaNodePtr root, const Assignment &
     }
     WeightedMetaNodeList ret = CreateMetaNode(root->GetVarID(), root->GetCard(), newANDNodes);
     return ret;
+}
+
+inline WeightedMetaNodeList NodeManager::LookupUT(WeightedMetaNodeList &temp) {
+    UniqueTable::iterator it = ut.find(temp.first[0]);
+    if (it != ut.end()) {
+        return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
+    }
+    else {
+        ut.insert(temp.first[0]);
+        utMemUsage += temp.first[0]->MemUsage() / MB_PER_BYTE;
+        if (utMemUsage > maxUTMemUsage) maxUTMemUsage = utMemUsage;
+        return temp;
+    }
+}
+
+inline double NodeManager::MemUsage() const {
+    double memUsage = 0;
+    BOOST_FOREACH(MetaNodePtr m, ut) {
+        memUsage += m->MemUsage();
+    }
+    return (sizeof(ut) + memUsage) / MB_PER_BYTE;
+}
+
+inline double NodeManager::OpCacheMemUsage() const {
+    double memUsage = 0;
+    OperationCache::const_iterator it = opCache.begin();
+    for (; it != opCache.end(); ++it) {
+//    BOOST_FOREACH(OperationCache::value_type i, opCache) {
+        memUsage += sizeof(*it) + it->first.MemUsage();
+        memUsage += sizeof(it->second);
+        memUsage += sizeof(MetaNodePtr) * it->second.first.size();
+    }
+    return (sizeof(opCache) + memUsage) / MB_PER_BYTE;
 }
 
 /*

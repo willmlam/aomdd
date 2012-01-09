@@ -7,12 +7,12 @@
  *
  */
 
-#ifndef PSEUDOTREE_H_
-#define PSEUDOTREE_H_
+#ifndef PSEUDOTREE_H_AOMDD
+#define PSEUDOTREE_H_AOMDD
 
 #include "graphbase.h"
-#include "utils.h"
-#include "Graph.h"
+#include "./utils.h"
+#include "./Graph.h"
 #include "Scope.h"
 #include "Model.h"
 
@@ -89,9 +89,14 @@ struct EmbedTreeGenerator : public boost::dfs_visitor<> {
         else if ( !candidateConnectors.empty() && candidateConnectors.top() == int(v) ) {
             candidateConnectors.pop();
             if (candidateConnectors.size() == 0 && numScopeUnfinished == 0) {
+                for (unsigned int i = 0; i < disconnectedRoots.size(); ++i) {
+                    add_edge(v, disconnectedRoots[i], treeRef);
+                }
+                /*
                 BOOST_FOREACH(int dv, disconnectedRoots) {
                     add_edge(v, dv, treeRef);
                 }
+                */
                 root = v;
             }
             else {

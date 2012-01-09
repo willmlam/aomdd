@@ -12,15 +12,17 @@
 
 #include "base.h"
 #include "Model.h"
-#include "DDMiniBucket.h"
 #include "PseudoTree.h"
+#include "DDMiniBucket.h"
 
 namespace aomdd {
 enum QueryType {PE, MPE};
 
 class DDMiniBucketTree {
     std::vector<DDMiniBucket> buckets;
-    std::vector< std::vector<const AOMDDFunction *> > interMessages;
+    std::vector< std::vector<const AOMDDFunction *> > intermediate;
+    std::vector< std::vector<const AOMDDFunction *> > augmented;
+    std::vector< std::vector<int> > bucketSource;
     const PseudoTree *pt;
     std::list<int> ordering;
     std::map<int, int> evidence;
@@ -90,7 +92,6 @@ public:
     void PrintBuckets(std::ostream &out) const;
     virtual ~DDMiniBucketTree();
 
-    /*
     inline double SelfMemUsage() {
         double mem = 0.0;
         for (unsigned int i = 0; i < buckets.size(); ++i) {
@@ -98,7 +99,21 @@ public:
         }
         return mem + sizeof(*this);
     }
-    */
+
+    inline double HeuristicMem() {
+        double mem = 0.0;
+        for (unsigned int i = 0; i < buckets.size(); ++i) {
+            BOOST_FOREACH(const AOMDDFunction *f, intermediate[i]) {
+                mem += f->SelfMemUsage() + sizeof(const AOMDDFunction*);
+            }
+            BOOST_FOREACH(const AOMDDFunction *f, augmented[i]) {
+                mem += f->SelfMemUsage() + sizeof(const AOMDDFunction*);
+            }
+        }
+        return mem + 
+            2*sizeof(std::vector<const AOMDDFunction*>)*buckets.size() + 
+            sizeof(*this);
+    }
 };
 
 }

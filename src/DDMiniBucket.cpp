@@ -79,11 +79,13 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
                 list<LongIntPair>::iterator it = functionAritys.begin();
                 for (; it != functionAritys.end(); ++it) {
                     Scope tempScope = partScope + functions[it->second]->GetScope();
+//                    tempScope.Save(cout);
                     if (tempScope.GetNumVars() <= bound + 1) {
                         partScope = tempScope;
                         partitions[curPartition].push_back(it->second);
                         break;
                     }
+//                    cout << "...was too large: " << tempScope.GetNumVars() << endl;
                 }
                 if (it != functionAritys.end()) {
                     functionAritys.erase(it);

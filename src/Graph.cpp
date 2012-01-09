@@ -56,12 +56,12 @@ void Graph::InduceEdges(const list<int> &ordering) {
     for (; rit != ordering.rend(); ++rit) {
         if (*rit == ordering.front()) break;
         remainingNodes.erase(*rit);
-        Edge out, out_end;
-        tie(out, out_end) = out_edges(*rit, g);
+        Edge eout, eout_end;
+        tie(eout, eout_end) = out_edges(*rit, g);
         // Generate parent list
         list<int> parents;
-        for (; out != out_end; ++out) {
-            int outVertex = target(*out, g);
+        for (; eout != eout_end; ++eout) {
+            int outVertex = target(*eout, g);
             if (remainingNodes.find(outVertex) != remainingNodes.end()) {
                 parents.push_back(outVertex);
             }

@@ -19,12 +19,16 @@ PseudoTree::PseudoTree() {
 
 PseudoTree::PseudoTree(const Model &m) {
     Graph g(m.GetNumVars(), m.GetScopes());
+    cout << "Inducing edges" << endl;
     g.InduceEdges(m.GetOrdering());
+    cout << "...done" << endl;
     inducedWidth = g.GetInducedWidth();
     s = m.GetCompleteScope();
     context.resize(s.GetNumVars());
+    cout << "Performing DFS building" << endl;
     DFSGenerator(g);
-    ComputeContext(g);
+    cout << "...done" << endl;
+//    ComputeContext(g);
     if (hasDummy) {
         s.AddVar(root, 1);
     }

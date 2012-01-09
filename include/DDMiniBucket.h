@@ -42,6 +42,9 @@ public:
     inline void SetBound(unsigned long b) {
         bound = b;
     }
+    inline unsigned long GetBound() {
+        return bound;
+    }
 
     inline const std::vector<const AOMDDFunction *> &GetFunctions() const {
         return functions;
@@ -58,6 +61,10 @@ public:
     void PrintDiagramSizes(std::ostream &out) const;
 
     virtual ~DDMiniBucket();
+
+    inline double SelfMemUsage() {
+        return sizeof(AOMDDFunction*)*functions.size() + sizeof(*this);
+    }
 };
 
 } /* namespace aomdd */
