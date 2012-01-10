@@ -58,6 +58,10 @@ public:
 
     void AddFunction(const Scope &s, const std::vector<double>& values);
 
+    inline void SetFunctionVal(int i, Assignment a, double val) {
+        functions[i].SetVal(a, val);
+    }
+
     void FreeMemory() {
         scopes.clear();
         domains.clear();
