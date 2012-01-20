@@ -30,6 +30,7 @@ public:
     // Used to represent children of the metanode
     // Corresponds to weights of assignments
     class ANDNode {
+        MetaNodePtr parent;
         double weight;
         std::vector<MetaNodePtr> children;
     public:
@@ -43,7 +44,10 @@ public:
 
         void SetChildren(const std::vector<MetaNodePtr> &ch);
 
-        const std::vector<MetaNodePtr> &GetChildren() const;
+        inline void SetParent(MetaNodePtr p) { parent = p; }
+
+        inline std::vector<MetaNodePtr> &GetChildren() { return children; }
+        inline const std::vector<MetaNodePtr> &GetChildren() const { return children; }
 
         double Evaluate(const Assignment &a);
 
@@ -70,6 +74,7 @@ private:
     int varID;
     unsigned int card;
     // children: ANDNodes
+    std::set<ANDNodePtr> parents;
     std::vector<ANDNodePtr> children;
 //    double weight;
 
@@ -105,12 +110,24 @@ public:
     inline void SetWeight(double w) { weight = w; }
     */
 
+    inline std::vector<ANDNodePtr> &GetChildren() { return children; }
     inline const std::vector<ANDNodePtr> &GetChildren() const { return children; }
     inline void SetChildren(const std::vector<ANDNodePtr> &ch) { children = ch; }
+
+    void SetChildrenParent(MetaNodePtr m);
+    inline void AddParent(ANDNodePtr a) {
+        if (!IsTerminal()) {
+            parents.insert(a);
+        }
+    }
+    inline std::set<ANDNodePtr> &GetParents() { return parents; }
+    inline const std::set<ANDNodePtr> &GetParents() const { return parents; }
 
     inline bool IsDummy() const { return card == 1; }
 
     inline bool IsTerminal() const { return this == GetZero().get() || this == GetOne().get(); }
+
+    bool IsRedundant() const;
 
     inline size_t GetStoredHash() const { return hashVal; }
 

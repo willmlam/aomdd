@@ -48,10 +48,6 @@ void MetaNode::ANDNode::SetChildren(const std::vector<MetaNodePtr> &ch) {
     children = ch;
 }
 
-const vector<MetaNodePtr> &MetaNode::ANDNode::GetChildren() const {
-    return children;
-}
-
 void MetaNode::ANDNode::Save(ostream &out, string prefix) const {
     out << prefix << "and-id: " << this << endl;
     out << prefix << "weight: " << weight << endl;
@@ -247,6 +243,12 @@ void MetaNode::Save(ostream &out, string prefix) const {
     out << endl;
     out << prefix << "id: " << this << endl;
 //    out << prefix << "weight: " << weight << endl;
+    out << prefix << "parent ids: ";
+    BOOST_FOREACH(const ANDNodePtr &i, parents)
+                {
+                    out << " " << i.get();
+                }
+    out << endl;
     out << prefix << "children: ";
     BOOST_FOREACH(const ANDNodePtr &i, children)
                 {
@@ -334,6 +336,25 @@ void MetaNode::FindUniqueNodes(boost::unordered_set<const MetaNode *> &nodeSet) 
         BOOST_FOREACH(const MetaNodePtr &j, i->GetChildren()) {
             j->FindUniqueNodes(nodeSet);
         }
+    }
+}
+
+bool MetaNode::IsRedundant() const {
+    if (IsTerminal()) return false;
+    bool redundant = true;
+    ANDNodePtr temp = children[0];
+    for (unsigned int i = 1; i < children.size(); ++i) {
+        if (temp != children[i]) {
+            redundant = false;
+            break;
+        }
+    }
+    return redundant;
+}
+
+void MetaNode::SetChildrenParent(MetaNodePtr m) {
+    BOOST_FOREACH(ANDNodePtr i, children) {
+        i->SetParent(m);
     }
 }
 

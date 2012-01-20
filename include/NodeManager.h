@@ -16,6 +16,12 @@
 
 namespace aomdd {
 
+// pick a hash implementation USE_{SPARSE,DENSE,BOOSTHASH}
+#define USE_BOOSTHASH
+
+// use opcache?
+#define USE_OPCACHE
+
 enum Operator {
     PROD, 
     SUM, 
@@ -85,7 +91,7 @@ public:
     }
 };
 
-
+// Hash table related functions
 struct nodehasher {
     std::size_t operator()(const MetaNodePtr &node) const {
         return node->GetStoredHash();
@@ -131,8 +137,6 @@ struct eqop {
 typedef std::vector<MetaNodePtr> MetaNodeList;
 typedef std::pair<MetaNodeList, double> WeightedMetaNodeList;
 
-// pick a hash implementation
-#define USE_SPARSE
 
 #ifdef USE_SPARSE
 typedef google::sparse_hash_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
@@ -150,6 +154,11 @@ typedef boost::unordered_map<Operation, WeightedMetaNodeList, ophasher, eqop> Op
 #endif
 
 
+
+
+
+
+
 typedef std::pair<MetaNodePtr, std::vector<MetaNodePtr> > ApplyParamSet;
 
 class NodeManager {
@@ -164,10 +173,13 @@ class NodeManager {
     double MBLimit;
     double OCMBLimit;
 
+    std::vector< std::set<int> > *descendants;
+    std::list<int> *ordering;
+
     NodeManager() {
 #if defined USE_SPARSE | defined USE_DENSE
         MetaNodePtr delKey(new MetaNode(-10, 0, std::vector<ANDNodePtr>()));
-//        ut.set_deleted_key(delKey);
+        ut.set_deleted_key(delKey);
 #endif
 #ifdef USE_DENSE
         MetaNodePtr nullKey(new MetaNode(-1, 0, std::vector<ANDNodePtr>()));
@@ -230,8 +242,19 @@ public:
             const std::vector<MetaNodePtr> &lhs,
             const std::vector<MetaNodePtr> &rhs) const;
 
-    WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &elimChain, bool &sumOpPerformed);
+    void GetParamSets2(
+            const std::vector<MetaNodePtr> &lhs,
+            const std::vector<MetaNodePtr> &rhs,
+            std::vector<ApplyParamSet> &ret) const;
+    void GetParamSets3(
+            const std::vector<MetaNodePtr> &lhs,
+            const std::vector<MetaNodePtr> &rhs,
+            std::vector<ApplyParamSet> &ret) const;
+
+    WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &elimChain);
+    double MarginalizeFast(MetaNodePtr root, const Scope &s, const std::set<int> &relevantVars);
     WeightedMetaNodeList Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    double MaximizeFast(MetaNodePtr root, const Scope &s, const std::set<int> &relevantVars);
     WeightedMetaNodeList Minimize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
     WeightedMetaNodeList Condition(MetaNodePtr root, const Assignment &cond);
 
@@ -293,7 +316,7 @@ public:
             if (!done) it = ut.begin();
         }
 #if defined USE_SPARSE | defined USE_DENSE
-//        ut.resize(0);
+        ut.resize(0);
 #endif
         utMemUsage = MemUsage();
     }
@@ -312,6 +335,9 @@ public:
     inline double GetOCMemUsage() const { return opCacheMemUsage; }
     inline double GetMaxUTMemUsage() const { return maxUTMemUsage; }
     inline double GetMaxOCMemUsage() const { return maxOpCacheMemUsage; }
+
+    inline void SetDescendantsList(std::vector< std::set<int> > *dList) { descendants = dList; }
+    inline void SetOrdering(std::list<int> *order) { ordering = order; }
 
 };
 

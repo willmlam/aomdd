@@ -70,28 +70,74 @@ TableFunction *Bucket::FastSumElimination(const list<int> &ordering, const Scope
     }
     newDomain = newDomain - elimVar;
     newDomain.SetOrdering(ordering);
-    //unsigned int card = newDomain.GetCard();
-    vector<double> newValues;
+    unsigned int card = newDomain.GetCard();
+    vector<double> newValues(card, 0);
     Assignment a(newDomain);
     Assignment e(elimVar);
     a.SetAllVal(0);
     e.SetAllVal(0);
+    /*
     vector<Assignment> fAssign;
     for (unsigned int i = 0; i < functions.size(); ++i) {
         fAssign.push_back(Assignment(functions[i]->GetScope()));
     }
+    */
+
     int idx = 0;
     do {
-        newValues.push_back(0);
-        do {
+        for (unsigned int ii = 0; ii < e.GetCard(); ++ii) {
             double combVal = 1;
             for (unsigned int i = 0; i < functions.size(); ++i) {
+                /*
                 fAssign[i].SetAssign(a);
                 fAssign[i].SetAssign(e);
-                combVal *= functions[i]->GetVal(fAssign[i]);
+                */
+                combVal *= functions[i]->GetValElim(a, ii);
             }
-            newValues.back() += combVal;
-        } while(e.Iterate());
+            newValues[idx] += combVal;
+        }
+        idx++;
+    } while (a.Iterate());
+    assert(newValues.size() == newDomain.GetCard());
+    TableFunction *message = new TableFunction(newDomain, newValues);
+    return message;
+}
+
+TableFunction *Bucket::FastMaxElimination(const list<int> &ordering, const Scope &elimVar) {
+    if (functions.size() == 0)
+        return new TableFunction();
+    Scope newDomain;
+    for (unsigned int i = 0; i < functions.size(); ++i) {
+        newDomain = newDomain + functions[i]->GetScope();
+    }
+    newDomain = newDomain - elimVar;
+    newDomain.SetOrdering(ordering);
+    unsigned int card = newDomain.GetCard();
+    vector<double> newValues(card, 0);
+    Assignment a(newDomain);
+    Assignment e(elimVar);
+    a.SetAllVal(0);
+    e.SetAllVal(0);
+    /*
+    vector<Assignment> fAssign;
+    for (unsigned int i = 0; i < functions.size(); ++i) {
+        fAssign.push_back(Assignment(functions[i]->GetScope()));
+    }
+    */
+
+    int idx = 0;
+    do {
+        for (unsigned int ii = 0; ii < e.GetCard(); ++ii) {
+            double combVal = 1;
+            for (unsigned int i = 0; i < functions.size(); ++i) {
+                /*
+                fAssign[i].SetAssign(a);
+                fAssign[i].SetAssign(e);
+                */
+                combVal *= functions[i]->GetValElim(a, ii);
+            }
+            newValues[idx] = combVal > newValues[idx] ? combVal : newValues[idx];
+        }
         idx++;
     } while (a.Iterate());
     assert(newValues.size() == newDomain.GetCard());

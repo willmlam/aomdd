@@ -111,6 +111,28 @@ struct EmbedTreeGenerator : public boost::dfs_visitor<> {
     }
 };
 
+struct DescendantGenerator : public boost::dfs_visitor<> {
+    std::vector< std::set<int> > &descendants;
+
+    DescendantGenerator(std::vector< std::set<int> > &dIn) :
+        descendants(dIn) {
+    }
+
+    template <class Graph, class Vertex>
+    void finish_vertex(Vertex v, const Graph &g) {
+        descendants[v].insert(v);
+        DInEdge ei, ei_end;
+        tie(ei, ei_end) = in_edges(v, g);
+        for (; ei != ei_end; ++ei) {
+            int parent = source(*ei, g);
+            std::set<int> unionSet;
+            BOOST_FOREACH(int d, descendants[v]) {
+	            descendants[parent].insert(d);
+            }
+        }
+    }
+};
+
 class PseudoTree {
     DirectedGraph g;
     int root;

@@ -26,6 +26,7 @@ public:
 
     virtual ~TableFunction();
 
+    virtual double GetValElim(const Assignment &a, int elimOff, bool logOut = false) const;
     virtual double GetVal(const Assignment &a, bool logOut = false) const;
     virtual double GetValForceOldOrder(const Assignment &a, bool logOut = false) const;
 

@@ -47,12 +47,15 @@ double BucketTree::Prob(bool logOut) {
     else {
         pr = 1;
     }
-    int numBuckets = ordering.size();
+//    int numBuckets = ordering.size();
     Assignment empty;
-    unsigned int count = 1;
+//    unsigned int count = 1;
     for (; rit != ordering.rend(); ++rit) {
+        cout << "."; cout.flush();
+        /*
         cout << "Combining functions in bucket " << *rit;
         cout << " (" << count++ << " of " << numBuckets << ")" << endl;
+        */
 //        buckets[*rit].PrintFunctionTables(cout); cout << endl;
         /*
         TableFunction *message = buckets[*rit].Flatten(ordering);
@@ -68,13 +71,13 @@ double BucketTree::Prob(bool logOut) {
             cond.SetVal(*rit, eit->second);
 //            cout << "Conditioning" << endl;
             message = buckets[*rit].FastCondition(ordering, cond);
-	        cout << "After flattening" << endl;
+//	        cout << "After flattening" << endl;
 
         }
         else {
 //            cout << "Marginalizing" << endl;
             message = buckets[*rit].FastSumElimination(ordering, elim);
-	        cout << "After flattening" << endl;
+//	        cout << "After flattening" << endl;
         }
         cout << "After eliminating " << *rit << endl;
 //        message->PrintAsTable(cout); cout << endl;
@@ -95,10 +98,11 @@ double BucketTree::Prob(bool logOut) {
         }
         else {
             int destBucket = message->GetScope().GetOrdering().back();
-            cout << "Sending message from <" << *rit << "> to <" << destBucket << ">" << endl;
+//            cout << "Sending message from <" << *rit << "> to <" << destBucket << ">" << endl;
             buckets[destBucket].AddFunction(message);
         }
     }
+    cout << "done." << endl;
     if (logOut) {
         pr += log10(globalWeight);
     }
@@ -117,35 +121,39 @@ double BucketTree::MPE(bool logOut) {
     else {
         pr = 1;
     }
-    int numBuckets = ordering.size();
     Assignment empty;
+    /*
+    int numBuckets = ordering.size();
     unsigned int count = 1;
+    */
     for (; rit != ordering.rend(); ++rit) {
+        cout << "."; cout.flush();
+        /*
         cout << "Combining functions in bucket " << *rit;
         cout << " (" << count++ << " of " << numBuckets << ")" << endl;
+        */
 
 //        buckets[*rit].PrintFunctionTables(cout); cout << endl;
 
-        TableFunction *message = buckets[*rit].Flatten(ordering);
-        cout << "After flattening" << endl;
+        TableFunction *message;// = buckets[*rit].Flatten(ordering);
+//        cout << "After flattening" << endl;
 
-//        message->PrintAsTable(cout); cout << endl;
 
         Scope elim;
-        elim.AddVar(*rit, message->GetScope().GetVarCard(*rit));
+        elim.AddVar(*rit, buckets[*rit].GetScope().GetVarCard(*rit));
         map<int, int>::iterator eit = evidence.find(*rit);
         if (eit != evidence.end()) {
             Assignment cond(elim);
             cond.SetVal(*rit, eit->second);
 //            cout << "Conditioning" << endl;
-            message->Condition(cond);
+            message = buckets[*rit].FastCondition(ordering, cond);
 
         }
         else {
 //            cout << "Marginalizing" << endl;
-            message->Maximize(elim);
+            message = buckets[*rit].FastMaxElimination(ordering, elim);
         }
-        cout << "After eliminating " << *rit << endl;
+//        cout << "After eliminating " << *rit << endl;
 
 //        message->PrintAsTable(cout); cout << endl;
 
@@ -166,10 +174,11 @@ double BucketTree::MPE(bool logOut) {
         }
         else {
             int destBucket = message->GetScope().GetOrdering().back();
-            cout << "Sending message from <" << *rit << "> to <" << destBucket << ">" << endl;
+//            cout << "Sending message from <" << *rit << "> to <" << destBucket << ">" << endl;
             buckets[destBucket].AddFunction(message);
         }
     }
+    cout << "done." << endl;
     if (logOut) {
         pr += log10(globalWeight);
     }

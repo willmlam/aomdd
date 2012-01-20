@@ -29,10 +29,44 @@ TableFunction::~TableFunction() {
     values.clear();
 }
 
-double TableFunction::GetVal(const Assignment &a, bool logOut) const {
+double TableFunction::GetValElim(const Assignment &a, int idx, bool logOut) const {
+    // Compute the index
+    list<int>::const_reverse_iterator it = domain.GetOrdering().rbegin();
+    int offset = domain.GetVarCard(*it);
+    ++it;
+    for (; it != domain.GetOrdering().rend(); ++it) {
+        idx += a.GetVal(*it) * offset;
+        offset *= domain.GetVarCard(*it);
+    }
+
+    /*
     Assignment at(domain);
     at.SetAssign(a);
     int idx = at.GetIndex();
+    */
+    if (idx == UNKNOWN_VAL || idx >= (int) values.size()) {
+        cout << idx << ", Max is: " << values.size() << std::endl;
+//        throw GenericException("Invalid indexing of function: " + idx);
+    }
+    return !logOut ? values[idx] : log10(values[idx]);
+}
+
+
+double TableFunction::GetVal(const Assignment &a, bool logOut) const {
+    // Compute the index
+    list<int>::const_reverse_iterator it = domain.GetOrdering().rbegin();
+    int idx = 0;
+    int offset = 1;
+    for (; it != domain.GetOrdering().rend(); ++it) {
+        idx += a.GetVal(*it) * offset;
+        offset *= domain.GetVarCard(*it);
+    }
+
+    /*
+    Assignment at(domain);
+    at.SetAssign(a);
+    int idx = at.GetIndex();
+    */
     if (idx == UNKNOWN_VAL || idx >= (int) values.size()) {
         cout << idx << ", Max is: " << values.size() << std::endl;
 //        throw GenericException("Invalid indexing of function: " + idx);

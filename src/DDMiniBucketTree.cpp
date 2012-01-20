@@ -52,9 +52,24 @@ DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
     numAND = 0;
     numTotal = 0;
     mem = 0;
+
+    // Use the pseudotree to build the descendant sets
+    descendants.resize(ordering.size());
+
+    // Terminals are always descendants of any variable
+    BOOST_FOREACH(set<int> &dSet, descendants) {
+        dSet.insert(-1);
+        dSet.insert(-2);
+    }
+    DescendantGenerator vis(descendants);
+    depth_first_search(pt->GetTree(), root_vertex(VertexDesc(pt->GetRoot())).
+            visitor(vis).
+            edge_color_map(get(edge_color,pt->GetTree())));
 }
 
 AOMDDFunction DDMiniBucketTree::Compile() {
+    NodeManager::GetNodeManager()->SetDescendantsList(&descendants);
+    NodeManager::GetNodeManager()->SetOrdering(&ordering);
     if (!compiled) {
         list<int>::reverse_iterator rit = ordering.rbegin();
         int numBuckets = ordering.size();
@@ -111,11 +126,15 @@ AOMDDFunction DDMiniBucketTree::Compile() {
     }
     compiled = true;
     compiledDD.ReweighRoot(globalWeight);
+    NodeManager::GetNodeManager()->SetDescendantsList(NULL);
+    NodeManager::GetNodeManager()->SetOrdering(NULL);
     return compiledDD;
 }
 
 double DDMiniBucketTree::Query(QueryType q, bool logOut) {
     double pr = logOut ? 0 : 1;
+    NodeManager::GetNodeManager()->SetDescendantsList(&descendants);
+    NodeManager::GetNodeManager()->SetOrdering(&ordering);
 
     // If it's already been compiled, we can just eliminate from the large DD
     if (compiled) {
@@ -391,6 +410,8 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
     else
         logPR = log10(pr);
     cout << "log P(e) = " << pr << endl;
+    NodeManager::GetNodeManager()->SetDescendantsList(NULL);
+    NodeManager::GetNodeManager()->SetOrdering(NULL);
     return pr;
 }
 

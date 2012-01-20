@@ -216,7 +216,6 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
     */
     WeightedMetaNodeList newroot;
     newroot.second = root.second;
-    bool sumOpPerformed = false;
     // Build an "elim chain"
     // From the elim variable, trace the parents until it hits one of the metanodes of the root
     // If it isn't reached, no need to marginalize
@@ -257,10 +256,9 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
         tie(ei, ei_end) = in_edges(chainRoot, pt->GetTree());
     }
 
-    cout << endl;
     BOOST_FOREACH(MetaNodePtr m, root.first) {
         if (m->GetVarID() == chainRoot) {
-            WeightedMetaNodeList l = mgr->Marginalize(m, elimVars, elimChain, sumOpPerformed);
+            WeightedMetaNodeList l = mgr->Marginalize(m, elimVars, elimChain);
             newroot.first.insert(newroot.first.end(), l.first.begin(), l.first.end());
             newroot.second *= l.second;
         }
@@ -268,11 +266,6 @@ void AOMDDFunction::Marginalize(const Scope &elimVars, bool mutableIDs) {
             newroot.first.push_back(m);
         }
     }
-    /*
-    if (!sumOpPerformed) {
-        newroot.second *= actualElimVars.GetCard();
-    }
-    */
     root = newroot;
     domain = domain - actualElimVars;
     NodeManager::GetNodeManager()->UTGarbageCollect();
@@ -307,6 +300,235 @@ void AOMDDFunction::Maximize(const Scope &elimVars, bool mutableIDs) {
         newroot.second *= l.second;
     }
     root = newroot;
+    domain = domain - elimVars;
+    NodeManager::GetNodeManager()->UTGarbageCollect();
+}
+
+void AOMDDFunction::MarginalizeFast(const Scope &elimVars, bool mutableIDs) {
+    Scope actualElimVars = domain * elimVars;
+    if (root.first.size() == 1 && root.first[0]->IsTerminal()) {
+//        cout << "Using special terminal case" << endl;
+        domain = domain - actualElimVars;
+        root.second *= actualElimVars.GetCard();
+        return;
+    }
+
+    int elimvar = actualElimVars.GetOrdering().front();
+    /*
+    if (fullReduce) {
+        root = mgr->FullReduce(mgr->Maximize(root, elimVars, pt->GetTree()));
+//        root = mgr->Maximize(root, elimVars, pt->GetTree());
+        domain = domain - elimVars;
+        if (mutableIDs && root->IsDummy() && !domain.IsEmpty() && !domain.VarExists(root->GetVarID())) {
+            int newDummyID = domain.GetOrdering().front();
+            cout << "Changing dummy id " << "<" << root->GetVarID() << "> to <" << newDummyID << ">" << endl;
+            root = mgr->CreateMetaNode(newDummyID, 1.0, root->GetChildren());
+        }
+    }
+    */
+    DirectedGraph elimChain;
+    DInEdge ei, ei_end;
+    tie(ei, ei_end) = in_edges(elimvar, pt->GetTree());
+    int chainRoot = elimvar;
+
+    // Hackish way to add a vertex to the graph
+    add_edge(chainRoot, chainRoot+1, elimChain);
+    remove_edge(chainRoot, chainRoot+1, elimChain);
+
+    bool chainDone = false;
+    BOOST_FOREACH(MetaNodePtr m, root.first) {
+        if (chainRoot == m->GetVarID()) {
+            chainDone = true;
+        }
+    }
+    while (!chainDone && ei != ei_end) {
+        int current = target(*ei, pt->GetTree());
+        chainRoot = source(*ei, pt->GetTree());
+
+        // keep traversing up if variable is not in the scope of this function
+        while (!domain.VarExists(chainRoot)) {
+            DInEdge e, e_end;
+            tie(e, e_end) = in_edges(chainRoot, pt->GetTree());
+            chainRoot = source(*e, pt->GetTree());
+        }
+        add_edge(chainRoot, current, elimChain);
+        BOOST_FOREACH(MetaNodePtr m, root.first) {
+	        if (chainRoot == m->GetVarID()) {
+	            chainDone = true;
+	        }
+        }
+        tie(ei, ei_end) = in_edges(chainRoot, pt->GetTree());
+    }
+
+
+    set<int> relevantVars;
+    relevantVars.insert(chainRoot);
+    DEdge eoi, eoi_end;
+    tie(eoi, eoi_end) = out_edges(chainRoot, elimChain);
+    while (eoi != eoi_end) {
+        int child = target(*eoi, elimChain);
+        relevantVars.insert(child);
+        tie(eoi, eoi_end) = out_edges(child, elimChain);
+    }
+    bool foundRelevant = false;
+    for (size_t i = 0; i < root.first.size(); ++i) {
+        MetaNodePtr &m = root.first[i];
+        if (relevantVars.find(m->GetVarID()) == relevantVars.end()) {
+            continue;
+        }
+        foundRelevant = true;
+        if (elimVars.VarExists(m->GetVarID())) {
+            double w = 0.0;
+            vector<ANDNodePtr> &andNodesJ = m->GetChildren();
+            for (unsigned int k = 0; k < andNodesJ.size(); ++k) {
+                w += andNodesJ[k]->GetWeight();
+            }
+            if (w == 0) {
+                root.first.clear();
+                root.first.push_back(MetaNode::GetZero());
+            }
+            else {
+                m = MetaNode::GetOne();
+            }
+            root.second *= w;
+        }
+        else {
+            // First check if the ANDNodes connect to relevant variables
+            BOOST_FOREACH(ANDNodePtr a, m->GetChildren()) {
+                bool hasRelevantChild = false;
+                BOOST_FOREACH(MetaNodePtr mm, a->GetChildren()) {
+                    if (relevantVars.find(mm->GetVarID()) !=
+                            relevantVars.end()) {
+                        hasRelevantChild = true;
+                        break;
+                    }
+                }
+                // multiply by elimination var scope size if not
+                // and normalize
+                if (!hasRelevantChild) {
+	                a->SetWeight(a->GetWeight() * actualElimVars.GetVarCard(elimvar));
+                }
+            }
+            root.second *= mgr->MarginalizeFast(m, elimVars, relevantVars);
+        }
+    }
+
+    if (!foundRelevant) root.second *= actualElimVars.GetCard();
+
+    // Clean up root of terminals if root.first.size() > 1
+    while (root.first.size() > 1) {
+        for (size_t j = 0; j < root.first.size(); ++j) {
+            if (root.first[j]->IsTerminal()) {
+                root.first.erase(root.first.begin() + j);
+                break;
+            }
+        }
+    }
+    domain = domain - elimVars;
+    NodeManager::GetNodeManager()->UTGarbageCollect();
+}
+
+void AOMDDFunction::MaximizeFast(const Scope &elimVars, bool mutableIDs) {
+    Scope actualElimVars = domain * elimVars;
+    if (root.first.size() == 1 && root.first[0]->IsTerminal()) {
+//        cout << "Using special terminal case" << endl;
+        domain = domain - actualElimVars;
+        return;
+    }
+
+    int elimvar = actualElimVars.GetOrdering().front();
+    /*
+    if (fullReduce) {
+        root = mgr->FullReduce(mgr->Maximize(root, elimVars, pt->GetTree()));
+//        root = mgr->Maximize(root, elimVars, pt->GetTree());
+        domain = domain - elimVars;
+        if (mutableIDs && root->IsDummy() && !domain.IsEmpty() && !domain.VarExists(root->GetVarID())) {
+            int newDummyID = domain.GetOrdering().front();
+            cout << "Changing dummy id " << "<" << root->GetVarID() << "> to <" << newDummyID << ">" << endl;
+            root = mgr->CreateMetaNode(newDummyID, 1.0, root->GetChildren());
+        }
+    }
+    */
+    DirectedGraph elimChain;
+    DInEdge ei, ei_end;
+    tie(ei, ei_end) = in_edges(elimvar, pt->GetTree());
+    int chainRoot = elimvar;
+
+    // Hackish way to add a vertex to the graph
+    add_edge(chainRoot, chainRoot+1, elimChain);
+    remove_edge(chainRoot, chainRoot+1, elimChain);
+
+    bool chainDone = false;
+    BOOST_FOREACH(MetaNodePtr m, root.first) {
+        if (chainRoot == m->GetVarID()) {
+            chainDone = true;
+        }
+    }
+    while (!chainDone && ei != ei_end) {
+        int current = target(*ei, pt->GetTree());
+        chainRoot = source(*ei, pt->GetTree());
+
+        // keep traversing up if variable is not in the scope of this function
+        while (!domain.VarExists(chainRoot)) {
+            DInEdge e, e_end;
+            tie(e, e_end) = in_edges(chainRoot, pt->GetTree());
+            chainRoot = source(*e, pt->GetTree());
+        }
+        add_edge(chainRoot, current, elimChain);
+        BOOST_FOREACH(MetaNodePtr m, root.first) {
+	        if (chainRoot == m->GetVarID()) {
+	            chainDone = true;
+	        }
+        }
+        tie(ei, ei_end) = in_edges(chainRoot, pt->GetTree());
+    }
+    for (size_t i = 0; i < root.first.size(); ++i) {
+        MetaNodePtr &m = root.first[i];
+        set<int> relevantVars;
+        relevantVars.insert(chainRoot);
+        DEdge ei, ei_end;
+        tie(ei, ei_end) = out_edges(chainRoot, elimChain);
+        while (ei != ei_end) {
+            int child = target(*ei, elimChain);
+            relevantVars.insert(child);
+            tie(ei, ei_end) = out_edges(child, elimChain);
+        }
+        if (relevantVars.find(m->GetVarID()) == relevantVars.end()) {
+            continue;
+        }
+
+        if (elimVars.VarExists(m->GetVarID())) {
+            double w = DOUBLE_MIN;
+            vector<ANDNodePtr> &andNodesJ = m->GetChildren();
+            for (unsigned int k = 0; k < andNodesJ.size(); ++k) {
+                double temp = andNodesJ[k]->GetWeight();
+                if (temp > w) {
+                    w = temp;
+                }
+            }
+            if (w == 0) {
+                root.first.clear();
+                root.first.push_back(MetaNode::GetZero());
+            }
+            else {
+                m = MetaNode::GetOne();
+            }
+            root.second *= w;
+        }
+        else {
+            root.second *= mgr->MaximizeFast(m, elimVars, relevantVars);
+        }
+    }
+
+    // Clean up root of terminals if root.first.size() > 1
+    while (root.first.size() > 1) {
+        for (size_t j = 0; j < root.first.size(); ++j) {
+            if (root.first[j]->IsTerminal()) {
+                root.first.erase(root.first.begin() + j);
+                break;
+            }
+        }
+    }
     domain = domain - elimVars;
     NodeManager::GetNodeManager()->UTGarbageCollect();
 }
@@ -411,6 +633,7 @@ void AOMDDFunction::Save(ostream &out) const {
 }
 
 void AOMDDFunction::PrintAsTable(ostream &out) const {
+    domain.Save(cout); cout << endl;
     Assignment a(domain);
     a.SetAllVal(0);
     do {

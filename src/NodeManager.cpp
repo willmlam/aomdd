@@ -29,6 +29,246 @@ NodeManager *NodeManager::GetNodeManager() {
     }
 }
 
+void NodeManager::GetParamSets2(
+        const vector<MetaNodePtr> &lhs, const vector<MetaNodePtr> &rhs, vector<ApplyParamSet> &ret) const {
+
+    unordered_map<int, int> lhsMap;
+    unordered_map<int, int> rhsMap;
+    set<int> lhsVarsSet;
+    set<int> rhsVarsSet;
+
+    // Make an index to the meta nodes by their variable
+    for (unsigned int i = 0; i < lhs.size(); ++i) {
+        lhsMap[lhs[i]->GetVarID()] = i;
+        lhsVarsSet.insert(lhs[i]->GetVarID());
+    }
+    for (unsigned int i = 0; i < rhs.size(); ++i) {
+        rhsMap[rhs[i]->GetVarID()] = i;
+        rhsVarsSet.insert(rhs[i]->GetVarID());
+    }
+
+    /*
+    cout << "begin search" << endl;
+    for (size_t i = 0; i < descendants->size(); ++i) {
+        cout << i << " : ";
+        BOOST_FOREACH(int s, (*descendants)[i]) {
+            cout << " " << s;
+        }
+        cout << endl;
+    }
+    */
+
+    BOOST_FOREACH(int i, (*ordering)) {
+        if (lhsVarsSet.empty() || rhsVarsSet.empty()) break;
+
+        if (lhsVarsSet.find(i) != lhsVarsSet.end()) {
+	        MetaNodePtr paramLHS;
+	        vector<MetaNodePtr> paramRHS;
+	        // if it exists in both, we need to find which gives a larger set
+	        if (rhsVarsSet.find(i) != rhsVarsSet.end()) {
+	            set<int> tempLHS;
+	            BOOST_FOREACH(int s, rhsVarsSet) {
+	                if ((*descendants)[i].find(s) != (*descendants)[i].end()) {
+	                    tempLHS.insert(s);
+	                }
+	            }
+	            set<int> tempRHS;
+	            BOOST_FOREACH(int s, lhsVarsSet) {
+	                if ((*descendants)[i].find(s) != (*descendants)[i].end()) {
+	                    tempRHS.insert(s);
+	                }
+	            }
+
+	            if (tempLHS.size() >= tempRHS.size()) {
+		            paramLHS = lhs[lhsMap[i]];
+		            lhsVarsSet.erase(i);
+		            BOOST_FOREACH(int s, tempLHS) {
+		                paramRHS.push_back(rhs[rhsMap[s]]);
+		                rhsVarsSet.erase(s);
+		            }
+	            }
+	            else {
+		            paramLHS = rhs[rhsMap[i]];
+		            rhsVarsSet.erase(i);
+		            BOOST_FOREACH(int s, tempRHS) {
+		                paramRHS.push_back(lhs[lhsMap[s]]);
+		                lhsVarsSet.erase(s);
+		            }
+	            }
+	        }
+	        else {
+	            paramLHS = lhs[lhsMap[i]];
+	            lhsVarsSet.erase(i);
+
+	            BOOST_FOREACH(int s, rhsVarsSet) {
+	                if ((*descendants)[i].find(s) != (*descendants)[i].end()) {
+	                    paramRHS.push_back(rhs[rhsMap[s]]);
+	                }
+	            }
+
+	            BOOST_FOREACH(MetaNodePtr m, paramRHS) {
+	                rhsVarsSet.erase(m->GetVarID());
+	            }
+	        }
+            ret.push_back(make_pair(paramLHS, paramRHS));
+        }
+        // does the current variable exist only in rhs?
+        else if (rhsVarsSet.find(i) != rhsVarsSet.end()) {
+	        MetaNodePtr paramLHS;
+	        vector<MetaNodePtr> paramRHS;
+            paramLHS = rhs[rhsMap[i]];
+            rhsVarsSet.erase(i);
+
+            BOOST_FOREACH(int s, lhsVarsSet) {
+                if ((*descendants)[i].find(s) != (*descendants)[i].end()) {
+                    paramRHS.push_back(lhs[lhsMap[s]]);
+                }
+            }
+
+            BOOST_FOREACH(MetaNodePtr m, paramRHS) {
+                lhsVarsSet.erase(m->GetVarID());
+            }
+            ret.push_back(make_pair(paramLHS, paramRHS));
+        }
+    }
+
+    BOOST_FOREACH(int s, lhsVarsSet) {
+        if (s < 0 && rhsVarsSet.find(s) != rhsVarsSet.end()) {
+            ret.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(lhs[lhsMap[s]], vector<MetaNodePtr>(1, rhs[rhsMap[s]])));
+            rhsVarsSet.erase(s);
+        }
+        else {
+            ret.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(lhs[lhsMap[s]], vector<MetaNodePtr>()));
+        }
+    }
+
+    BOOST_FOREACH(int s, rhsVarsSet) {
+        ret.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(rhs[rhsMap[s]], vector<MetaNodePtr>()));
+    }
+}
+void NodeManager::GetParamSets3(
+        const vector<MetaNodePtr> &lhs, const vector<MetaNodePtr> &rhs, vector<ApplyParamSet> &ret) const {
+
+    unordered_map<int, int> lhsMap;
+    unordered_map<int, int> rhsMap;
+    set<int> lhsVarsSet;
+    set<int> rhsVarsSet;
+
+    // Make an index to the meta nodes by their variable
+    for (unsigned int i = 0; i < lhs.size(); ++i) {
+        lhsMap[lhs[i]->GetVarID()] = i;
+        lhsVarsSet.insert(lhs[i]->GetVarID());
+    }
+    for (unsigned int i = 0; i < rhs.size(); ++i) {
+        rhsMap[rhs[i]->GetVarID()] = i;
+        rhsVarsSet.insert(rhs[i]->GetVarID());
+    }
+
+    /*
+    cout << "begin search" << endl;
+    for (size_t i = 0; i < descendants->size(); ++i) {
+        cout << i << " : ";
+        BOOST_FOREACH(int s, (*descendants)[i]) {
+            cout << " " << s;
+        }
+        cout << endl;
+    }
+    */
+
+    while(!lhsVarsSet.empty() && !rhsVarsSet.empty()) {
+        int largestSetSize = -1;
+        int side; // 0 left, 1 right
+        int root = -1;
+        set<int> inters;
+        BOOST_FOREACH(int l, lhsVarsSet) {
+            set<int> temp;
+            if (l < 0) {
+                BOOST_FOREACH(int s, rhsVarsSet) {
+                    if (s < 0) {
+                        temp.insert(s);
+                    }
+                }
+            }
+            else {
+//	            cout << "testing (from lhs) " << l << endl;
+                BOOST_FOREACH(int s, rhsVarsSet) {
+                    if ((*descendants)[l].find(s) != (*descendants)[l].end()) {
+                        temp.insert(s);
+                    }
+                }
+            }
+            int size = int(temp.size());
+            if (size > largestSetSize) {
+                largestSetSize = size;
+                root = l;
+                inters = temp;
+                side = 0;
+            }
+        }
+        BOOST_FOREACH(int l, rhsVarsSet) {
+            set<int> temp;
+            if (l < 0) {
+                BOOST_FOREACH(int s, lhsVarsSet) {
+                    if (s < 0) {
+                        temp.insert(s);
+                    }
+                }
+            }
+            else {
+//                cout << "testing (from rhs)" << l << endl;
+                BOOST_FOREACH(int s, lhsVarsSet) {
+                    if ((*descendants)[l].find(s) != (*descendants)[l].end()) {
+                        temp.insert(s);
+                    }
+                }
+            }
+            int size = int(temp.size());
+            if (size > largestSetSize) {
+                largestSetSize = size;
+                root = l;
+                inters = temp;
+                side = 1;
+            }
+        }
+
+
+        MetaNodePtr paramLHS;
+        vector<MetaNodePtr> paramRHS;
+        if (side == 0) {
+            paramLHS = lhs[lhsMap[root]];
+            lhsVarsSet.erase(root);
+            BOOST_FOREACH(int s, inters) {
+                paramRHS.push_back(rhs[rhsMap[s]]);
+                rhsVarsSet.erase(s);
+            }
+        }
+        else {
+            paramLHS = rhs[rhsMap[root]];
+            rhsVarsSet.erase(root);
+            BOOST_FOREACH(int s, inters) {
+                paramRHS.push_back(lhs[lhsMap[s]]);
+                lhsVarsSet.erase(s);
+            }
+
+        }
+        ret.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(paramLHS, paramRHS));
+    }
+
+    BOOST_FOREACH(int s, lhsVarsSet) {
+        if (s < 0 && rhsVarsSet.find(s) != rhsVarsSet.end()) {
+            ret.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(lhs[lhsMap[s]], vector<MetaNodePtr>(1, rhs[rhsMap[s]])));
+            rhsVarsSet.erase(s);
+        }
+        else {
+            ret.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(lhs[lhsMap[s]], vector<MetaNodePtr>()));
+        }
+    }
+
+    BOOST_FOREACH(int s, rhsVarsSet) {
+        ret.push_back(make_pair<MetaNodePtr, vector<MetaNodePtr> >(rhs[rhsMap[s]], vector<MetaNodePtr>()));
+    }
+}
+
 
 vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
         const vector<MetaNodePtr> &lhs, const vector<MetaNodePtr> &rhs) const {
@@ -163,13 +403,17 @@ vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
 
 WeightedMetaNodeList NodeManager::CreateMetaNode(int varid, unsigned int card,
         const vector<ANDNodePtr> &ch) {
+    WeightedMetaNodeList ret;
     MetaNodePtr newNode(new MetaNode(varid, card, ch));
     WeightedMetaNodeList temp = SingleLevelFullReduce(newNode);
     if (temp.first.size() > 1 || temp.first[0].get() != newNode.get()) {
         return temp;
     }
     temp.second *= temp.first[0]->Normalize();
-    return LookupUT(temp);
+    temp.first[0]->SetChildrenParent(temp.first[0]);
+    ret = LookupUT(temp);
+
+    return ret;
     /*
     UniqueTable::iterator it = ut.find(temp.first[0]);
     if (it != ut.end()) {
@@ -360,14 +604,14 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     int varid = lhs->GetVarID();
     int card = lhs->GetCard();
 
-    /*
+#ifdef USE_OPCACHE
     Operation ocEntry(op, lhs, rhs);
     OperationCache::iterator ocit = opCache.find(ocEntry);
 
     if ( ocit != opCache.end() ) {
         return ocit->second;
     }
-    */
+#endif
 
     // Base cases
     switch(op) {
@@ -439,11 +683,13 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
                     assert(false);
                     break;
             }
-            paramSets = GetParamSets(embeddedPT, paramLHS, rhs[0]->GetChildren()[k]->GetChildren());
+//            paramSets = GetParamSets(embeddedPT, paramLHS, rhs[0]->GetChildren()[k]->GetChildren());
+            GetParamSets3(paramLHS, rhs[0]->GetChildren()[k]->GetChildren(), paramSets);
         }
         else {
             // Not the same variable, prepare to push rhs down
-            paramSets = GetParamSets(embeddedPT, paramLHS, rhs);
+//            paramSets = GetParamSets(embeddedPT, paramLHS, rhs);
+            GetParamSets3(paramLHS, rhs, paramSets);
         }
 
         bool terminalOnly = true;
@@ -454,15 +700,21 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
 
         else {
             // For each parameter set
+            /*
+            cout << "New param set" << endl;
+            BOOST_FOREACH(ApplyParamSet aps, paramSets) {
+	            cout << "lhs: " << aps.first->GetVarID() << ", ";
+	            cout << "rhs:";
+	            BOOST_FOREACH(MetaNodePtr r, aps.second) {
+	                cout << " " << r->GetVarID();
+	            }
+	            cout << endl;
+            }
+            */
             BOOST_FOREACH(ApplyParamSet aps, paramSets) {
                 WeightedMetaNodeList subDD = Apply(aps.first, aps.second, op, embeddedPT);
-                /*
-            cout << "lhs: " << aps.first->GetVarID() << ", ";
-            cout << "rhs:";
-            BOOST_FOREACH(MetaNodePtr r, aps.second) {
-                cout << " " << r->GetVarID();
-            }
-            cout << endl;
+
+            /*
 
             cout << "SubDD:" << "(" << varid << "," << k << ")" << endl;
             BOOST_FOREACH(MetaNodePtr msub, subDD.first) {
@@ -514,19 +766,17 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     */
     WeightedMetaNodeList u = CreateMetaNode(varid, card, children);
 
-    /*
+#ifdef USE_OPCACHE
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
     opCacheMemUsage += (ocEntry.MemUsage() + sizeof(u) + (u.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
-    */
 
-    /*
     // Purge if op cache is too large
     if (opCacheMemUsage > OCMBLimit) {
         NodeManager::GetNodeManager()->PurgeOpCache();
     }
 
     if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
-    */
+#endif
     /*
     cout << "Created cache entry" << endl;
     cout << "keys:";
@@ -546,11 +796,8 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
 
 // Sets each AND node of variables to marginalize to be the result of summing
 // the respective MetaNode children of each AND node.
-
-// Current bug: have to check for the case where the node is not present,
-// but is a child of a node that is being marginalized.
 WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
-        const DirectedGraph &elimChain, bool &sumOpPerformed) {
+        const DirectedGraph &elimChain) {
     if (root.get() == MetaNode::GetZero().get()) {
         return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetZero()), 0.0);
     }
@@ -561,14 +808,14 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     int card = root->GetCard();
     int elimvar = s.GetOrdering().front();
 
-    /*
+#ifdef USE_OPCACHE
     Operation ocEntry(MARGINALIZE, root, elimvar);
     OperationCache::iterator ocit = opCache.find(ocEntry);
     if ( ocit != opCache.end() ) {
         //Found result in cache
         return ocit->second;
     }
-    */
+#endif
 
     // Marginalize each subgraph
     const vector<ANDNodePtr> &andNodes = root->GetChildren();
@@ -600,7 +847,7 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
                 newMetaNodes.push_back(j);
                 continue;
             }
-            WeightedMetaNodeList newMetaNodeList = Marginalize(j, s, elimChain, sumOpPerformed);
+            WeightedMetaNodeList newMetaNodeList = Marginalize(j, s, elimChain);
             /*
             cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
             paramSets[i].first->RecursivePrint(cout); cout << endl;
@@ -633,7 +880,6 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
 
     // If the root is to be marginalized
     if (s.VarExists(varid)) {
-//        sumOpPerformed = true;
         // Assume node resides at bottom
         double weight = 0;
         for (unsigned int i = 0; i < newANDNodes.size(); ++i) {
@@ -656,20 +902,148 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     var.AddVar(varid, card);
     */
     WeightedMetaNodeList ret = CreateMetaNode(varid, card, newANDNodes);
-    /*
+#ifdef USE_OPCACHE
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
     opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
-    */
 
-    /*
     // Purge if op cache is too large
     if (opCacheMemUsage > OCMBLimit) {
         NodeManager::GetNodeManager()->PurgeOpCache();
     }
 
     if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
-    */
+#endif
     return ret;
+}
+
+double NodeManager::MarginalizeFast(MetaNodePtr root, const Scope &s,
+        const set<int> &relevantVars) {
+    if (root.get() == MetaNode::GetZero().get()) {
+        return 0.0;
+    }
+    else if (root.get() == MetaNode::GetOne().get()) {
+        return 1.0;
+    }
+    /*
+    int varid = root->GetVarID();
+    int card = root->GetCard();
+    */
+    int elimvar = s.GetOrdering().front();
+
+    /*
+    // Expand only nodes in the chain
+    // If a leaf in the *diagram* is reached and it is not the elimination
+    // variable, multiply the AND weight by the elimination variable's cardinality
+    set<int> relevantVars;
+    tie(ei, ei_end) = out_edges(varid, elimChain);
+    while (ei != ei_end) {
+        int child = target(*ei, elimChain);
+        relevantVars.insert(child);
+        tie(ei, ei_end) = out_edges(child, elimChain);
+    }
+    */
+
+    // idea: do a dfs visit and store the nodes encountered
+    stack<MetaNode*> stk;
+    vector<MetaNode*> visitOrder;
+    set<MetaNode*> visited;
+
+    stk.push(root.get());
+    while (!stk.empty()) {
+        MetaNode *c = stk.top();
+        visitOrder.push_back(c);
+        stk.pop();
+        BOOST_FOREACH(ANDNodePtr a, c->GetChildren()) {
+            BOOST_FOREACH(MetaNodePtr m, a->GetChildren()) {
+                if (visited.find(m.get()) == visited.end() &&
+                        relevantVars.find(m->GetVarID()) != relevantVars.end()) {
+	                visited.insert(m.get());
+	                stk.push(m.get());
+                }
+
+            }
+        }
+    }
+
+    set<ANDNode*> receivedWeight;
+
+    for (size_t i = visitOrder.size() - 1; i >= 0; --i) {
+        MetaNode *&m = visitOrder[i];
+        if (s.VarExists(m->GetVarID())) {
+            double w = 0.0;
+            BOOST_FOREACH(ANDNodePtr a, m->GetChildren()) {
+                w += a->GetWeight();
+            }
+            if (i == 0) {
+                assert(m == root.get());
+                return w;
+            }
+            // propagate weight directly to parents -- reassign children
+            set<ANDNodePtr> &parents = m->GetParents();
+            set<ANDNodePtr>::iterator it = parents.begin();
+            for (; it != parents.end(); ++it) {
+                (*it)->SetWeight((*it)->GetWeight() * w);
+                vector<MetaNodePtr> &aCh = (*it)->GetChildren();
+                for (size_t j = 0; j < aCh.size(); ++j) {
+                    if (m == aCh[j].get()) {
+                        if (w == 0) {
+                            aCh.clear();
+                            aCh.push_back(MetaNode::GetZero());
+                        }
+                        else {
+                            aCh.erase(aCh.begin() + j);
+                        }
+                        break;
+                    }
+                }
+                if (aCh.empty()) {
+                    aCh.push_back(MetaNode::GetOne());
+                }
+                receivedWeight.insert(it->get());
+            }
+        }
+        else {
+            if (i != 0) {
+	            // First check if the ANDNodes connect to relevant variables
+	            BOOST_FOREACH(ANDNodePtr a, m->GetChildren()) {
+	                if (receivedWeight.find(a.get()) != receivedWeight.end()) continue;
+	                bool hasRelevantChild = false;
+	                BOOST_FOREACH(MetaNodePtr mm, a->GetChildren()) {
+	                    if (relevantVars.find(mm->GetVarID()) !=
+	                            relevantVars.end()) {
+	                        hasRelevantChild = true;
+	                        break;
+	                    }
+	                }
+	                // multiply by elimination var scope size if not
+	                if (!hasRelevantChild) {
+		                a->SetWeight(a->GetWeight() * s.GetVarCard(elimvar));
+	                }
+	            }
+            }
+
+            // Normalize the node and promote its weights to the parents
+            double w = m->Normalize();
+            if (i == 0) {
+                assert(m == root.get());
+                return w;
+            }
+            set<ANDNodePtr> &parents = m->GetParents();
+            set<ANDNodePtr>::iterator it = parents.begin();
+            for (; it != parents.end(); ++it) {
+                (*it)->SetWeight((*it)->GetWeight() * w);
+            }
+        }
+    }
+    cout << "Should not get here." << endl;
+    assert(false);
+    return 1.0;
+
+
+
+
+
+
 }
 
 // Sets each AND node of variables to marginalize to be the result of maximizing
@@ -686,19 +1060,21 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     int varid = root->GetVarID();
     int card = root->GetCard();
 
-    /*
+#ifdef USE_OPCACHE
     int elimvar = s.GetOrdering().front();
     Operation ocEntry(MAX, root, elimvar);
     OperationCache::iterator ocit = opCache.find(ocEntry);
     if ( ocit != opCache.end() ) {
         //Found result in cache
+        /*
         cout << "operator: " << ocit->first.GetOperator() << endl;
         cout << "root: " << root.get() << endl;
         cout << "elimvar: " << elimvar << endl;
         cout << "Returning: " << ocit->second.get() << endl;
+        */
         return ocit->second;
     }
-*/
+#endif
 
     // Maximize each subgraph
     const vector<ANDNodePtr> &andNodes = root->GetChildren();
@@ -763,19 +1139,18 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     var.AddVar(varid, card);
     */
     WeightedMetaNodeList ret = CreateMetaNode(varid, card, newANDNodes);
-    /*
+
+#ifdef USE_OPCACHE
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
     opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
-    */
 
-    /*
     // Purge if op cache is too large
     if (opCacheMemUsage > OCMBLimit) {
         NodeManager::GetNodeManager()->PurgeOpCache();
     }
 
     if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
-    */
+#endif
     /*
     cout << "Created cache entry(MAX)" << endl;
     cout << "elimvar:" << elimvar << endl;
@@ -786,6 +1161,175 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     cout << endl << "res:" << ret.get() << endl;
     */
     return ret;
+}
+
+// Assumes variable is eliminated only once during the entire run
+/*
+double NodeManager::MaximizeFast(MetaNodePtr root, const Scope &s,
+        const DirectedGraph &embeddedpt) {
+    if (root.get() == MetaNode::GetZero().get()) {
+        return 0.0;
+    }
+    else if (root.get() == MetaNode::GetOne().get()) {
+        return 1.0;
+    }
+//    int varid = root->GetVarID();
+//    int card = root->GetCard();
+
+    // Maximize each subgraph
+    vector<ANDNodePtr> &andNodes = root->GetChildren();
+    BOOST_FOREACH(ANDNodePtr i, andNodes) {
+        vector<MetaNodePtr> &metaNodes = i->GetChildren();
+//        vector<MetaNodePtr> newMetaNodes;
+//        bool terminalOnly = true;
+        double weight = 1.0;
+        for (size_t j = 0; j < metaNodes.size(); ++j) {
+            if (s.VarExists(metaNodes[j]->GetVarID())) {
+                double w = DOUBLE_MIN;
+                vector<ANDNodePtr> &andNodesJ = metaNodes[j]->GetChildren();
+                for (unsigned int k = 0; k < andNodesJ.size(); ++k) {
+                    double temp = andNodesJ[k]->GetWeight();
+                    if (temp > w) {
+                        w = temp;
+                    }
+                }
+		        // propagate weight directly to parents
+                set<ANDNodePtr> &parents = metaNodes[j]->GetParents();
+                set<ANDNodePtr>::iterator it = parents.begin();
+                for (; it != parents.end(); ++it) {
+                    (*it)->SetWeight((*it)->GetWeight() * w);
+                }
+		        if (w == 0) {
+		            metaNodes[j] = MetaNode::GetZero();
+		        } else {
+		            metaNodes[j] = MetaNode::GetOne();
+		        }
+		        cout << w << endl;
+		        weight *= w;
+            }
+            else {
+                weight *= MaximizeFast(metaNodes[j], s, embeddedpt);
+            }
+            cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
+            paramSets[i].first->RecursivePrint(cout); cout << endl;
+            cout << "SubDD:" << "(" << varid << "," << k << ")" << endl;
+            subDD->RecursivePrint(cout); cout << endl;
+
+
+            // Note: would have to modify for other operators
+        }
+
+        // Will need to consider if the weights on the AND nodes become equal
+        // Do a check to see if the metaNodes[j] is redundant
+        size_t orig_size = metaNodes.size();
+        vector<int> toRemove;
+        for (size_t j = 0; j < orig_size; ++j) {
+            if (metaNodes[j]->IsRedundant()) {
+                toRemove.push_back(j);
+                BOOST_FOREACH(MetaNodePtr k, metaNodes[j]->GetChildren()[0]->GetChildren()) {
+                    metaNodes.push_back(k);;
+                }
+            }
+        }
+        BOOST_FOREACH(int j, toRemove) {
+            metaNodes.erase(metaNodes.begin() + j);
+        }
+        i->SetWeight(i->GetWeight()*weight);
+    }
+    cout << root->GetVarID() << endl;
+    cout << "Normalizing" << endl;
+    double norm = root->Normalize();
+    cout << "val=" << norm << endl;
+    return norm;
+}
+*/
+
+// Non-recursive way
+double NodeManager::MaximizeFast(MetaNodePtr root, const Scope &s,
+        const set<int> &relevantVars) {
+    if (root.get() == MetaNode::GetZero().get()) {
+        return 0.0;
+    }
+    else if (root.get() == MetaNode::GetOne().get()) {
+        return 1.0;
+    }
+
+    // idea: do a dfs visit and store the nodes encountered
+    stack<MetaNode*> stk;
+    vector<MetaNode*> visitOrder;
+    set<MetaNode*> visited;
+
+    stk.push(root.get());
+    while (!stk.empty()) {
+        MetaNode *c = stk.top();
+        visitOrder.push_back(c);
+        stk.pop();
+        BOOST_FOREACH(ANDNodePtr a, c->GetChildren()) {
+            BOOST_FOREACH(MetaNodePtr m, a->GetChildren()) {
+                if (visited.find(m.get()) == visited.end() &&
+                        relevantVars.find(m->GetVarID()) != relevantVars.end()) {
+	                visited.insert(m.get());
+	                stk.push(m.get());
+                }
+
+            }
+        }
+    }
+
+    for (size_t i = visitOrder.size() - 1; i >= 0; --i) {
+        MetaNode *&m = visitOrder[i];
+        if (s.VarExists(m->GetVarID())) {
+            double w = DOUBLE_MIN;
+            BOOST_FOREACH(ANDNodePtr a, m->GetChildren()) {
+                double temp = a->GetWeight();
+                if (temp > w) {
+                    w = temp;
+                }
+            }
+            if (i == 0) {
+                assert(m == root.get());
+                return w;
+            }
+            // propagate weight directly to parents -- reassign children
+            set<ANDNodePtr> &parents = m->GetParents();
+            set<ANDNodePtr>::iterator it = parents.begin();
+            for (; it != parents.end(); ++it) {
+                (*it)->SetWeight((*it)->GetWeight() * w);
+                vector<MetaNodePtr> &aCh = (*it)->GetChildren();
+                for (size_t j = 0; j < aCh.size(); ++j) {
+                    if (m == aCh[j].get()) {
+                        if (w == 0) {
+                            aCh.clear();
+                            aCh.push_back(MetaNode::GetZero());
+                        }
+                        else {
+                            aCh.erase(aCh.begin() + j);
+                        }
+                        break;
+                    }
+                }
+                if (aCh.empty()) {
+                    aCh.push_back(MetaNode::GetOne());
+                }
+            }
+        }
+        else {
+            // Normalize the node and promote its weights to the parents
+            double w = m->Normalize();
+            if (i == 0) {
+                assert(m == root.get());
+                return w;
+            }
+            set<ANDNodePtr> &parents = m->GetParents();
+            set<ANDNodePtr>::iterator it = parents.begin();
+            for (; it != parents.end(); ++it) {
+                (*it)->SetWeight((*it)->GetWeight() * w);
+            }
+        }
+    }
+    cout << "Should not get here." << endl;
+    assert(false);
+    return 1.0;
 }
 
 // Sets each AND node of variables to marginalize to be the result of minimizing
@@ -802,8 +1346,8 @@ WeightedMetaNodeList NodeManager::Minimize(MetaNodePtr root, const Scope &s,
     int varid = root->GetVarID();
     int card = root->GetCard();
 
-    /*
     int elimvar = s.GetOrdering().front();
+#ifdef USE_OPCACHE
     Operation ocEntry(MIN, root, elimvar);
     OperationCache::iterator ocit = opCache.find(ocEntry);
     if ( ocit != opCache.end() ) {
@@ -811,10 +1355,10 @@ WeightedMetaNodeList NodeManager::Minimize(MetaNodePtr root, const Scope &s,
         cout << "operator: " << ocit->first.GetOperator() << endl;
         cout << "root: " << root.get() << endl;
         cout << "elimvar: " << elimvar << endl;
-        cout << "Returning: " << ocit->second.get() << endl;
+//        cout << "Returning: " << ocit->second.get() << endl;
         return ocit->second;
     }
-*/
+#endif
 
     // Minimize each subgraph
     const vector<ANDNodePtr> &andNodes = root->GetChildren();
@@ -879,19 +1423,17 @@ WeightedMetaNodeList NodeManager::Minimize(MetaNodePtr root, const Scope &s,
     var.AddVar(varid, card);
     */
     WeightedMetaNodeList ret = CreateMetaNode(varid, card, newANDNodes);
-    /*
+#ifdef USE_OPCACHE
     opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
     opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
-    */
 
-    /*
     // Purge if op cache is too large
     if (opCacheMemUsage > OCMBLimit) {
         NodeManager::GetNodeManager()->PurgeOpCache();
     }
 
     if (opCacheMemUsage > maxOpCacheMemUsage) maxOpCacheMemUsage = opCacheMemUsage;
-    */
+#endif
     /*
     cout << "Created cache entry(MAX)" << endl;
     cout << "elimvar:" << elimvar << endl;
@@ -977,6 +1519,13 @@ inline WeightedMetaNodeList NodeManager::LookupUT(WeightedMetaNodeList &temp) {
         return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
     }
     else {
+	    // Confirmed uniqueness, add AND nodes of new node to the parent
+        // lists of their children
+	    BOOST_FOREACH(ANDNodePtr a, temp.first[0]->GetChildren()) {
+	        BOOST_FOREACH(MetaNodePtr mm, a->GetChildren()) {
+	            mm->AddParent(a);
+	        }
+	    }
         ut.insert(temp.first[0]);
         utMemUsage += temp.first[0]->MemUsage() / MB_PER_BYTE;
         if (utMemUsage > maxUTMemUsage) maxUTMemUsage = utMemUsage;
@@ -984,7 +1533,7 @@ inline WeightedMetaNodeList NodeManager::LookupUT(WeightedMetaNodeList &temp) {
     }
 }
 
-inline double NodeManager::MemUsage() const {
+double NodeManager::MemUsage() const {
     double memUsage = 0;
     BOOST_FOREACH(MetaNodePtr m, ut) {
         memUsage += m->MemUsage();
@@ -992,7 +1541,7 @@ inline double NodeManager::MemUsage() const {
     return (sizeof(ut) + memUsage) / MB_PER_BYTE;
 }
 
-inline double NodeManager::OpCacheMemUsage() const {
+double NodeManager::OpCacheMemUsage() const {
     double memUsage = 0;
     OperationCache::const_iterator it = opCache.begin();
     for (; it != opCache.end(); ++it) {

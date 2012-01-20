@@ -11,7 +11,8 @@ protected:
         UNION, INTERSECT, DIFF
     };
 
-    boost::unordered_map<int, unsigned int> varCard;
+//    std::map<int, unsigned int> varCard;
+    std::vector<unsigned int> varCard;
     std::list<int> ordering;
 
 public:
@@ -36,7 +37,7 @@ public:
     virtual bool VarExists(int i) const;
 
     virtual bool IsEmpty() const {
-        return varCard.empty();
+        return ordering.empty();
     }
 
     // Get the number of variables in the scope
@@ -69,7 +70,8 @@ public:
 
 class Assignment: public Scope {
 protected:
-    boost::unordered_map<int, int> varAssigns;
+//    std::map<int, int> varAssigns;
+    std::vector<int> varAssigns;
 public:
     Assignment();
     Assignment(const Scope &s);

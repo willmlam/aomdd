@@ -29,6 +29,8 @@ class DDMiniBucketTree {
     std::vector<int> initialBucketSizes;
     int largestBucket;
 
+    std::vector< std::set<int> > descendants;
+
     bool fullReduce;
     bool compiled;
     AOMDDFunction compiledDD;

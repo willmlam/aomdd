@@ -42,9 +42,24 @@ CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
     for (unsigned int i = 0; i < buckets.size(); i++) {
         initialBucketSizes[i] = buckets[i].GetBucketSize();
     }
+
+    // Use the pseudotree to build the descendant sets
+    descendants.resize(ordering.size());
+
+    // Terminals are always descendants of any variable
+    BOOST_FOREACH(set<int> &dSet, descendants) {
+        dSet.insert(-1);
+        dSet.insert(-2);
+    }
+    DescendantGenerator vis(descendants);
+    depth_first_search(pt->GetTree(), root_vertex(VertexDesc(pt->GetRoot())).
+            visitor(vis).
+            edge_color_map(get(edge_color,pt->GetTree())));
 }
 
 AOMDDFunction CompileBucketTree::Compile() {
+    NodeManager::GetNodeManager()->SetDescendantsList(&descendants);
+    NodeManager::GetNodeManager()->SetOrdering(&ordering);
     if (!compiled) {
         list<int>::reverse_iterator rit = ordering.rbegin();
         int numBuckets = ordering.size();
@@ -93,12 +108,17 @@ AOMDDFunction CompileBucketTree::Compile() {
     }
     compiled = true;
     compiledDD.ReweighRoot(globalWeight);
+
+    NodeManager::GetNodeManager()->SetDescendantsList(NULL);
+    NodeManager::GetNodeManager()->SetOrdering(NULL);
     return compiledDD;
 }
 
 double CompileBucketTree::Prob(bool logOut) {
     double pr = logOut ? 0 : 1;
 
+    NodeManager::GetNodeManager()->SetDescendantsList(&descendants);
+    NodeManager::GetNodeManager()->SetOrdering(&ordering);
     // If it's already been compiled, we can just eliminate from the large DD
     if (compiled) {
         Assignment a;
@@ -142,6 +162,19 @@ double CompileBucketTree::Prob(bool logOut) {
             DInEdge ei, ei_end;
             tie(ei, ei_end) = in_edges(*rit, tree);
             Scope elim;
+
+            if (message->GetScope().IsEmpty()) {
+                Assignment a;
+                if (logOut) {
+                    pr += message->GetVal(a, logOut);
+                    delete message;
+                }
+                else {
+                    pr *= message->GetVal(a, logOut);
+                    delete message;
+                }
+                continue;
+            }
             int card = message->GetScope().GetVarCard(*rit);
             elim.AddVar(*rit, card);
 
@@ -154,7 +187,7 @@ double CompileBucketTree::Prob(bool logOut) {
                 message->Condition(cond);
             }
             else {
-                message->Marginalize(elim);
+                message->MarginalizeFast(elim);
                 if (*rit == largestBucket) {
                     tie(numMeta, numAND) = message->Size();
                     numTotal = numMeta + numAND;
@@ -215,11 +248,16 @@ double CompileBucketTree::Prob(bool logOut) {
         NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
+    NodeManager::GetNodeManager()->SetDescendantsList(NULL);
+    NodeManager::GetNodeManager()->SetOrdering(NULL);
     return pr;
 }
 
 double CompileBucketTree::MPE(bool logOut) {
     double pr = logOut ? 0 : 1;
+
+    NodeManager::GetNodeManager()->SetDescendantsList(&descendants);
+    NodeManager::GetNodeManager()->SetOrdering(&ordering);
 
     // If it's already been compiled, we can just eliminate from the large DD
     if (compiled) {
@@ -262,6 +300,18 @@ double CompileBucketTree::MPE(bool logOut) {
             DInEdge ei, ei_end;
             tie(ei, ei_end) = in_edges(*rit, tree);
             Scope elim;
+            if (message->GetScope().IsEmpty()) {
+                Assignment a;
+                if (logOut) {
+                    pr += message->GetVal(a, logOut);
+                    delete message;
+                }
+                else {
+                    pr *= message->GetVal(a, logOut);
+                    delete message;
+                }
+                continue;
+            }
             int card = message->GetScope().GetVarCard(*rit);
             elim.AddVar(*rit, card);
 
@@ -274,7 +324,10 @@ double CompileBucketTree::MPE(bool logOut) {
                 message->Condition(cond);
             }
             else {
-                message->Maximize(elim);
+//	                message->Save(cout); cout << endl;
+//	                message->PrintAsTable(cout); cout << endl;
+                message->MaximizeFast(elim);
+//	                message->Save(cout); cout << endl;
                 if (*rit == largestBucket) {
                     tie(numMeta, numAND) = message->Size();
                     numTotal = numMeta + numAND;
@@ -326,6 +379,8 @@ double CompileBucketTree::MPE(bool logOut) {
             pr *= globalWeight;
         }
     }
+    NodeManager::GetNodeManager()->SetDescendantsList(NULL);
+    NodeManager::GetNodeManager()->SetOrdering(NULL);
     return pr;
 }
 

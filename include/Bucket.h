@@ -29,6 +29,7 @@ public:
     TableFunction *Flatten(const std::list<int> &ordering);
     TableFunction *FlattenFast(const std::list<int> &ordering);
     TableFunction *FastSumElimination(const std::list<int> &order, const Scope &elimVar);
+    TableFunction *FastMaxElimination(const std::list<int> &order, const Scope &elimVar);
     TableFunction *FastCondition(const std::list<int> &order, const Assignment &cond);
 
     inline const Scope &GetScope() const {

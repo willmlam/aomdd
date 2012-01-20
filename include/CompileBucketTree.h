@@ -22,6 +22,9 @@ class CompileBucketTree {
     const PseudoTree *pt;
     std::list<int> ordering;
     std::map<int, int> evidence;
+
+    std::vector< std::set<int> > descendants;
+
     std::vector<int> initialBucketSizes;
     int largestBucket;
 
@@ -65,6 +68,7 @@ public:
         return mem + sizeof(*this);
     }
 };
+
 
 }
 
