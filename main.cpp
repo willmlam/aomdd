@@ -15,8 +15,11 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
+#include <boost/program_options.hpp>
 using namespace aomdd;
 using namespace std;
+
+namespace po = boost::program_options;
 
 time_t timeStart, timeEnd;
 double timePassed;
@@ -183,6 +186,38 @@ int main(int argc, char **argv) {
     cout << "====================================================" << endl;
     cout << endl;
 
+    po::options_description inputOptions("Input files");
+    inputOptions.add_options()
+            ("file,f", po::value<string>(), "path to problem file (UAI format) [required]")
+            ("order,o", po::value<string>(), "path to elimination ordering file [required]")
+            ("evid,e", po::value<string>(), "path to evidence file")
+            ;
+    po::options_description outputOptions("Output files");
+    outputOptions.add_options()
+            ("treedot,t", po::value<string>(), "path to DOT file to output generated pseudo-tree")
+            ("res,r", po::value<string>(), "path to output results")
+            ;
+    po::options_description infOptions("Inference options");
+    infOptions.add_options()
+            ("compile,c", "compile full AOMDD")
+            ("pe", "compute P(e)")
+            ("mpe", "computer MPE(e) cost")
+            ("mbe", "use minibucket approximation")
+            ("mbebound", po::value<unsigned long>(), "diagram size bound for minibucket")
+            ("mbeibound", po::value<unsigned long>(), "i-bound for minibucket")
+            ("vbe", "use standard function tables")
+            ("log", "output results in log space")
+            ;
+    po::options_description otherOptions("Other options");
+    otherOptions.add_options()
+            ("mlim", po::value<double>(), "Memory limit (MB) for nodes")
+            ("oclim", po::value<double>(), "Memory limit (MB) for operation cache")
+            ("outcompile", "Output compiled AOMDD")
+            ("bespace", "Output space for standard table BE (only)")
+            ("help,h", "Output list of options")
+            ;
+
+    /*
     if ( !ParseCommandLine(argc, argv) ) {
         cout << "Invalid arguments given" << endl;
         cout << "Options list" << endl;
@@ -210,6 +245,61 @@ int main(int argc, char **argv) {
 //        cout << "  -oclim           specify memory limit (MB) for operations" << endl;
         cout << "  -outcompile      output compiled AOMDD" << endl;
         cout << "  -vbespace        compute space needed by vanilla bucket elimination (only)" << endl;
+        return 0;
+    }
+    */
+
+    po::options_description allOptions;
+    allOptions.add(inputOptions).add(outputOptions).add(infOptions).add(otherOptions);
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc,argv,allOptions),vm);
+    po::notify(vm);
+
+
+    if (vm.count("help")) {
+        cout << allOptions << endl;
+        return 1;
+    }
+
+    if (!vm.count("file") || !vm.count("order")) {
+        cout << "Missing UAI file or ordering file" << endl;
+        cout << endl;
+    }
+
+    if (vm.count("pe") && vm.count("mpe")) {
+        cout << "Please choose a single query type (P(e) or MPE)" << endl;
+        cout << endl;
+    }
+
+    try {
+    inputFile = vm["file"].as<string>();
+    orderFile = vm["order"].as<string>();
+    if (vm.count("evid"))
+        evidFile = vm["evid"].as<string>();
+    if (vm.count("treedot"))
+        dotFile = vm["treedot"].as<string>();
+    if (vm.count("res"))
+        outputResultFile = vm["res"].as<string>();
+    compileMode = vm.count("compile");
+    peMode = vm.count("pe");
+    mpeMode = vm.count("mpe");
+    vbeMode = vm.count("vbe");
+    logMode = vm.count("log");
+    miniBucketMode = vm.count("mbe");
+    outCompile = vm.count("outcompile");
+    vbeSpace = vm.count("bespace");
+
+    if (vm.count("mlim"))
+	    MBLimit = vm["mlim"].as<double>();
+    if (vm.count("oclim"))
+        OCMBLimit = vm["oclim"].as<double>();
+    if (vm.count("mbebound"))
+        mbeSizeBound = vm["mbebound"].as<unsigned long>();
+    if (vm.count("mbeibound"))
+        mbeIBound = vm["mbeibound"].as<unsigned long>();
+    } catch ( const std::exception &e) {
+        cout << e.what();
         return 0;
     }
 

@@ -24,6 +24,9 @@
 							<tool id="cdt.managedbuild.tool.macosx.c.linker.macosx.base.1289342284" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.base"/>
 							<tool command="/usr/local/bin/ccache g++" id="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base.806658921" name="MacOS X C++ Linker" superClass="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base">
 								<option id="macosx.cpp.link.option.flags.793932986" name="Linker flags" superClass="macosx.cpp.link.option.flags" value="" valueType="string"/>
+								<option id="macosx.cpp.link.option.libs.1950296901" superClass="macosx.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="boost_program_options-mt"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.macosx.cpp.linker.input.649420404" superClass="cdt.managedbuild.tool.macosx.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

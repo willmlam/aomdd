@@ -185,11 +185,7 @@ Assignment::~Assignment() {
 }
 
 Assignment::Assignment(const Scope &s) :
-    Scope(s) {
-    varAssigns.resize(varCard.size());
-    for (unsigned int i = 0; i < varAssigns.size(); ++i)
-        varAssigns[i] = UNKNOWN_VAL;
-
+    Scope(s), varAssigns(vector<int>(varCard.size(), UNKNOWN_VAL)) {
 }
 
 Assignment::Assignment(const Assignment &s) :
@@ -398,6 +394,7 @@ Assignment Assignment::operator-(const Assignment &rhs) {
 
 Assignment& Assignment::operator=(const Assignment &a) {
     if (this != &a) {
+        ordering = a.ordering;
         varCard = a.varCard;
         varAssigns = a.varAssigns;
     }
