@@ -22,7 +22,8 @@ class AOMDDFunction: public Function {
 private:
     static NodeManager *mgr;
 
-    WeightedMetaNodeList root;
+//    WeightedMetaNodeList root;
+    ANDNodePtr root;
     const PseudoTree *pt;
 
 public:
@@ -55,16 +56,17 @@ public:
     void Normalize();
 
     inline void ReweighRoot(double w) {
-        root.second *= w;
+        root->SetWeight(root->GetWeight()*w);
+//        root.second *= w;
     }
 
     inline double GetRootWeight() const {
-        return root.second;
+        return root->GetWeight();
     }
 
     inline bool IsConstantValue() const {
-        assert(root.first.size() != 0);
-        return root.first.size() == 1 && root.first[0]->IsTerminal();
+        assert(root->GetChildren().size() != 0);
+        return root->GetChildren().size() == 1 && root->GetChildren()[0]->IsTerminal();
     }
 
     inline std::pair<unsigned int, unsigned int> Size() const {
@@ -72,7 +74,7 @@ public:
         unsigned int numAND = 0;
         unsigned int numMetaTemp = 0;
         unsigned int numANDTemp = 0;
-        BOOST_FOREACH(MetaNodePtr m, root.first) {
+        BOOST_FOREACH(MetaNodePtr m, root->GetChildren()) {
             tie(numMetaTemp, numANDTemp) = m->NumOfNodes();
             numMeta += numMetaTemp;
             numAND += numANDTemp;
@@ -82,7 +84,7 @@ public:
 
     inline std::pair<std::vector<unsigned int>, std::vector<unsigned int> > GetCounts(unsigned int n) const {
         std::vector<unsigned int> numMeta(n, 0);
-        BOOST_FOREACH(MetaNodePtr m, root.first) {
+        BOOST_FOREACH(MetaNodePtr m, root->GetChildren()) {
             m->GetNumNodesPerVar(numMeta);
         }
         std::vector<unsigned int> numAND(n, 0);
@@ -101,14 +103,14 @@ public:
 
     inline double MemUsage() const {
         double memUsage = 0;
-        BOOST_FOREACH(MetaNodePtr m, root.first) {
+        BOOST_FOREACH(MetaNodePtr m, root->GetChildren()) {
             memUsage += m->ComputeTotalMemory();
         }
-        return memUsage + sizeof(AOMDDFunction) + (root.first.size() * sizeof(MetaNodePtr));
+        return memUsage + sizeof(AOMDDFunction) + (root->GetChildren().size() * sizeof(MetaNodePtr));
     }
 
     inline double SelfMemUsage() const {
-        return sizeof(AOMDDFunction) + (root.first.size() * sizeof(MetaNodePtr));
+        return sizeof(AOMDDFunction) + (root->GetChildren().size() * sizeof(MetaNodePtr));
     }
 };
 

@@ -58,7 +58,7 @@ Scope::~Scope() {
 inline bool Scope::AddVar(int i, unsigned int card) {
     if (card > 0 && find(ordering.begin(), ordering.end(), i) == ordering.end()) {
         size_t j = varCard.size();
-        if (i >= j) {
+        if (i >= int(j)) {
             varCard.resize(i+1);
             for (; j < varCard.size(); ++j) {
                 varCard[j] = 0;

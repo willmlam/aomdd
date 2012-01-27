@@ -150,7 +150,7 @@ typedef google::dense_hash_map<Operation, WeightedMetaNodeList, ophasher, eqop> 
 
 #ifdef USE_BOOSTHASH
 typedef boost::unordered_set<MetaNodePtr, nodehasher, eqnode> UniqueTable;
-typedef boost::unordered_map<Operation, WeightedMetaNodeList, ophasher, eqop> OperationCache;
+typedef boost::unordered_map<Operation, ANDNodePtr, ophasher, eqop> OperationCache;
 #endif
 
 
@@ -194,6 +194,7 @@ class NodeManager {
         maxOpCacheMemUsage = OpCacheMemUsage();
 
         MBLimit = 2048;
+        OCMBLimit = 512;
     }
     NodeManager(NodeManager const&) {
     }
@@ -209,15 +210,15 @@ class NodeManager {
 public:
     static NodeManager *GetNodeManager();
     // Create a metanode from a variable with a children list
-    WeightedMetaNodeList CreateMetaNode(const Scope &var,
+    ANDNodePtr CreateMetaNode(const Scope &var,
             const std::vector<ANDNodePtr> &ch);
 
-    WeightedMetaNodeList CreateMetaNode(int varid, unsigned int card,
+    ANDNodePtr CreateMetaNode(int varid, unsigned int card,
             const std::vector<ANDNodePtr> &ch);
 
     // Create a metanode based on a tabular form of the function
     // Variable ordering is defined by the scope
-    WeightedMetaNodeList CreateMetaNode(const Scope &vars,
+    ANDNodePtr CreateMetaNode(const Scope &vars,
             const std::vector<double> &vals);
 
     /*
@@ -233,9 +234,9 @@ public:
 
     // Same as above, but single level version, it assumes all the decision
     // diagrams rooted by the children are already fully reduced
-    WeightedMetaNodeList SingleLevelFullReduce(MetaNodePtr node);
+    ANDNodePtr SingleLevelFullReduce(MetaNodePtr node);
 
-    WeightedMetaNodeList Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
+    ANDNodePtr Apply(MetaNodePtr lhs, const std::vector<MetaNodePtr> &rhs, Operator op,
             const DirectedGraph &embeddedPT);
 
     std::vector<ApplyParamSet> GetParamSets(const DirectedGraph &tree,
@@ -251,12 +252,12 @@ public:
             const std::vector<MetaNodePtr> &rhs,
             std::vector<ApplyParamSet> &ret) const;
 
-    WeightedMetaNodeList Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &elimChain);
+    ANDNodePtr Marginalize(MetaNodePtr root, const Scope &s, const DirectedGraph &elimChain);
     double MarginalizeFast(MetaNodePtr root, const Scope &s, const std::set<int> &relevantVars);
-    WeightedMetaNodeList Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    ANDNodePtr Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
     double MaximizeFast(MetaNodePtr root, const Scope &s, const std::set<int> &relevantVars);
-    WeightedMetaNodeList Minimize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
-    WeightedMetaNodeList Condition(MetaNodePtr root, const Assignment &cond);
+    ANDNodePtr Minimize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    ANDNodePtr Condition(MetaNodePtr root, const Assignment &cond);
 
     // Normalizes the weights of the immediate AND nodes to sum to 1.
 //    double Normalize(MetaNodePtr root);
@@ -289,7 +290,7 @@ public:
     void PrintUniqueTable(std::ostream &out) const;
     void PrintReferenceCount(std::ostream &out) const;
 
-    WeightedMetaNodeList LookupUT(WeightedMetaNodeList &temp);
+    ANDNodePtr LookupUT(ANDNodePtr &temp);
 
 
     inline void SetMBLimit(double m) { MBLimit = m; }

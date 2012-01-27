@@ -608,101 +608,60 @@ int main(int argc, char **argv) {
             out << "Effective semantic width=" << probESemanticWidth << endl;
         }
     }
+
+    QueryType q;
     if (peMode) {
-        double pr;
-        time(&timeStart);
-        if (vbeMode) {
-                pr = bt->Prob(logMode);
-        }
-        else if (miniBucketMode) {
-            pr = mbt->Query(PE, logMode);
-            cout << endl;
-            cout << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
-            cout << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
-            cout << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
-            cout << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
-            if (outputToFile) {
-                out << endl;
-                out << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
-                out << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
-                out << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
-                out << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
-            }
-        }
-        else {
-            pr = cbt->Prob(logMode);
-            cout << endl;
-            cout << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
-            cout << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
-            cout << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
-            cout << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
-            if (outputToFile) {
-                out << endl;
-                out << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
-                out << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
-                out << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
-                out << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
-            }
-        }
-        time(&timeEnd);
-        timePassed = difftime(timeEnd, timeStart);
-        string prefix = logMode ? "log P(e)=" : "P(e)=";
-        cout << endl;
-        cout << "Time=" << timePassed << "s" << endl;
-        cout << prefix << pr << endl;
-        if (outputToFile) {
-            out << endl;
-            out << "Time=" << timePassed << "s" << endl;
-            out << prefix << pr << endl;
-        }
+        q = PE;
     }
     else if (mpeMode) {
-        double pr;
-        time(&timeStart);
-        if (vbeMode) {
-            pr = bt->MPE(logMode);
-        }
-        else if (miniBucketMode) {
-            pr = mbt->Query(MPE, logMode);
-            cout << endl;
-            cout << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
-            cout << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
-            cout << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
-            cout << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
-            if (outputToFile) {
-                out << endl;
-                out << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
-                out << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
-                out << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
-                out << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
-            }
-        }
-        else {
-            pr = cbt->MPE(logMode);
-            cout << endl;
-            cout << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
-            cout << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
-            cout << "Largest Message (AOMDD Total)=" << cbt->GetLargestNumTotal() << endl;
-            cout << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
-            if (outputToFile) {
-                out << endl;
-                out << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
-                out << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
-                out << "Largest Message (AOMDD Total)=" << cbt->GetLargestNumTotal() << endl;
-                out << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
-            }
-        }
-        time(&timeEnd);
-        timePassed = difftime(timeEnd, timeStart);
-        string prefix = logMode ? "log MPE=" : "MPE=";
+        q = MPE;
+    }
+
+    double pr;
+    time(&timeStart);
+    if (vbeMode) {
+        pr = bt->Query(q, logMode);
+    }
+    else if (miniBucketMode) {
+        pr = mbt->Query(q, logMode);
         cout << endl;
-        cout << "Time=" << timePassed << "s" << endl;
-        cout << prefix << pr << endl;
+        cout << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
+        cout << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
+        cout << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
+        cout << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
         if (outputToFile) {
             out << endl;
-            out << "Time=" << timePassed << "s" << endl;
-            out << prefix << pr << endl;
+            out << "Largest Message (AOMDD Meta)=" << mbt->GetLargestNumMeta() << endl;
+            out << "Largest Message (AOMDD AND)=" << mbt->GetLargestNumAND() << endl;
+            out << "Largest Message (AOMDD Total)= " << mbt->GetLargestNumTotal() << endl;
+            out << "Largest Message (AOMDD Memory)=" << mbt->GetLargestMem() << endl;
         }
+    }
+    else {
+        pr = cbt->Query(q, logMode);
+        cout << endl;
+        cout << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
+        cout << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
+        cout << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+        cout << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
+        if (outputToFile) {
+            out << endl;
+            out << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
+            out << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
+            out << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+            out << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
+        }
+    }
+    time(&timeEnd);
+    timePassed = difftime(timeEnd, timeStart);
+    string prefix = logMode ? "log P(e)=" : "P(e)=";
+    cout << endl;
+    cout << "Time=" << timePassed << "s" << endl;
+    cout << prefix << pr << endl;
+    if (outputToFile) {
+        out << endl;
+        out << "Time=" << timePassed << "s" << endl;
+        out << prefix << pr << endl;
     }
 
     if (verifyVals) {

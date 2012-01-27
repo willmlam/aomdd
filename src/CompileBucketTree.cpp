@@ -114,6 +114,157 @@ AOMDDFunction CompileBucketTree::Compile() {
     return compiledDD;
 }
 
+double CompileBucketTree::Query(QueryType q, bool logOut) {
+    double pr = logOut ? 0 : 1;
+
+    NodeManager::GetNodeManager()->SetDescendantsList(&descendants);
+    NodeManager::GetNodeManager()->SetOrdering(&ordering);
+    // If it's already been compiled, we can just eliminate from the large DD
+    if (compiled) {
+        Assignment a;
+        typedef std::map<int, int> map_t;
+        BOOST_FOREACH(map_t::value_type i, evidence) {
+            a.AddVar(i.first, i.second + 1);
+            a.SetVal(i.first, i.second);
+        }
+
+        if (q == PE) {
+	        pr = compiledDD.Sum(a);
+        }
+        else if (q == MPE) {
+            pr = compiledDD.Maximum(a);
+        }
+
+        if (logOut) pr = log10(pr);
+
+    }
+
+    // Otherwise, compile, but eliminate variables along the way
+    else {
+        ResetBuckets();
+        list<int>::reverse_iterator rit = ordering.rbegin();
+        int numBuckets = ordering.size();
+        int count = 1;
+
+        const DirectedGraph &tree = pt->GetTree();
+
+        for (; rit != ordering.rend(); ++rit) {
+            cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
+            cout << "Combining functions in bucket " << *rit;
+            cout << " (" << count++ << " of " << numBuckets << ")" << endl;
+
+//            buckets[*rit].PrintDiagrams(cout); cout << endl;
+//            buckets[*rit].PrintFunctionTables(cout); cout << endl;
+            AOMDDFunction *message = buckets[*rit].Flatten();
+            buckets[*rit].PurgeFunctions();
+            message->SetScopeOrdering(ordering);
+            cout << "After flattening" << endl;
+
+//            message->Save(cout); cout << endl;
+//            message->PrintAsTable(cout); cout << endl;
+
+            DInEdge ei, ei_end;
+            tie(ei, ei_end) = in_edges(*rit, tree);
+            Scope elim;
+
+            if (message->GetScope().IsEmpty()) {
+                Assignment a;
+                if (logOut) {
+                    pr += message->GetVal(a, logOut);
+                    delete message;
+                }
+                else {
+                    pr *= message->GetVal(a, logOut);
+                    delete message;
+                }
+                continue;
+            }
+            int card = message->GetScope().GetVarCard(*rit);
+            elim.AddVar(*rit, card);
+
+            map<int, int>::iterator eit = evidence.find(*rit);
+
+            if (eit != evidence.end()) {
+                Assignment cond(elim);
+                cond.SetVal(*rit, eit->second);
+//                cout << "Conditioning with "; cond.Save(cout); cout << endl;
+                message->Condition(cond);
+            }
+            else {
+                if (q == PE) {
+	                message->MarginalizeFast(elim);
+                }
+                else if (q == MPE) {
+                    message->MaximizeFast(elim);
+                }
+                if (*rit == largestBucket) {
+                    tie(numMeta, numAND) = message->Size();
+                    numTotal = numMeta + numAND;
+                    mem = message->MemUsage() / MB_PER_BYTE;
+                }
+            }
+            cout << "After eliminating " << *rit << endl;
+
+//            message->Save(cout); cout << endl;
+//            message->PrintAsTable(cout); cout << endl;
+
+            // empty scope, no need to send message, update final result
+            if (message->GetScope().IsEmpty()) {
+                Assignment a;
+                if (logOut) {
+                    pr += message->GetVal(a, logOut);
+                    delete message;
+                }
+                else {
+                    pr *= message->GetVal(a, logOut);
+                    delete message;
+                }
+            }
+            // message is a constant value
+            else if (false &&message->IsConstantValue() && ei != ei_end) {
+                int parent = source(*ei, tree);
+                cout << "Removing irrelevant bucket" << endl;
+                buckets[parent].Reweigh(message->GetRootWeight());
+                delete message;
+            }
+            // Not at root
+            else if (ei != ei_end) {
+                int bParent = message->GetScope().GetOrdering().back();
+                cout << "True bParent: " << bParent << endl;
+                int parent = source(*ei, tree);
+                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
+                buckets[parent].AddFunction(message);
+            }
+            // At root
+            else {
+                Assignment a;
+                if (logOut) {
+                    pr += message->GetVal(a, logOut);
+                    delete message;
+                }
+                else {
+                    pr *= message->GetVal(a, logOut);
+                    delete message;
+                }
+            }
+
+//            if (count-1 == 69) exit(0);
+        }
+        if (logOut) {
+            pr += log10(globalWeight);
+        }
+        else {
+            pr *= globalWeight;
+        }
+        NodeManager::GetNodeManager()->PurgeOpCache();
+        NodeManager::GetNodeManager()->UTGarbageCollect();
+    }
+    NodeManager::GetNodeManager()->SetDescendantsList(NULL);
+    NodeManager::GetNodeManager()->SetOrdering(NULL);
+    return pr;
+}
+
+/*
 double CompileBucketTree::Prob(bool logOut) {
     double pr = logOut ? 0 : 1;
 
@@ -147,10 +298,8 @@ double CompileBucketTree::Prob(bool logOut) {
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
-            /*
-            buckets[*rit].PrintDiagrams(cout); cout << endl;
-            buckets[*rit].PrintFunctionTables(cout); cout << endl;
-            */
+//            buckets[*rit].PrintDiagrams(cout); cout << endl;
+//            buckets[*rit].PrintFunctionTables(cout); cout << endl;
             AOMDDFunction *message = buckets[*rit].Flatten();
             buckets[*rit].PurgeFunctions();
             message->SetScopeOrdering(ordering);
@@ -383,6 +532,7 @@ double CompileBucketTree::MPE(bool logOut) {
     NodeManager::GetNodeManager()->SetOrdering(NULL);
     return pr;
 }
+*/
 
 void CompileBucketTree::PrintBucketFunctionScopes(ostream &out) const {
     for (unsigned int i = 0; i < buckets.size(); ++i) {

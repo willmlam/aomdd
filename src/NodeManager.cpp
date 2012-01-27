@@ -401,16 +401,16 @@ vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
 
 // Public functions below here
 
-WeightedMetaNodeList NodeManager::CreateMetaNode(int varid, unsigned int card,
+ANDNodePtr NodeManager::CreateMetaNode(int varid, unsigned int card,
         const vector<ANDNodePtr> &ch) {
-    WeightedMetaNodeList ret;
+    ANDNodePtr ret;
     MetaNodePtr newNode(new MetaNode(varid, card, ch));
-    WeightedMetaNodeList temp = SingleLevelFullReduce(newNode);
-    if (temp.first.size() > 1 || temp.first[0].get() != newNode.get()) {
+    ANDNodePtr temp = SingleLevelFullReduce(newNode);
+    if (temp->GetChildren().size() > 1 || temp->GetChildren()[0].get() != newNode.get()) {
         return temp;
     }
-    temp.second *= temp.first[0]->Normalize();
-    temp.first[0]->SetChildrenParent(temp.first[0]);
+    temp->ScaleWeight(temp->GetChildren()[0]->Normalize());
+    temp->GetChildren()[0]->SetChildrenParent(temp->GetChildren()[0]);
     ret = LookupUT(temp);
 
     return ret;
@@ -435,7 +435,7 @@ WeightedMetaNodeList NodeManager::CreateMetaNode(int varid, unsigned int card,
 }
 */
 
-WeightedMetaNodeList NodeManager::CreateMetaNode(const Scope &vars,
+ANDNodePtr NodeManager::CreateMetaNode(const Scope &vars,
         const vector<double> &vals) {
     assert(vars.GetCard() == vals.size());
     int rootVarID = vars.GetOrdering().front();
@@ -463,8 +463,8 @@ WeightedMetaNodeList NodeManager::CreateMetaNode(const Scope &vars,
         vector<vector<double> > valParts = SplitVector(vals, card);
         for (unsigned int i = 0; i < card; i++) {
             vector<MetaNodePtr> ANDch;
-            WeightedMetaNodeList l = CreateMetaNode(restVars, valParts[i]);
-            ANDNodePtr newNode(new MetaNode::ANDNode(l.second, l.first));
+            ANDNodePtr newNode = CreateMetaNode(restVars, valParts[i]);
+//            ANDNodePtr newNode(new MetaNode::ANDNode(l.second, l.first));
             children.push_back(newNode);
         }
 //        }
@@ -483,12 +483,13 @@ WeightedMetaNodeList NodeManager::CreateMetaNode(const Scope &vars,
     return CreateMetaNode(rootVarID, card, children);
 }
 
-WeightedMetaNodeList NodeManager::SingleLevelFullReduce(MetaNodePtr node) {
+ANDNodePtr NodeManager::SingleLevelFullReduce(MetaNodePtr node) {
     // terminal check
     if (node.get() == MetaNode::GetZero().get() ||
             node.get() == MetaNode::GetOne().get()) {
         double weight = node.get() == MetaNode::GetZero().get() ? 0.0 : 1.0;
-        return WeightedMetaNodeList(MetaNodeList(1, node), weight);
+        return ANDNodePtr(new MetaNode::ANDNode(weight, MetaNodeList(1,node)));
+//        return WeightedMetaNodeList(MetaNodeList(1, node), weight);
     }
 
     const vector<ANDNodePtr> &ch = node->GetChildren();
@@ -503,10 +504,10 @@ WeightedMetaNodeList NodeManager::SingleLevelFullReduce(MetaNodePtr node) {
     }
 
     if ( redundant ) {
-        return WeightedMetaNodeList(ch[0]->GetChildren(), ch[0]->GetWeight());
+        return ANDNodePtr(new ANDNode(ch[0]->GetWeight(), ch[0]->GetChildren()));
     }
     else {
-        return WeightedMetaNodeList(MetaNodeList(1, node), 1.0);
+        return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, node)));
     }
 }
 
@@ -597,7 +598,7 @@ MetaNodePtr NodeManager::FullReduce(MetaNodePtr root) {
 }
 */
 
-WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
+ANDNodePtr NodeManager::Apply(MetaNodePtr lhs,
         const MetaNodeList &rhs,
         Operator op,
         const DirectedGraph &embeddedPT) {
@@ -618,13 +619,13 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
         case PROD:
             // If its a terminal the rhs must be same terminals
             if ( rhs.size() == 0 || lhs->IsTerminal() ) {
-                return WeightedMetaNodeList(MetaNodeList(1, lhs), 1.0);
+                return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, lhs)));
             }
             // Look for any zeros on the rhs. Result is zero if found
             else {
                 for (unsigned int i = 0; i < rhs.size(); ++i) {
                     if ( rhs[i].get() == MetaNode::GetZero().get() ) {
-                        return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetZero()), 0.0);
+                        return ANDNodePtr(new ANDNode(0.0, MetaNodeList(1, MetaNode::GetZero())));
                     }
                 }
             }
@@ -637,12 +638,14 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
             break;
         case SUM:
             if ( rhs.size() == 0 || lhs->IsTerminal() ) {
-                return WeightedMetaNodeList(MetaNodeList(1, lhs), 1.0);
+                return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, lhs)));
+//                return WeightedMetaNodeList(MetaNodeList(1, lhs), 1.0);
             }
             break;
         case MAX:
             if ( rhs.size() == 0 || lhs->IsTerminal() ) {
-                return WeightedMetaNodeList(MetaNodeList(1, lhs), 1.0);
+                return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, lhs)));
+//                return WeightedMetaNodeList(MetaNodeList(1, lhs), 1.0);
             }
             break;
         default:
@@ -712,7 +715,7 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
             }
             */
             BOOST_FOREACH(ApplyParamSet aps, paramSets) {
-                WeightedMetaNodeList subDD = Apply(aps.first, aps.second, op, embeddedPT);
+                ANDNodePtr subDD = Apply(aps.first, aps.second, op, embeddedPT);
 
             /*
 
@@ -729,8 +732,8 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
                 cout << "weight after multiplying in subDD weight:" << weight << endl;
                 subDD.first[0]->RecursivePrint(cout); cout << endl;
                 */
-                weight *= subDD.second;
-                BOOST_FOREACH(MetaNodePtr m, subDD.first) {
+                weight *= subDD->GetWeight();
+                BOOST_FOREACH(MetaNodePtr m, subDD->GetChildren()) {
                     if (op == PROD && m.get() == MetaNode::GetZero().get()) {
 //                        cout << "Found a zero terminal" << endl;
                         newChildren.clear();
@@ -764,11 +767,11 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
     Scope var;
     var.AddVar(varid, card);
     */
-    WeightedMetaNodeList u = CreateMetaNode(varid, card, children);
+    ANDNodePtr u = CreateMetaNode(varid, card, children);
 
 #ifdef USE_OPCACHE
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, u));
-    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(u) + (u.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
+    opCache.insert(make_pair<Operation, ANDNodePtr>(ocEntry, u));
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(u) + (u->GetChildren().size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
 
     // Purge if op cache is too large
     if (opCacheMemUsage > OCMBLimit) {
@@ -796,13 +799,13 @@ WeightedMetaNodeList NodeManager::Apply(MetaNodePtr lhs,
 
 // Sets each AND node of variables to marginalize to be the result of summing
 // the respective MetaNode children of each AND node.
-WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
+ANDNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
         const DirectedGraph &elimChain) {
     if (root.get() == MetaNode::GetZero().get()) {
-        return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetZero()), 0.0);
+        return ANDNodePtr(new MetaNode::ANDNode(0.0, MetaNodeList(1, MetaNode::GetZero())));
     }
     else if (root.get() == MetaNode::GetOne().get()) {
-        return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetOne()), 1.0);
+        return ANDNodePtr(new MetaNode::ANDNode(1.0, MetaNodeList(1, MetaNode::GetOne())));
     }
     int varid = root->GetVarID();
     int card = root->GetCard();
@@ -847,7 +850,7 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
                 newMetaNodes.push_back(j);
                 continue;
             }
-            WeightedMetaNodeList newMetaNodeList = Marginalize(j, s, elimChain);
+            ANDNodePtr newMetaNodeList = Marginalize(j, s, elimChain);
             /*
             cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
             paramSets[i].first->RecursivePrint(cout); cout << endl;
@@ -856,9 +859,9 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
             */
 
             // Note: would have to modify for other operators
-            weight *= newMetaNodeList.second;
+            weight *= newMetaNodeList->GetWeight();
 
-            BOOST_FOREACH(MetaNodePtr m, newMetaNodeList.first) {
+            BOOST_FOREACH(MetaNodePtr m, newMetaNodeList->GetChildren()) {
                 if (!m->IsTerminal()) {
                     if (terminalOnly) {
                         newMetaNodes.clear();
@@ -901,10 +904,10 @@ WeightedMetaNodeList NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     */
-    WeightedMetaNodeList ret = CreateMetaNode(varid, card, newANDNodes);
+    ANDNodePtr ret = CreateMetaNode(varid, card, newANDNodes);
 #ifdef USE_OPCACHE
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
+    opCache.insert(make_pair<Operation, ANDNodePtr>(ocEntry, ret));
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret->GetChildren().size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
 
     // Purge if op cache is too large
     if (opCacheMemUsage > OCMBLimit) {
@@ -967,23 +970,23 @@ double NodeManager::MarginalizeFast(MetaNodePtr root, const Scope &s,
 
     set<ANDNode*> receivedWeight;
 
-    for (size_t i = visitOrder.size() - 1; i >= 0; --i) {
+    for (int i = visitOrder.size() - 1; i >= 0; --i) {
         MetaNode *&m = visitOrder[i];
         if (s.VarExists(m->GetVarID())) {
             double w = 0.0;
             BOOST_FOREACH(ANDNodePtr a, m->GetChildren()) {
                 w += a->GetWeight();
             }
+            /*
             if (i == 0) {
                 assert(m == root.get());
                 return w;
             }
+            */
             // propagate weight directly to parents -- reassign children
-            set<ANDNodePtr> &parents = m->GetParents();
-            set<ANDNodePtr>::iterator it = parents.begin();
-            for (; it != parents.end(); ++it) {
-                (*it)->SetWeight((*it)->GetWeight() * w);
-                vector<MetaNodePtr> &aCh = (*it)->GetChildren();
+            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
+                i->ScaleWeight(w);
+                vector<MetaNodePtr> &aCh = i->GetChildren();
                 for (size_t j = 0; j < aCh.size(); ++j) {
                     if (m == aCh[j].get()) {
                         if (w == 0) {
@@ -999,63 +1002,47 @@ double NodeManager::MarginalizeFast(MetaNodePtr root, const Scope &s,
                 if (aCh.empty()) {
                     aCh.push_back(MetaNode::GetOne());
                 }
-                receivedWeight.insert(it->get());
+                receivedWeight.insert(i);
             }
         }
         else {
-            if (i != 0) {
-	            // First check if the ANDNodes connect to relevant variables
-	            BOOST_FOREACH(ANDNodePtr a, m->GetChildren()) {
-	                if (receivedWeight.find(a.get()) != receivedWeight.end()) continue;
-	                bool hasRelevantChild = false;
-	                BOOST_FOREACH(MetaNodePtr mm, a->GetChildren()) {
-	                    if (relevantVars.find(mm->GetVarID()) !=
-	                            relevantVars.end()) {
-	                        hasRelevantChild = true;
-	                        break;
-	                    }
-	                }
-	                // multiply by elimination var scope size if not
-	                if (!hasRelevantChild) {
-		                a->SetWeight(a->GetWeight() * s.GetVarCard(elimvar));
-	                }
-	            }
+            // First check if the ANDNodes connect to relevant variables
+            BOOST_FOREACH(ANDNodePtr a, m->GetChildren()) {
+                if (receivedWeight.find(a.get()) != receivedWeight.end()) continue;
+                bool hasRelevantChild = false;
+                BOOST_FOREACH(MetaNodePtr mm, a->GetChildren()) {
+                    if (relevantVars.find(mm->GetVarID()) !=
+                            relevantVars.end()) {
+                        hasRelevantChild = true;
+                        break;
+                    }
+                }
+                // multiply by elimination var scope size if not
+                if (!hasRelevantChild) {
+                    a->ScaleWeight(s.GetVarCard(elimvar));
+                }
             }
 
             // Normalize the node and promote its weights to the parents
             double w = m->Normalize();
-            if (i == 0) {
-                assert(m == root.get());
-                return w;
-            }
-            set<ANDNodePtr> &parents = m->GetParents();
-            set<ANDNodePtr>::iterator it = parents.begin();
-            for (; it != parents.end(); ++it) {
-                (*it)->SetWeight((*it)->GetWeight() * w);
+            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
+                i->ScaleWeight(w);
             }
         }
     }
-    cout << "Should not get here." << endl;
-    assert(false);
     return 1.0;
-
-
-
-
-
-
 }
 
 // Sets each AND node of variables to marginalize to be the result of maximizing
-// the respective MetaNode children of each AND node. Redundancy can be
+// the respective MetaNode children of eachANDNodePtry can be
 // resolved outside.
-WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
+ANDNodePtr NodeManager::Maximize(MetaNodePtr root, const Scope &s,
         const DirectedGraph &embeddedpt) {
     if (root.get() == MetaNode::GetZero().get()) {
-        return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetZero()), 0.0);
+        return ANDNodePtr(new ANDNode(0.0, MetaNodeList(1, MetaNode::GetZero())));
     }
     else if (root.get() == MetaNode::GetOne().get()) {
-        return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetOne()), 1.0);
+        return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, MetaNode::GetOne())));
     }
     int varid = root->GetVarID();
     int card = root->GetCard();
@@ -1085,7 +1072,7 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
         bool terminalOnly = true;
         double weight = 1.0;
         BOOST_FOREACH(MetaNodePtr j, metaNodes) {
-            WeightedMetaNodeList newMetaNodeList = Maximize(j, s, embeddedpt);
+            ANDNodePtr newMetaNodeList = Maximize(j, s, embeddedpt);
             /*
             cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
             paramSets[i].first->RecursivePrint(cout); cout << endl;
@@ -1094,8 +1081,8 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
             */
 
             // Note: would have to modify for other operators
-            weight *= newMetaNodeList.second;
-            BOOST_FOREACH(MetaNodePtr m, newMetaNodeList.first) {
+            weight *= newMetaNodeList->GetWeight();
+            BOOST_FOREACH(MetaNodePtr m, newMetaNodeList->GetChildren()) {
                 if (!m->IsTerminal()) {
                     if (terminalOnly) {
                         newMetaNodes.clear();
@@ -1138,11 +1125,11 @@ WeightedMetaNodeList NodeManager::Maximize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     */
-    WeightedMetaNodeList ret = CreateMetaNode(varid, card, newANDNodes);
+    ANDNodePtr ret = CreateMetaNode(varid, card, newANDNodes);
 
 #ifdef USE_OPCACHE
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
+    opCache.insert(make_pair<Operation, ANDNodePtr>(ocEntry, ret));
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret->GetChildren().size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
 
     // Purge if op cache is too large
     if (opCacheMemUsage > OCMBLimit) {
@@ -1276,7 +1263,7 @@ double NodeManager::MaximizeFast(MetaNodePtr root, const Scope &s,
         }
     }
 
-    for (size_t i = visitOrder.size() - 1; i >= 0; --i) {
+    for (int i = visitOrder.size() - 1; i >= 0; --i) {
         MetaNode *&m = visitOrder[i];
         if (s.VarExists(m->GetVarID())) {
             double w = DOUBLE_MIN;
@@ -1286,16 +1273,16 @@ double NodeManager::MaximizeFast(MetaNodePtr root, const Scope &s,
                     w = temp;
                 }
             }
+            /*
             if (i == 0) {
                 assert(m == root.get());
                 return w;
             }
+            */
             // propagate weight directly to parents -- reassign children
-            set<ANDNodePtr> &parents = m->GetParents();
-            set<ANDNodePtr>::iterator it = parents.begin();
-            for (; it != parents.end(); ++it) {
-                (*it)->SetWeight((*it)->GetWeight() * w);
-                vector<MetaNodePtr> &aCh = (*it)->GetChildren();
+            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
+                i->ScaleWeight(w);
+                vector<MetaNodePtr> &aCh = i->GetChildren();
                 for (size_t j = 0; j < aCh.size(); ++j) {
                     if (m == aCh[j].get()) {
                         if (w == 0) {
@@ -1316,32 +1303,24 @@ double NodeManager::MaximizeFast(MetaNodePtr root, const Scope &s,
         else {
             // Normalize the node and promote its weights to the parents
             double w = m->Normalize();
-            if (i == 0) {
-                assert(m == root.get());
-                return w;
-            }
-            set<ANDNodePtr> &parents = m->GetParents();
-            set<ANDNodePtr>::iterator it = parents.begin();
-            for (; it != parents.end(); ++it) {
-                (*it)->SetWeight((*it)->GetWeight() * w);
+            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
+                i->ScaleWeight(w);
             }
         }
     }
-    cout << "Should not get here." << endl;
-    assert(false);
     return 1.0;
 }
 
 // Sets each AND node of variables to marginalize to be the result of minimizing
 // the respective MetaNode children of each AND node. Redundancy can be
 // resolved outside.
-WeightedMetaNodeList NodeManager::Minimize(MetaNodePtr root, const Scope &s,
+ANDNodePtr NodeManager::Minimize(MetaNodePtr root, const Scope &s,
         const DirectedGraph &embeddedpt) {
     if (root.get() == MetaNode::GetZero().get()) {
-        return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetZero()), 0.0);
+        return ANDNodePtr(new ANDNode(0.0, MetaNodeList(1, MetaNode::GetZero())));
     }
     else if (root.get() == MetaNode::GetOne().get()) {
-        return WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetOne()), 1.0);
+        return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, MetaNode::GetOne())));
     }
     int varid = root->GetVarID();
     int card = root->GetCard();
@@ -1369,7 +1348,7 @@ WeightedMetaNodeList NodeManager::Minimize(MetaNodePtr root, const Scope &s,
         bool terminalOnly = true;
         double weight = 1.0;
         BOOST_FOREACH(MetaNodePtr j, metaNodes) {
-            WeightedMetaNodeList newMetaNodeList = Minimize(j, s, embeddedpt);
+            ANDNodePtr newMetaNodeList = Minimize(j, s, embeddedpt);
             /*
             cout << "Input lhs: " << "(w="<< w << ", rhs size=" << paramSets[i].second.size() << ")"<< endl;
             paramSets[i].first->RecursivePrint(cout); cout << endl;
@@ -1378,8 +1357,8 @@ WeightedMetaNodeList NodeManager::Minimize(MetaNodePtr root, const Scope &s,
             */
 
             // Note: would have to modify for other operators
-            weight *= newMetaNodeList.second;
-            BOOST_FOREACH(MetaNodePtr m, newMetaNodeList.first) {
+            weight *= newMetaNodeList->GetWeight();
+            BOOST_FOREACH(MetaNodePtr m, newMetaNodeList->GetChildren()) {
                 if (!m->IsTerminal()) {
                     if (terminalOnly) {
                         newMetaNodes.clear();
@@ -1422,10 +1401,10 @@ WeightedMetaNodeList NodeManager::Minimize(MetaNodePtr root, const Scope &s,
     Scope var;
     var.AddVar(varid, card);
     */
-    WeightedMetaNodeList ret = CreateMetaNode(varid, card, newANDNodes);
+    ANDNodePtr ret = CreateMetaNode(varid, card, newANDNodes);
 #ifdef USE_OPCACHE
-    opCache.insert(make_pair<Operation, WeightedMetaNodeList>(ocEntry, ret));
-    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret.first.size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
+    opCache.insert(make_pair<Operation, ANDNodePtr>(ocEntry, ret));
+    opCacheMemUsage += (ocEntry.MemUsage() + sizeof(ret) + (ret->GetChildren().size() * sizeof(MetaNodePtr))) / MB_PER_BYTE;
 
     // Purge if op cache is too large
     if (opCacheMemUsage > OCMBLimit) {
@@ -1441,17 +1420,17 @@ WeightedMetaNodeList NodeManager::Minimize(MetaNodePtr root, const Scope &s,
     BOOST_FOREACH(size_t k, entryKey.GetParamSet()) {
         cout << " " << (void*)k;
     }
-    cout << endl << "res:" << ret.get() << endl;
+    cout << endl << "res:ANDNodePtrdl;
     */
     return ret;
 }
 
-WeightedMetaNodeList NodeManager::Condition(MetaNodePtr root, const Assignment &cond) {
+ANDNodePtr NodeManager::Condition(MetaNodePtr root, const Assignment &cond) {
     if (root.get() == MetaNode::GetOne().get()) {
-        return WeightedMetaNodeList(MetaNodeList(1, root), 1.0);
+        return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, root)));
     }
     else if (root.get() == MetaNode::GetZero().get()) {
-        return WeightedMetaNodeList(MetaNodeList(1, root), 0.0);
+        return ANDNodePtr(new ANDNode(0.0, MetaNodeList(1, root)));
     }
 
     vector<ANDNodePtr> newANDNodes;
@@ -1462,11 +1441,11 @@ WeightedMetaNodeList NodeManager::Condition(MetaNodePtr root, const Assignment &
         bool terminalOnly = true;
         double weight = 1.0;
         BOOST_FOREACH(MetaNodePtr j, rootCh[val]->GetChildren()) {
-            WeightedMetaNodeList newMetaNodeList = Condition(j, cond);
+            ANDNodePtr newMetaNodeList = Condition(j, cond);
 
             // Note: would have to modify for other operators
-            weight *= newMetaNodeList.second;
-            BOOST_FOREACH(MetaNodePtr m, newMetaNodeList.first) {
+            weight *= newMetaNodeList->GetWeight();
+            BOOST_FOREACH(MetaNodePtr m, newMetaNodeList->GetChildren()) {
                 if (!m->IsTerminal()) {
                     if (terminalOnly) {
                         newMetaNodes.clear();
@@ -1487,12 +1466,12 @@ WeightedMetaNodeList NodeManager::Condition(MetaNodePtr root, const Assignment &
             vector<MetaNodePtr> newMetaNodes;
             double weight = 1.0;
             BOOST_FOREACH(MetaNodePtr j, i->GetChildren()) {
-                WeightedMetaNodeList newMetaNodeList = Condition(j, cond);
+                ANDNodePtr newMetaNodeList = Condition(j, cond);
                 bool terminalOnly = true;
 
                 // Note: would have to modify for other operators
-                weight *= newMetaNodeList.second;
-                BOOST_FOREACH(MetaNodePtr m, newMetaNodeList.first) {
+                weight *= newMetaNodeList->GetWeight();
+                BOOST_FOREACH(MetaNodePtr m, newMetaNodeList->GetChildren()) {
                     if (!m->IsTerminal()) {
                         if (terminalOnly) {
                             newMetaNodes.clear();
@@ -1509,25 +1488,27 @@ WeightedMetaNodeList NodeManager::Condition(MetaNodePtr root, const Assignment &
             newANDNodes.push_back(newAND);
         }
     }
-    WeightedMetaNodeList ret = CreateMetaNode(root->GetVarID(), root->GetCard(), newANDNodes);
+    ANDNodePtr ret = CreateMetaNode(root->GetVarID(), root->GetCard(), newANDNodes);
     return ret;
 }
 
-inline WeightedMetaNodeList NodeManager::LookupUT(WeightedMetaNodeList &temp) {
-    UniqueTable::iterator it = ut.find(temp.first[0]);
+inline ANDNodePtr NodeManager::LookupUT(ANDNodePtr &temp) {
+    UniqueTable::iterator it = ut.find(temp->GetChildren()[0]);
     if (it != ut.end()) {
-        return WeightedMetaNodeList(MetaNodeList(1, *it), temp.second);
+        return ANDNodePtr(new ANDNode(temp->GetWeight(), MetaNodeList(1, *it)));
     }
     else {
 	    // Confirmed uniqueness, add AND nodes of new node to the parent
         // lists of their children
-	    BOOST_FOREACH(ANDNodePtr a, temp.first[0]->GetChildren()) {
+	    BOOST_FOREACH(ANDNodePtr a, temp->GetChildren()[0]->GetChildren()) {
 	        BOOST_FOREACH(MetaNodePtr mm, a->GetChildren()) {
-	            mm->AddParent(a);
+	            mm->AddParent(a.get());
 	        }
 	    }
-        ut.insert(temp.first[0]);
-        utMemUsage += temp.first[0]->MemUsage() / MB_PER_BYTE;
+
+//	    temp->GetChildren()[0]->AddParent(temp);
+        ut.insert(temp->GetChildren()[0]);
+        utMemUsage += temp->GetChildren()[0]->MemUsage() / MB_PER_BYTE;
         if (utMemUsage > maxUTMemUsage) maxUTMemUsage = utMemUsage;
         return temp;
     }
@@ -1548,7 +1529,7 @@ double NodeManager::OpCacheMemUsage() const {
 //    BOOST_FOREACH(OperationCache::value_type i, opCache) {
         memUsage += sizeof(*it) + it->first.MemUsage();
         memUsage += sizeof(it->second);
-        memUsage += sizeof(MetaNodePtr) * it->second.first.size();
+        memUsage += sizeof(MetaNodePtr) * it->second->GetChildren().size();
     }
     return (sizeof(opCache) + memUsage) / MB_PER_BYTE;
 }

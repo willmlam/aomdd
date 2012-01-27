@@ -38,7 +38,7 @@ BucketTree::~BucketTree() {
 
 }
 
-double BucketTree::Prob(bool logOut) {
+double BucketTree::Query(QueryType q, bool logOut) {
     list<int>::reverse_iterator rit = ordering.rbegin();
     double pr;
     if (logOut) {
@@ -61,6 +61,84 @@ double BucketTree::Prob(bool logOut) {
         TableFunction *message = buckets[*rit].Flatten(ordering);
         cout << "After flattening" << endl;
         */
+        TableFunction *message;
+//        message->PrintAsTable(cout); cout << endl;
+        Scope elim;
+        elim.AddVar(*rit, buckets[*rit].GetScope().GetVarCard(*rit));
+        map<int, int>::iterator eit = evidence.find(*rit);
+        if (eit != evidence.end()) {
+            Assignment cond(elim);
+            cond.SetVal(*rit, eit->second);
+//            cout << "Conditioning" << endl;
+            message = buckets[*rit].FastCondition(ordering, cond);
+//	        cout << "After flattening" << endl;
+
+        }
+        else {
+//            cout << "Marginalizing" << endl;
+            if (q == PE) {
+                message = buckets[*rit].FastSumElimination(ordering, elim);
+            }
+            else if (q == MPE) {
+                message = buckets[*rit].FastMaxElimination(ordering, elim);
+            }
+//	        cout << "After flattening" << endl;
+        }
+        cout << "After eliminating " << *rit << endl;
+        message->PrintAsTable(cout); cout << endl;
+        if (message->GetScope().IsEmpty()) {
+            if (logOut) {
+                double val = message->GetVal(empty, true);
+                //              cout << "Updating log p(e)" << endl;
+                //              cout << "with: " << val << endl;
+
+                pr += val;
+            }
+            else {
+                double val = message->GetVal(empty);
+                //                cout << "Updating p(e)" << endl;
+                //                cout << "with: " << val << endl;
+                pr *= val;
+            }
+        }
+        else {
+            int destBucket = message->GetScope().GetOrdering().back();
+//            cout << "Sending message from <" << *rit << "> to <" << destBucket << ">" << endl;
+            buckets[destBucket].AddFunction(message);
+        }
+    }
+    cout << "done." << endl;
+    if (logOut) {
+        pr += log10(globalWeight);
+    }
+    else {
+        pr *= globalWeight;
+    }
+    return pr;
+}
+
+/*
+double BucketTree::Prob(bool logOut) {
+    list<int>::reverse_iterator rit = ordering.rbegin();
+    double pr;
+    if (logOut) {
+        pr = 0;
+    }
+    else {
+        pr = 1;
+    }
+//    int numBuckets = ordering.size();
+    Assignment empty;
+//    unsigned int count = 1;
+    for (; rit != ordering.rend(); ++rit) {
+        cout << "."; cout.flush();
+
+//        cout << "Combining functions in bucket " << *rit;
+//        cout << " (" << count++ << " of " << numBuckets << ")" << endl;
+//        buckets[*rit].PrintFunctionTables(cout); cout << endl;
+
+//        TableFunction *message = buckets[*rit].Flatten(ordering);
+//        cout << "After flattening" << endl;
         TableFunction *message;
 //        message->PrintAsTable(cout); cout << endl;
         Scope elim;
@@ -122,16 +200,14 @@ double BucketTree::MPE(bool logOut) {
         pr = 1;
     }
     Assignment empty;
-    /*
-    int numBuckets = ordering.size();
-    unsigned int count = 1;
-    */
+
+//    int numBuckets = ordering.size();
+//    unsigned int count = 1;
     for (; rit != ordering.rend(); ++rit) {
         cout << "."; cout.flush();
-        /*
-        cout << "Combining functions in bucket " << *rit;
-        cout << " (" << count++ << " of " << numBuckets << ")" << endl;
-        */
+
+//        cout << "Combining functions in bucket " << *rit;
+//        cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
 //        buckets[*rit].PrintFunctionTables(cout); cout << endl;
 
@@ -187,6 +263,7 @@ double BucketTree::MPE(bool logOut) {
     }
     return pr;
 }
+*/
 
 unsigned long BucketTree::ComputeMaxEntriesInMemory() {
     list<int>::reverse_iterator rit = ordering.rbegin();

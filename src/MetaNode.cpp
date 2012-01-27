@@ -24,6 +24,9 @@ MetaNode::ANDNode::ANDNode(double w, const vector<MetaNodePtr> &ch) :
 }
 
 MetaNode::ANDNode::~ANDNode() {
+    BOOST_FOREACH(MetaNodePtr i, children) {
+        i->RemoveParent(this);
+    }
 }
 
 double MetaNode::ANDNode::Evaluate(const Assignment &a) {
@@ -42,6 +45,10 @@ double MetaNode::ANDNode::GetWeight() const {
 
 void MetaNode::ANDNode::SetWeight(double w) {
     weight = w;
+}
+
+void MetaNode::ANDNode::ScaleWeight(double w) {
+    weight *= w;
 }
 
 void MetaNode::ANDNode::SetChildren(const std::vector<MetaNodePtr> &ch) {
@@ -78,6 +85,7 @@ void MetaNode::ANDNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDes
 }
 
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
+    if (lhs.get() == rhs.get()) return true;
     if (fabs(lhs->GetWeight() - rhs->GetWeight()) >= TOLERANCE ||
             lhs->GetChildren().size() != rhs->GetChildren().size() ||
             lhs->GetChildren() != rhs->GetChildren()) {
@@ -244,16 +252,14 @@ void MetaNode::Save(ostream &out, string prefix) const {
     out << prefix << "id: " << this << endl;
 //    out << prefix << "weight: " << weight << endl;
     out << prefix << "parent ids: ";
-    BOOST_FOREACH(const ANDNodePtr &i, parents)
-                {
-                    out << " " << i.get();
-                }
+    BOOST_FOREACH(ANDNode* i, parents) {
+        out << " " << i;
+    }
     out << endl;
     out << prefix << "children: ";
-    BOOST_FOREACH(const ANDNodePtr &i, children)
-                {
-                    out << " " << i;
-                }
+    BOOST_FOREACH(const ANDNodePtr &i, children) {
+        out << " " << i;
+    }
     if (children.empty()) {
         out << "None";
     }

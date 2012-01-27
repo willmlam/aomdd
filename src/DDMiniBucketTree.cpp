@@ -260,10 +260,10 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                 }
                 else {
                     if (q == PE && i == 0) {
-                        message->Marginalize(elim);
+                        message->MarginalizeFast(elim);
                     }
                     else if (q == MPE || (q == PE && i > 0)) {
-                        message->Maximize(elim);
+                        message->MaximizeFast(elim);
                     }
                     else {
                         cerr << "Invalid query type!" << endl;

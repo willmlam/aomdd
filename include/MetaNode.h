@@ -41,6 +41,7 @@ public:
 
         double GetWeight() const;
         void SetWeight(double w);
+        void ScaleWeight(double w);
 
         void SetChildren(const std::vector<MetaNodePtr> &ch);
 
@@ -74,7 +75,7 @@ private:
     int varID;
     unsigned int card;
     // children: ANDNodes
-    std::set<ANDNodePtr> parents;
+    std::set<ANDNode*> parents;
     std::vector<ANDNodePtr> children;
 //    double weight;
 
@@ -115,13 +116,16 @@ public:
     inline void SetChildren(const std::vector<ANDNodePtr> &ch) { children = ch; }
 
     void SetChildrenParent(MetaNodePtr m);
-    inline void AddParent(ANDNodePtr a) {
+    inline void AddParent(ANDNode *a) {
         if (!IsTerminal()) {
             parents.insert(a);
         }
     }
-    inline std::set<ANDNodePtr> &GetParents() { return parents; }
-    inline const std::set<ANDNodePtr> &GetParents() const { return parents; }
+    inline void RemoveParent(ANDNode *a) {
+        parents.erase(a);
+    }
+    inline std::set<ANDNode*> &GetParents() { return parents; }
+    inline const std::set<ANDNode*> &GetParents() const { return parents; }
 
     inline bool IsDummy() const { return card == 1; }
 

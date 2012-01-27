@@ -16,7 +16,6 @@
 #include "DDMiniBucket.h"
 
 namespace aomdd {
-enum QueryType {PE, MPE};
 
 class DDMiniBucketTree {
     std::vector<DDMiniBucket> buckets;

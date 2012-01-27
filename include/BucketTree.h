@@ -36,9 +36,10 @@ public:
 
     virtual ~BucketTree();
 
-    double Prob(bool logOut = false);
+    double Query(QueryType q, bool logOut = false);
 
-    double MPE(bool logOut = false);
+//    double Prob(bool logOut = false);
+//    double MPE(bool logOut = false);
 
     unsigned long ComputeMaxEntriesInMemory();
 

@@ -48,8 +48,9 @@ public:
 
     AOMDDFunction Compile();
 
-    double Prob(bool logOut = false);
-    double MPE(bool logOut = false);
+    double Query(QueryType q, bool logOut = false);
+//    double Prob(bool logOut = false);
+//    double MPE(bool logOut = false);
 
     inline long GetLargestNumMeta() { return numMeta; }
     inline long GetLargestNumAND() { return numAND; }

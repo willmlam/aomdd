@@ -39,5 +39,7 @@ const double MB_PER_BYTE = 1048576;
 const unsigned long OUTPUT_COMPLEXITY_LIMIT = 2048;
 const double MB_LIMIT = 2048;
 
+enum QueryType {PE, MPE};
+
 
 #endif
