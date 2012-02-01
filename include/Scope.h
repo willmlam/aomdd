@@ -49,6 +49,12 @@ public:
     // Get the cardinality of the scope
     virtual unsigned long GetCard() const;
 
+    // Get the log cardinality of the scope
+    virtual unsigned long GetLogCard() const;
+
+    // Get the cardinality of the scope as a map of exponents
+    virtual std::map<int, unsigned int> GetCardExp() const;
+
     // Check whether another scope has consistent cardinalities to this scope
     virtual bool HasConsistentCard(const Scope &rhs) const;
 

@@ -15,6 +15,11 @@
 #include "PseudoTree.h"
 #include "DDMiniBucket.h"
 
+#ifndef QUERY_TYPE_ENUM
+#define QUERY_TYPE_ENUM
+enum QueryType { PE, MPE };
+#endif
+
 namespace aomdd {
 
 class DDMiniBucketTree {

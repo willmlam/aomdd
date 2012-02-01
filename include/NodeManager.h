@@ -308,7 +308,7 @@ public:
         while (!done) {
             done = true;
             for (; it != ut.end(); ++it) {
-                if (it->use_count() == 1) {
+                if ((*it)->refs == 1) {
                     done = false;
 //                    utMemUsage -= (*it)->MemUsage() / MB_PER_BYTE;
                     ut.erase(it);

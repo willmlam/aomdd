@@ -115,6 +115,30 @@ inline unsigned long Scope::GetCard() const {
     return totalCard;
 }
 
+inline unsigned long Scope::GetLogCard() const {
+    unsigned long totalCard = 0;
+
+    list<int>::const_iterator it =
+            ordering.begin();
+    for (; it != ordering.end(); ++it) {
+        totalCard += log(varCard[*it]);
+    }
+    return totalCard;
+}
+
+map<int, unsigned int> Scope::GetCardExp() const {
+    map<int, unsigned int> cardExp;
+
+    list<int>::const_iterator it =
+            ordering.begin();
+    for (; it != ordering.end(); ++it) {
+        ++cardExp[varCard[*it]];
+    }
+    return cardExp;
+}
+
+
+
 bool Scope::HasConsistentCard(const Scope &rhs) const {
     list<int>::const_iterator it = ordering.begin();
     for (; it != ordering.end(); ++it) {
@@ -314,6 +338,7 @@ inline int Assignment::GetVal(int i) const {
     if (it == varAssigns.end())
         return ERROR_VAL;
         */
+    if (i >= int(varAssigns.size())) return ERROR_VAL;
     return varAssigns[i];
 }
 

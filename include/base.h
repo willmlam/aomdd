@@ -10,6 +10,8 @@
 #include <boost/unordered_set.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/intrusive_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <google/dense_hash_set>
 #include <google/sparse_hash_set>
 #include <google/dense_hash_map>
@@ -38,8 +40,12 @@ const double MB_PER_BYTE = 1048576;
 // Limits
 const unsigned long OUTPUT_COMPLEXITY_LIMIT = 2048;
 const double MB_LIMIT = 2048;
+#endif
 
+#ifndef QUERY_TYPE_ENUM
+#define QUERY_TYPE_ENUM
 enum QueryType {PE, MPE};
 
-
 #endif
+
+

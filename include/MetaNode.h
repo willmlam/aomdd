@@ -25,7 +25,7 @@ const double TOLERANCE = 1e-50;
 class MetaNode {
 friend class NodeManager;
 public:
-    typedef boost::shared_ptr<MetaNode> MetaNodePtr;
+    typedef boost::intrusive_ptr<MetaNode> MetaNodePtr;
 
     // Used to represent children of the metanode
     // Corresponds to weights of assignments
@@ -34,6 +34,8 @@ public:
         double weight;
         std::vector<MetaNodePtr> children;
     public:
+        mutable long refs;
+
         ANDNode();
         virtual ~ANDNode();
 
@@ -64,7 +66,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<ANDNode> ANDNodePtr;
+    typedef boost::intrusive_ptr<ANDNode> ANDNodePtr;
 
 private:
     // IDs handled by shared_ptr wrappers
@@ -81,6 +83,7 @@ private:
 
     size_t hashVal;
 
+
     // Used to make terminal nodes singletons
     static bool zeroInit;
     static bool oneInit;
@@ -95,6 +98,8 @@ private:
             std::vector<unsigned int> &numMeta) const;
 
 public:
+    mutable long refs;
+
     MetaNode();
 
     virtual ~MetaNode();
@@ -209,6 +214,7 @@ public:
         BOOST_FOREACH(const ANDNodePtr &i, children) {
             temp += i->MemUsage();
         }
+        temp += parents.size() * sizeof(ANDNode*);
         return temp;
     }
 
@@ -218,6 +224,20 @@ typedef MetaNode::MetaNodePtr MetaNodePtr;
 typedef MetaNode::ANDNodePtr ANDNodePtr;
 
 typedef MetaNode::ANDNode ANDNode;
+
+inline void intrusive_ptr_add_ref(MetaNode *m) {
+    ++m->refs;
+}
+inline void intrusive_ptr_release(MetaNode *m) {
+    if(--m->refs == 0) delete m;
+}
+
+inline void intrusive_ptr_add_ref(ANDNode *a) {
+    ++a->refs;
+}
+inline void intrusive_ptr_release(ANDNode *a) {
+    if(--a->refs == 0) delete a;
+}
 
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs);
 bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs);

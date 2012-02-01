@@ -527,7 +527,9 @@ int main(int argc, char **argv) {
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
         unsigned long totalCard = combined.GetScope().GetCard();
-        if (outCompile && totalCard <= OUTPUT_COMPLEXITY_LIMIT) {
+        unsigned long totalLogCard = combined.GetScope().GetLogCard();
+        map<int, unsigned int> cardExp = combined.GetScope().GetCardExp();
+        if (outCompile && totalCard <= OUTPUT_COMPLEXITY_LIMIT && totalLogCard <= log(OUTPUT_COMPLEXITY_LIMIT)) {
             combined.Save(cout); cout << endl;
             combined.PrintAsTable(cout); cout << endl;
         }
@@ -538,6 +540,7 @@ int main(int argc, char **argv) {
         tie(numMeta, numANDMDD) = combined.GetCounts(m.GetNumVars());
 
         // Compute semantic widths
+        /*
         for (int i = 0; i < m.GetNumVars(); ++i) {
             // Compute log-average of domain size in context
             double logSum = 0;
@@ -555,6 +558,15 @@ int main(int argc, char **argv) {
                 else {
                     varESemanticWidth[i] = log(double(numMeta[i])) / logAvgDomain;
                 }
+            }
+        }
+        */
+        for (int i = 0; i < m.GetNumVars(); ++i) {
+            if (pt.GetContexts()[i].size() == 1 && pt.GetContexts()[i].count(-1) == 1) {
+	            varESemanticWidth[i] = 0;
+            }
+            else {
+                varESemanticWidth[i] = log(double(numMeta[i]));
             }
         }
 
@@ -588,23 +600,30 @@ int main(int argc, char **argv) {
         cout << endl;
         cout << "Time=" << timePassed << "s" << endl;
         cout << "Total flat state space=" << totalCard << endl;
+        cout << "Total log flat state space=" << totalLogCard << endl;
+        typedef map<int, unsigned int> map_t;
+        BOOST_FOREACH(map_t::value_type &c, cardExp) {
+            cout << " " << c.first << "^" << c.second;
+        }
+        cout << endl;
         cout << "Number of AOMDD metanodes=" << countMeta << endl;
         cout << "Number of AOMDD AND nodes=" << countAND << endl;
         cout << "Total AOMDD nodes=" << countMeta + countAND << endl;
         cout << "Compression ratio (wrtOR)=" << double(numOR) / countMeta << endl;
         cout << "Compression ratio (wrtAND)=" << double(numAND) / countAND << endl;
-        cout << "AOMDD Memory (MBytes)=" << combined.MemUsage() << endl;
+        cout << "AOMDD Memory (MBytes)=" << combined.MemUsage() / (1024.0*1024) << endl;
         cout << "Effective semantic width=" << probESemanticWidth << endl;
         if (outputToFile) {
             out << endl;
             out << "Time=" << timePassed << "s" << endl;
             out << "Total flat state space=" << totalCard << endl;
+	        out << "Total log flat state space=" << totalLogCard << endl;
             out << "Number of AOMDD metanodes=" << countMeta << endl;
             out << "Number of AOMDD AND nodes=" << countAND << endl;
             out << "Total AOMDD nodes=" << countMeta + countAND << endl;
             out << "Compression ratio (wrtOR)=" << double(numOR) / countMeta << endl;
             out << "Compression ratio (wrtAND)=" << double(numAND) / countAND << endl;
-            out << "AOMDD Memory (MBytes)=" << combined.MemUsage() << endl;
+            out << "AOMDD Memory (MBytes)=" << combined.MemUsage() / (1024.0*1024) << endl;
             out << "Effective semantic width=" << probESemanticWidth << endl;
         }
     }

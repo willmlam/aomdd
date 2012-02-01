@@ -12,6 +12,7 @@ using namespace std;
 
 namespace aomdd {
 AOMDDFunction::AOMDDFunction() {
+//    root = make_shared<ANDNode>(1.0, vector<MetaNodePtr>(1, MetaNode::GetOne()));
     root = ANDNodePtr(new MetaNode::ANDNode(1.0, vector<MetaNodePtr>(1, MetaNode::GetOne())));
 //    root = WeightedMetaNodeList(MetaNodeList(1, MetaNode::GetOne()), 1.0);
 }
@@ -165,6 +166,7 @@ void AOMDDFunction::Multiply(const AOMDDFunction& rhs) {
     */
 
     ANDNodePtr newroot(new ANDNode());
+//    ANDNodePtr newroot(new ANDNode());
     newroot->SetWeight(root->GetWeight()*rhs.root->GetWeight());
 //    root->GetChildren().clear();
 //    root->SetWeight(root->GetWeight()*rhs.root->GetWeight());
@@ -566,6 +568,7 @@ void AOMDDFunction::Minimize(const Scope &elimVars, bool mutableIDs) {
     WeightedMetaNodeList newroot;
     newroot.second = root.second;
     */
+//    ANDNodePtr newroot = make_shared<ANDNode>();
     ANDNodePtr newroot(new ANDNode());
     newroot->SetWeight(root->GetWeight());
 
@@ -628,6 +631,7 @@ void AOMDDFunction::Condition(const Assignment &cond) {
     WeightedMetaNodeList newroot;
     newroot.second = root.second;
     */
+//    ANDNodePtr newroot = make_shared<ANDNode>();
     ANDNodePtr newroot(new ANDNode());
     newroot->SetWeight(root->GetWeight());
     BOOST_FOREACH(MetaNodePtr m, root->GetChildren()) {

@@ -403,17 +403,16 @@ vector<ApplyParamSet> NodeManager::GetParamSets(const DirectedGraph &tree,
 
 ANDNodePtr NodeManager::CreateMetaNode(int varid, unsigned int card,
         const vector<ANDNodePtr> &ch) {
-    ANDNodePtr ret;
     MetaNodePtr newNode(new MetaNode(varid, card, ch));
+//    MetaNodePtr newNode = make_shared<MetaNode>(varid, card, ch);
     ANDNodePtr temp = SingleLevelFullReduce(newNode);
     if (temp->GetChildren().size() > 1 || temp->GetChildren()[0].get() != newNode.get()) {
         return temp;
     }
     temp->ScaleWeight(temp->GetChildren()[0]->Normalize());
     temp->GetChildren()[0]->SetChildrenParent(temp->GetChildren()[0]);
-    ret = LookupUT(temp);
+    return LookupUT(temp);
 
-    return ret;
     /*
     UniqueTable::iterator it = ut.find(temp.first[0]);
     if (it != ut.end()) {
@@ -440,14 +439,12 @@ ANDNodePtr NodeManager::CreateMetaNode(const Scope &vars,
     assert(vars.GetCard() == vals.size());
     int rootVarID = vars.GetOrdering().front();
     unsigned int card = vars.GetVarCard(rootVarID);
-    Scope rootVar;
-    rootVar.AddVar(rootVarID, card);
     vector<ANDNodePtr> children;
 
     // Need to split the values vector if we are not at a leaf
     if (card != vals.size()) {
-        Scope v(vars);
-        Scope restVars = v - rootVar;
+        Scope restVars(vars);
+        restVars.RemoveVar(rootVarID);
 
         /*
         // Dummy variable case
@@ -462,10 +459,8 @@ ANDNodePtr NodeManager::CreateMetaNode(const Scope &vars,
 //        else {
         vector<vector<double> > valParts = SplitVector(vals, card);
         for (unsigned int i = 0; i < card; i++) {
-            vector<MetaNodePtr> ANDch;
-            ANDNodePtr newNode = CreateMetaNode(restVars, valParts[i]);
 //            ANDNodePtr newNode(new MetaNode::ANDNode(l.second, l.first));
-            children.push_back(newNode);
+            children.push_back(CreateMetaNode(restVars, valParts[i]));
         }
 //        }
     }
@@ -474,10 +469,7 @@ ANDNodePtr NodeManager::CreateMetaNode(const Scope &vars,
         for (unsigned int i = 0; i < card; i++) {
             const MetaNodePtr &terminal = ((vals[i] == 0) ? MetaNode::GetZero()
                     : MetaNode::GetOne());
-            vector<MetaNodePtr> ANDch;
-            ANDch.push_back(terminal);
-            ANDNodePtr newNode(new MetaNode::ANDNode(vals[i], ANDch));
-            children.push_back(newNode);
+            children.push_back(ANDNodePtr(new ANDNode(vals[i], MetaNodeList(1, terminal))));
         }
     }
     return CreateMetaNode(rootVarID, card, children);
@@ -488,7 +480,9 @@ ANDNodePtr NodeManager::SingleLevelFullReduce(MetaNodePtr node) {
     if (node.get() == MetaNode::GetZero().get() ||
             node.get() == MetaNode::GetOne().get()) {
         double weight = node.get() == MetaNode::GetZero().get() ? 0.0 : 1.0;
-        return ANDNodePtr(new MetaNode::ANDNode(weight, MetaNodeList(1,node)));
+        return ANDNodePtr(new ANDNode(weight, MetaNodeList(1,node)));
+//        return make_shared<ANDNode>(weight, MetaNodeList(1,node));
+//        return ANDNodePtr(new MetaNode::ANDNode(weight, MetaNodeList(1,node)));
 //        return WeightedMetaNodeList(MetaNodeList(1, node), weight);
     }
 
@@ -504,9 +498,11 @@ ANDNodePtr NodeManager::SingleLevelFullReduce(MetaNodePtr node) {
     }
 
     if ( redundant ) {
+//        return make_shared<ANDNode>(ch[0]->GetWeight(), ch[0]->GetChildren());
         return ANDNodePtr(new ANDNode(ch[0]->GetWeight(), ch[0]->GetChildren()));
     }
     else {
+//        return make_shared<ANDNode>(1.0, MetaNodeList(1, node));
         return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, node)));
     }
 }
@@ -619,12 +615,14 @@ ANDNodePtr NodeManager::Apply(MetaNodePtr lhs,
         case PROD:
             // If its a terminal the rhs must be same terminals
             if ( rhs.size() == 0 || lhs->IsTerminal() ) {
+//                return make_shared<ANDNode>(1.0, MetaNodeList(1, lhs));
                 return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, lhs)));
             }
             // Look for any zeros on the rhs. Result is zero if found
             else {
                 for (unsigned int i = 0; i < rhs.size(); ++i) {
                     if ( rhs[i].get() == MetaNode::GetZero().get() ) {
+//                        return make_shared<ANDNode>(0.0, MetaNodeList(1, MetaNode::GetZero()));
                         return ANDNodePtr(new ANDNode(0.0, MetaNodeList(1, MetaNode::GetZero())));
                     }
                 }
@@ -638,12 +636,14 @@ ANDNodePtr NodeManager::Apply(MetaNodePtr lhs,
             break;
         case SUM:
             if ( rhs.size() == 0 || lhs->IsTerminal() ) {
+//                  return make_shared<ANDNode>(1.0, MetaNodeList(1, lhs));
                 return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, lhs)));
 //                return WeightedMetaNodeList(MetaNodeList(1, lhs), 1.0);
             }
             break;
         case MAX:
             if ( rhs.size() == 0 || lhs->IsTerminal() ) {
+//                return make_shared<ANDNode>(1.0, MetaNodeList(1, lhs));
                 return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, lhs)));
 //                return WeightedMetaNodeList(MetaNodeList(1, lhs), 1.0);
             }
@@ -760,8 +760,7 @@ ANDNodePtr NodeManager::Apply(MetaNodePtr lhs,
             assert(newChildren.size() == 1);
             assert(newChildren[0].get() == MetaNode::GetZero().get());
         }
-        ANDNodePtr newNode(new MetaNode::ANDNode(weight, newChildren));
-        children.push_back(newNode);
+        children.push_back(ANDNodePtr(new ANDNode(weight, newChildren)));
     }
     /*
     Scope var;
@@ -802,9 +801,11 @@ ANDNodePtr NodeManager::Apply(MetaNodePtr lhs,
 ANDNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
         const DirectedGraph &elimChain) {
     if (root.get() == MetaNode::GetZero().get()) {
+//        return make_shared<ANDNode>(0.0, MetaNodeList(1, MetaNode::GetZero()));
         return ANDNodePtr(new MetaNode::ANDNode(0.0, MetaNodeList(1, MetaNode::GetZero())));
     }
     else if (root.get() == MetaNode::GetOne().get()) {
+//        return make_shared<ANDNode>(1.0, MetaNodeList(1, MetaNode::GetOne()));
         return ANDNodePtr(new MetaNode::ANDNode(1.0, MetaNodeList(1, MetaNode::GetOne())));
     }
     int varid = root->GetVarID();
@@ -877,8 +878,8 @@ ANDNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
         if (varid != elimvar && !foundMargVar) {
             weight *= s.GetVarCard(elimvar);
         }
-        ANDNodePtr newANDNode(new MetaNode::ANDNode(i->GetWeight() * weight, newMetaNodes));
-        newANDNodes.push_back(newANDNode);
+//        ANDNodePtr newANDNode = make_shared<ANDNode>(i->GetWeight() * weight, newMetaNodes);
+        newANDNodes.push_back(ANDNodePtr(new ANDNode(i->GetWeight() * weight, newMetaNodes)));
     }
 
     // If the root is to be marginalized
@@ -895,9 +896,9 @@ ANDNodePtr NodeManager::Marginalize(MetaNodePtr root, const Scope &s,
         } else {
             newMetaNodes.push_back(MetaNode::GetOne());
         }
-        ANDNodePtr newAND(new MetaNode::ANDNode(weight, newMetaNodes));
+//        ANDNodePtr newAND = make_shared<ANDNode>(weight, newMetaNodes);
 //        for (unsigned int i = 0; i < andNodes.size(); ++i) {
-            newANDNodes.push_back(newAND);
+            newANDNodes.push_back(ANDNodePtr(new ANDNode(weight, newMetaNodes)));
 //        }
     }
     /*
@@ -1034,14 +1035,16 @@ double NodeManager::MarginalizeFast(MetaNodePtr root, const Scope &s,
 }
 
 // Sets each AND node of variables to marginalize to be the result of maximizing
-// the respective MetaNode children of eachANDNodePtry can be
+// the respective MetaNode children of each ANDNodePtr can be
 // resolved outside.
 ANDNodePtr NodeManager::Maximize(MetaNodePtr root, const Scope &s,
         const DirectedGraph &embeddedpt) {
     if (root.get() == MetaNode::GetZero().get()) {
+//        return make_shared<ANDNode>(0.0, MetaNodeList(1, MetaNode::GetZero()));
         return ANDNodePtr(new ANDNode(0.0, MetaNodeList(1, MetaNode::GetZero())));
     }
     else if (root.get() == MetaNode::GetOne().get()) {
+//        return make_shared<ANDNode>(1.0, MetaNodeList(1, MetaNode::GetOne()));
         return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, MetaNode::GetOne())));
     }
     int varid = root->GetVarID();
@@ -1095,8 +1098,8 @@ ANDNodePtr NodeManager::Maximize(MetaNodePtr root, const Scope &s,
                 }
             }
         }
-        ANDNodePtr newANDNode(new MetaNode::ANDNode(i->GetWeight() * weight, newMetaNodes));
-        newANDNodes.push_back(newANDNode);
+//        ANDNodePtr newANDNode = make_shared<ANDNode>(i->GetWeight() * weight, newMetaNodes);
+        newANDNodes.push_back(ANDNodePtr(new ANDNode(i->GetWeight() * weight, newMetaNodes)));
     }
 
     // If the root is to be maximized
@@ -1116,7 +1119,7 @@ ANDNodePtr NodeManager::Maximize(MetaNodePtr root, const Scope &s,
         } else {
             newMetaNodes.push_back(MetaNode::GetOne());
         }
-        ANDNodePtr newAND(new MetaNode::ANDNode(weight, newMetaNodes));
+        ANDNodePtr newAND(new ANDNode(weight, newMetaNodes));
         for (unsigned int i = 0; i < andNodes.size(); ++i) {
             newANDNodes.push_back(newAND);
         }
@@ -1317,9 +1320,11 @@ double NodeManager::MaximizeFast(MetaNodePtr root, const Scope &s,
 ANDNodePtr NodeManager::Minimize(MetaNodePtr root, const Scope &s,
         const DirectedGraph &embeddedpt) {
     if (root.get() == MetaNode::GetZero().get()) {
+//        return make_shared<ANDNode>(0.0, MetaNodeList(1, MetaNode::GetZero()));
         return ANDNodePtr(new ANDNode(0.0, MetaNodeList(1, MetaNode::GetZero())));
     }
     else if (root.get() == MetaNode::GetOne().get()) {
+//        return make_shared<ANDNode>(1.0, MetaNodeList(1, MetaNode::GetOne()));
         return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, MetaNode::GetOne())));
     }
     int varid = root->GetVarID();
@@ -1371,8 +1376,7 @@ ANDNodePtr NodeManager::Minimize(MetaNodePtr root, const Scope &s,
                 }
             }
         }
-        ANDNodePtr newANDNode(new MetaNode::ANDNode(i->GetWeight() * weight, newMetaNodes));
-        newANDNodes.push_back(newANDNode);
+        newANDNodes.push_back(ANDNodePtr(new ANDNode(i->GetWeight() * weight, newMetaNodes)));
     }
 
     // If the root is to be maximized
@@ -1392,7 +1396,7 @@ ANDNodePtr NodeManager::Minimize(MetaNodePtr root, const Scope &s,
         } else {
             newMetaNodes.push_back(MetaNode::GetOne());
         }
-        ANDNodePtr newAND(new MetaNode::ANDNode(weight, newMetaNodes));
+        ANDNodePtr newAND(new ANDNode(weight, newMetaNodes));
         for (unsigned int i = 0; i < andNodes.size(); ++i) {
             newANDNodes.push_back(newAND);
         }
@@ -1427,9 +1431,11 @@ ANDNodePtr NodeManager::Minimize(MetaNodePtr root, const Scope &s,
 
 ANDNodePtr NodeManager::Condition(MetaNodePtr root, const Assignment &cond) {
     if (root.get() == MetaNode::GetOne().get()) {
+//        return make_shared<ANDNode>(1.0, MetaNodeList(1, root));
         return ANDNodePtr(new ANDNode(1.0, MetaNodeList(1, root)));
     }
     else if (root.get() == MetaNode::GetZero().get()) {
+//        return make_shared<ANDNode>(0.0, MetaNodeList(1, root));
         return ANDNodePtr(new ANDNode(0.0, MetaNodeList(1, root)));
     }
 
@@ -1458,8 +1464,7 @@ ANDNodePtr NodeManager::Condition(MetaNodePtr root, const Assignment &cond) {
                 }
             }
         }
-        ANDNodePtr newAND(new MetaNode::ANDNode(rootCh[val]->GetWeight() * weight, newMetaNodes));
-        newANDNodes.push_back(newAND);
+        newANDNodes.push_back(ANDNodePtr(new ANDNode(rootCh[val]->GetWeight() * weight, newMetaNodes)));
     }
     else {
         BOOST_FOREACH(ANDNodePtr i, root->GetChildren()) {
@@ -1484,8 +1489,7 @@ ANDNodePtr NodeManager::Condition(MetaNodePtr root, const Assignment &cond) {
                     }
                 }
             }
-            ANDNodePtr newAND(new MetaNode::ANDNode(i->GetWeight() * weight, newMetaNodes));
-            newANDNodes.push_back(newAND);
+            newANDNodes.push_back(ANDNodePtr(new ANDNode(i->GetWeight() * weight, newMetaNodes)));
         }
     }
     ANDNodePtr ret = CreateMetaNode(root->GetVarID(), root->GetCard(), newANDNodes);
@@ -1495,6 +1499,7 @@ ANDNodePtr NodeManager::Condition(MetaNodePtr root, const Assignment &cond) {
 inline ANDNodePtr NodeManager::LookupUT(ANDNodePtr &temp) {
     UniqueTable::iterator it = ut.find(temp->GetChildren()[0]);
     if (it != ut.end()) {
+//        return make_shared<ANDNode>(temp->GetWeight(), MetaNodeList(1, *it));
         return ANDNodePtr(new ANDNode(temp->GetWeight(), MetaNodeList(1, *it)));
     }
     else {
@@ -1519,7 +1524,7 @@ double NodeManager::MemUsage() const {
     BOOST_FOREACH(MetaNodePtr m, ut) {
         memUsage += m->MemUsage();
     }
-    return (sizeof(ut) + memUsage) / MB_PER_BYTE;
+    return (sizeof(NodeManager) + memUsage) / MB_PER_BYTE;
 }
 
 double NodeManager::OpCacheMemUsage() const {
@@ -1559,7 +1564,7 @@ void NodeManager::PrintUniqueTable(ostream &out) const {
 
 void NodeManager::PrintReferenceCount(ostream &out) const {
     BOOST_FOREACH (const MetaNodePtr &i, ut) {
-        out << i.get() << ":" << i.use_count() << endl;
+        out << i.get() << ":" << i->refs << endl;
     }
 }
 

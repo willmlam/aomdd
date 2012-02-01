@@ -16,11 +16,11 @@ namespace aomdd {
 using namespace std;
 
 MetaNode::ANDNode::ANDNode() :
-    weight(1) {
+    weight(1), refs(0) {
 }
 
 MetaNode::ANDNode::ANDNode(double w, const vector<MetaNodePtr> &ch) :
-    weight(w), children(ch) {
+    weight(w), children(ch), refs(0) {
 }
 
 MetaNode::ANDNode::~ANDNode() {
@@ -107,11 +107,11 @@ bool operator!=(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
 
 // ======================
 
-MetaNode::MetaNode() : varID(-1), card(0), elimValueCached(false) {
+MetaNode::MetaNode() : varID(-1), card(0), elimValueCached(false), refs(0) {
 }
 
 MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
-    children(ch), elimValueCached(false) {
+    children(ch), elimValueCached(false), refs(0) {
     // Scope must be over one variable
     assert(var.GetNumVars() == 1);
     varID = var.GetOrdering().front();
@@ -123,7 +123,7 @@ MetaNode::MetaNode(const Scope &var, const vector<ANDNodePtr> &ch) :
 }
 
 MetaNode::MetaNode(int varidIn, int cardIn, const vector<ANDNodePtr> &ch) :
-    varID(varidIn), card(cardIn), children(ch), elimValueCached(false) {
+    varID(varidIn), card(cardIn), children(ch), elimValueCached(false), refs(0) {
     // Scope must be over one variable
     // All assignments must be specified
     hashVal = hash_value(*this);

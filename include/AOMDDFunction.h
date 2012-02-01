@@ -106,11 +106,11 @@ public:
         BOOST_FOREACH(MetaNodePtr m, root->GetChildren()) {
             memUsage += m->ComputeTotalMemory();
         }
-        return memUsage + sizeof(AOMDDFunction) + (root->GetChildren().size() * sizeof(MetaNodePtr));
+        return memUsage + sizeof(AOMDDFunction) + (root->GetChildren().size() * sizeof(MetaNodePtr)) + sizeof(double);
     }
 
     inline double SelfMemUsage() const {
-        return sizeof(AOMDDFunction) + (root->GetChildren().size() * sizeof(MetaNodePtr));
+        return sizeof(AOMDDFunction) + (root->GetChildren().size() * sizeof(MetaNodePtr)) + sizeof(double);
     }
 };
 
