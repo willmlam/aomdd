@@ -154,24 +154,17 @@ TableFunction *Bucket::FastCondition(const list<int> &ordering, const Assignment
     }
     newDomain = newDomain - cond;
     newDomain.SetOrdering(ordering);
-    //unsigned int card = newDomain.GetCard();
-    vector<double> newValues;
+    unsigned int card = newDomain.GetCard();
+    vector<double> newValues(card, 1);
     Assignment a(newDomain);
     a.SetAllVal(0);
-    vector<Assignment> fAssign;
-    for (unsigned int i = 0; i < functions.size(); ++i) {
-        fAssign.push_back(Assignment(functions[i]->GetScope()));
-    }
     int idx = 0;
+    unsigned int ii = cond.GetVal(cond.GetOrdering().back());
     do {
-        newValues.push_back(0);
-            double combVal = 1;
-            for (unsigned int i = 0; i < functions.size(); ++i) {
-                fAssign[i].SetAssign(a);
-                fAssign[i].SetAssign(cond);
-                combVal *= functions[i]->GetVal(fAssign[i]);
-            }
-        newValues.push_back(combVal);
+        assert(idx < int(card));
+        for (unsigned int i = 0; i < functions.size(); ++i) {
+            newValues[idx] *= functions[i]->GetValElim(a, ii);
+        }
         idx++;
     } while (a.Iterate());
     assert(newValues.size() == newDomain.GetCard());

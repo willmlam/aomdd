@@ -405,13 +405,16 @@ ANDNodePtr NodeManager::CreateMetaNode(int varid, unsigned int card,
         const vector<ANDNodePtr> &ch) {
     MetaNodePtr newNode(new MetaNode(varid, card, ch));
 //    MetaNodePtr newNode = make_shared<MetaNode>(varid, card, ch);
+//    cout << newNode->refs << endl;
     ANDNodePtr temp = SingleLevelFullReduce(newNode);
+//    cout << newNode->refs << endl;
     if (temp->GetChildren().size() > 1 || temp->GetChildren()[0].get() != newNode.get()) {
         return temp;
     }
     temp->ScaleWeight(temp->GetChildren()[0]->Normalize());
-    temp->GetChildren()[0]->SetChildrenParent(temp->GetChildren()[0]);
-    return LookupUT(temp);
+    temp = LookupUT(temp);
+//    cout << newNode->refs << endl;
+    return temp;
 
     /*
     UniqueTable::iterator it = ut.find(temp.first[0]);
@@ -1429,6 +1432,79 @@ ANDNodePtr NodeManager::Minimize(MetaNodePtr root, const Scope &s,
     return ret;
 }
 
+double NodeManager::ConditionFast(MetaNodePtr root, const Assignment &s,
+        const set<int> &relevantVars) {
+    if (root.get() == MetaNode::GetZero().get()) {
+        return 0.0;
+    }
+    else if (root.get() == MetaNode::GetOne().get()) {
+        return 1.0;
+    }
+
+    // idea: do a dfs visit and store the nodes encountered
+    stack<MetaNode*> stk;
+    vector<MetaNode*> visitOrder;
+    set<MetaNode*> visited;
+
+    stk.push(root.get());
+    while (!stk.empty()) {
+        MetaNode *c = stk.top();
+        visitOrder.push_back(c);
+        stk.pop();
+        BOOST_FOREACH(ANDNodePtr a, c->GetChildren()) {
+            BOOST_FOREACH(MetaNodePtr m, a->GetChildren()) {
+                if (visited.find(m.get()) == visited.end() &&
+                        relevantVars.find(m->GetVarID()) != relevantVars.end()) {
+	                visited.insert(m.get());
+	                stk.push(m.get());
+                }
+
+            }
+        }
+    }
+
+    for (int i = visitOrder.size() - 1; i >= 0; --i) {
+        MetaNode *&m = visitOrder[i];
+        if (s.VarExists(m->GetVarID())) {
+            double w = m->GetChildren()[s.GetVal(m->GetVarID())]->GetWeight();
+            /*
+            if (i == 0) {
+                assert(m == root.get());
+                return w;
+            }
+            */
+            // propagate weight directly to parents -- reassign children
+            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
+                i->ScaleWeight(w);
+                vector<MetaNodePtr> &aCh = i->GetChildren();
+                for (size_t j = 0; j < aCh.size(); ++j) {
+                    if (m == aCh[j].get()) {
+                        if (w == 0) {
+                            aCh.clear();
+                            aCh.push_back(MetaNode::GetZero());
+                        }
+                        else {
+                            aCh.erase(aCh.begin() + j);
+                        }
+                        break;
+                    }
+                }
+                if (aCh.empty()) {
+                    aCh.push_back(MetaNode::GetOne());
+                }
+            }
+        }
+        else {
+            // Normalize the node and promote its weights to the parents
+            double w = m->Normalize();
+            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
+                i->ScaleWeight(w);
+            }
+        }
+    }
+    return 1.0;
+}
+
 ANDNodePtr NodeManager::Condition(MetaNodePtr root, const Assignment &cond) {
     if (root.get() == MetaNode::GetOne().get()) {
 //        return make_shared<ANDNode>(1.0, MetaNodeList(1, root));
@@ -1510,6 +1586,7 @@ inline ANDNodePtr NodeManager::LookupUT(ANDNodePtr &temp) {
 	            mm->AddParent(a.get());
 	        }
 	    }
+	    temp->GetChildren()[0]->SetChildrenParent(temp->GetChildren()[0]);
 
 //	    temp->GetChildren()[0]->AddParent(temp);
         ut.insert(temp->GetChildren()[0]);

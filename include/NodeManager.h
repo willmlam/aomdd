@@ -257,6 +257,7 @@ public:
     ANDNodePtr Maximize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
     double MaximizeFast(MetaNodePtr root, const Scope &s, const std::set<int> &relevantVars);
     ANDNodePtr Minimize(MetaNodePtr root, const Scope &s, const DirectedGraph &embeddedPT);
+    double ConditionFast(MetaNodePtr root, const Assignment &cond, const std::set<int> &relevantVars);
     ANDNodePtr Condition(MetaNodePtr root, const Assignment &cond);
 
     // Normalizes the weights of the immediate AND nodes to sum to 1.

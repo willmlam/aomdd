@@ -598,6 +598,84 @@ double AOMDDFunction::Sum(const Assignment &cond) {
     return res;
 }
 
+void AOMDDFunction::ConditionFast(const Assignment &cond) {
+    Scope actualElimVars = domain * cond;
+    if (root->GetChildren().size() == 1 && root->GetChildren()[0]->IsTerminal()) {
+        domain = domain - cond;
+        return;
+    }
+
+    int elimvar = actualElimVars.GetOrdering().front();
+
+    DirectedGraph elimChain;
+    DInEdge ei, ei_end;
+    tie(ei, ei_end) = in_edges(elimvar, pt->GetTree());
+    int chainRoot = elimvar;
+
+    // Hackish way to add a vertex to the graph
+    add_edge(chainRoot, chainRoot+1, elimChain);
+    remove_edge(chainRoot, chainRoot+1, elimChain);
+
+    bool chainDone = false;
+    BOOST_FOREACH(MetaNodePtr m, root->GetChildren()) {
+        if (chainRoot == m->GetVarID()) {
+            chainDone = true;
+        }
+    }
+    while (!chainDone && ei != ei_end) {
+        int current = target(*ei, pt->GetTree());
+        chainRoot = source(*ei, pt->GetTree());
+
+        // keep traversing up if variable is not in the scope of this function
+        while (!domain.VarExists(chainRoot)) {
+            DInEdge e, e_end;
+            tie(e, e_end) = in_edges(chainRoot, pt->GetTree());
+            chainRoot = source(*e, pt->GetTree());
+        }
+        add_edge(chainRoot, current, elimChain);
+        BOOST_FOREACH(MetaNodePtr m, root->GetChildren()) {
+	        if (chainRoot == m->GetVarID()) {
+	            chainDone = true;
+	        }
+        }
+        tie(ei, ei_end) = in_edges(chainRoot, pt->GetTree());
+    }
+
+    // Enumerate the set of relevant variables
+    set<int> relevantVars;
+    relevantVars.insert(chainRoot);
+    DEdge eoi, eoi_end;
+    tie(eoi, eoi_end) = out_edges(chainRoot, elimChain);
+    while (eoi != eoi_end) {
+        int child = target(*eoi, elimChain);
+        relevantVars.insert(child);
+        tie(eoi, eoi_end) = out_edges(child, elimChain);
+    }
+
+    for (size_t i = 0; i < root->GetChildren().size(); ++i) {
+        MetaNodePtr &m = root->GetChildren()[i];
+
+        // Skip irrelevant variables
+        if (relevantVars.find(m->GetVarID()) == relevantVars.end()) {
+            continue;
+        }
+        mgr->ConditionFast(m, cond, relevantVars);
+    }
+
+    // Clean up root of terminals if root.first.size() > 1
+    while (root->GetChildren().size() > 1) {
+        for (size_t j = 0; j < root->GetChildren().size(); ++j) {
+            if (root->GetChildren()[j]->IsTerminal()) {
+                root->GetChildren().erase(root->GetChildren().begin() + j);
+                break;
+            }
+        }
+    }
+    domain = domain - cond;
+    NodeManager::GetNodeManager()->UTGarbageCollect();
+
+}
+
 void AOMDDFunction::Condition(const Assignment &cond) {
     if (root->GetChildren().size() == 1 && root->GetChildren()[0]->IsTerminal()) {
         domain = domain - cond;

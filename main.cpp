@@ -264,42 +264,44 @@ int main(int argc, char **argv) {
 
     if (!vm.count("file") || !vm.count("order")) {
         cout << "Missing UAI file or ordering file" << endl;
-        cout << endl;
+        cout << allOptions << endl;
+        return 1;
     }
 
     if (vm.count("pe") && vm.count("mpe")) {
         cout << "Please choose a single query type (P(e) or MPE)" << endl;
-        cout << endl;
+        cout << allOptions << endl;
+        return 1;
     }
 
     try {
-    inputFile = vm["file"].as<string>();
-    orderFile = vm["order"].as<string>();
-    if (vm.count("evid"))
-        evidFile = vm["evid"].as<string>();
-    if (vm.count("treedot"))
-        dotFile = vm["treedot"].as<string>();
-    if (vm.count("res"))
-        outputResultFile = vm["res"].as<string>();
-    compileMode = vm.count("compile");
-    peMode = vm.count("pe");
-    mpeMode = vm.count("mpe");
-    vbeMode = vm.count("vbe");
-    logMode = vm.count("log");
-    miniBucketMode = vm.count("mbe");
-    outCompile = vm.count("outcompile");
-    vbeSpace = vm.count("bespace");
+        inputFile = vm["file"].as<string>();
+        orderFile = vm["order"].as<string>();
+        if (vm.count("evid"))
+            evidFile = vm["evid"].as<string>();
+        if (vm.count("treedot"))
+            dotFile = vm["treedot"].as<string>();
+        if (vm.count("res"))
+            outputResultFile = vm["res"].as<string>();
+        compileMode = vm.count("compile");
+        peMode = vm.count("pe");
+        mpeMode = vm.count("mpe");
+        vbeMode = vm.count("vbe");
+        logMode = vm.count("log");
+        miniBucketMode = vm.count("mbe");
+        outCompile = vm.count("outcompile");
+        vbeSpace = vm.count("bespace");
 
-    if (vm.count("mlim"))
-	    MBLimit = vm["mlim"].as<double>();
-    if (vm.count("oclim"))
-        OCMBLimit = vm["oclim"].as<double>();
-    if (vm.count("mbebound"))
-        mbeSizeBound = vm["mbebound"].as<unsigned long>();
-    if (vm.count("mbeibound"))
-        mbeIBound = vm["mbeibound"].as<unsigned long>();
-    } catch ( const std::exception &e) {
-        cout << e.what();
+        if (vm.count("mlim"))
+            MBLimit = vm["mlim"].as<double>();
+        if (vm.count("oclim"))
+            OCMBLimit = vm["oclim"].as<double>();
+        if (vm.count("mbebound"))
+            mbeSizeBound = vm["mbebound"].as<unsigned long>();
+        if (vm.count("mbeibound"))
+            mbeIBound = vm["mbeibound"].as<unsigned long>();
+    } catch (const std::exception &e) {
+        cout << allOptions << endl;
         return 0;
     }
 
@@ -527,7 +529,7 @@ int main(int argc, char **argv) {
         time(&timeEnd);
         timePassed = difftime(timeEnd, timeStart);
         unsigned long totalCard = combined.GetScope().GetCard();
-        unsigned long totalLogCard = combined.GetScope().GetLogCard();
+        double totalLogCard = combined.GetScope().GetLogCard();
         map<int, unsigned int> cardExp = combined.GetScope().GetCardExp();
         if (outCompile && totalCard <= OUTPUT_COMPLEXITY_LIMIT && totalLogCard <= log(OUTPUT_COMPLEXITY_LIMIT)) {
             combined.Save(cout); cout << endl;
@@ -658,17 +660,19 @@ int main(int argc, char **argv) {
     }
     else {
         pr = cbt->Query(q, logMode);
-        cout << endl;
-        cout << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
-        cout << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
-        cout << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
-        cout << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
-        if (outputToFile) {
-            out << endl;
-            out << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
-            out << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
-            out << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
-            out << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
+        if (!compileMode) {
+	        cout << endl;
+	        cout << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
+	        cout << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
+	        cout << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+	        cout << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
+	        if (outputToFile) {
+	            out << endl;
+	            out << "Largest Message (AOMDD Meta)=" << cbt->GetLargestNumMeta() << endl;
+	            out << "Largest Message (AOMDD AND)=" << cbt->GetLargestNumAND() << endl;
+	            out << "Largest Message (AOMDD Total)= " << cbt->GetLargestNumTotal() << endl;
+	            out << "Largest Message (AOMDD Memory)=" << cbt->GetLargestMem() << endl;
+	        }
         }
     }
     time(&timeEnd);

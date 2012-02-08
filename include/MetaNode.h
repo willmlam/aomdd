@@ -226,17 +226,25 @@ typedef MetaNode::ANDNodePtr ANDNodePtr;
 typedef MetaNode::ANDNode ANDNode;
 
 inline void intrusive_ptr_add_ref(MetaNode *m) {
+//    std::cout << "Increasing refcount" << std::endl;
     ++m->refs;
 }
 inline void intrusive_ptr_release(MetaNode *m) {
-    if(--m->refs == 0) delete m;
+//    std::cout << "Decreasing refcount" << std::endl;
+    if(--m->refs == 0) {
+//        std::cout << "Releasing meta " << m << std::endl;
+        delete m;
+    }
 }
 
 inline void intrusive_ptr_add_ref(ANDNode *a) {
     ++a->refs;
 }
 inline void intrusive_ptr_release(ANDNode *a) {
-    if(--a->refs == 0) delete a;
+    if(--a->refs == 0) {
+//        std::cout << "Releasing " << a << std::endl;
+        delete a;
+    }
 }
 
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs);

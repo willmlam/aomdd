@@ -70,11 +70,14 @@ AOMDDFunction CompileBucketTree::Compile() {
         for (; rit != ordering.rend(); ++rit) {
             // Try this for now (is it worth it for full compilation?)
             NodeManager::GetNodeManager()->UTGarbageCollect();
+            cout << "."; cout.flush();
 
+            /*
             cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
 
             cout << "Combining functions in bucket " << *rit;
             cout << " (" << count++ << " of " << numBuckets << ")" << endl;
+            */
 
             /*
             buckets[*rit].PrintDiagrams(cout); cout << endl;
@@ -95,7 +98,7 @@ AOMDDFunction CompileBucketTree::Compile() {
             // Not at root
             if (ei != ei_end) {
                 int parent = source(*ei, tree);
-                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
+//                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
                 buckets[parent].AddFunction(message);
             }
             // At root
@@ -103,12 +106,13 @@ AOMDDFunction CompileBucketTree::Compile() {
                 compiledDD = *message;
             }
         }
-        NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
+    cout << "compiled." << endl;
     compiled = true;
     compiledDD.ReweighRoot(globalWeight);
 
+    NodeManager::GetNodeManager()->PurgeOpCache();
     NodeManager::GetNodeManager()->SetDescendantsList(NULL);
     NodeManager::GetNodeManager()->SetOrdering(NULL);
     return compiledDD;
@@ -121,6 +125,7 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
     NodeManager::GetNodeManager()->SetOrdering(&ordering);
     // If it's already been compiled, we can just eliminate from the large DD
     if (compiled) {
+        cout << "AOMDD already compiled, querying AOMDD directly" << endl;
         Assignment a;
         typedef std::map<int, int> map_t;
         BOOST_FOREACH(map_t::value_type i, evidence) {
@@ -149,16 +154,17 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
         const DirectedGraph &tree = pt->GetTree();
 
         for (; rit != ordering.rend(); ++rit) {
-            cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
-            cout << "Combining functions in bucket " << *rit;
-            cout << " (" << count++ << " of " << numBuckets << ")" << endl;
+            cout << "."; cout.flush();
+//            cout << "Memory usage: " << NodeManager::GetNodeManager()->GetUTMemUsage() + NodeManager::GetNodeManager()->GetOCMemUsage() << endl;
+//            cout << "Combining functions in bucket " << *rit;
+//            cout << " (" << count++ << " of " << numBuckets << ")" << endl;
 
 //            buckets[*rit].PrintDiagrams(cout); cout << endl;
 //            buckets[*rit].PrintFunctionTables(cout); cout << endl;
             AOMDDFunction *message = buckets[*rit].Flatten();
             buckets[*rit].PurgeFunctions();
             message->SetScopeOrdering(ordering);
-            cout << "After flattening" << endl;
+//            cout << "After flattening" << endl;
 
 //            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
@@ -188,7 +194,7 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
                 Assignment cond(elim);
                 cond.SetVal(*rit, eit->second);
 //                cout << "Conditioning with "; cond.Save(cout); cout << endl;
-                message->Condition(cond);
+                message->ConditionFast(cond);
             }
             else {
                 if (q == PE) {
@@ -203,7 +209,7 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
                     mem = message->MemUsage() / MB_PER_BYTE;
                 }
             }
-            cout << "After eliminating " << *rit << endl;
+//            cout << "After eliminating " << *rit << endl;
 
 //            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
@@ -221,18 +227,18 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
                 }
             }
             // message is a constant value
-            else if (false &&message->IsConstantValue() && ei != ei_end) {
+            else if (message->IsConstantValue() && ei != ei_end) {
                 int parent = source(*ei, tree);
-                cout << "Removing irrelevant bucket" << endl;
+//                cout << "Removing irrelevant bucket" << endl;
                 buckets[parent].Reweigh(message->GetRootWeight());
                 delete message;
             }
             // Not at root
             else if (ei != ei_end) {
                 int bParent = message->GetScope().GetOrdering().back();
-                cout << "True bParent: " << bParent << endl;
+//                cout << "True bParent: " << bParent << endl;
                 int parent = source(*ei, tree);
-                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
+//                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
                 buckets[parent].AddFunction(message);
             }
             // At root
@@ -256,9 +262,11 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
         else {
             pr *= globalWeight;
         }
-        NodeManager::GetNodeManager()->PurgeOpCache();
+//        NodeManager::GetNodeManager()->PurgeOpCache();
         NodeManager::GetNodeManager()->UTGarbageCollect();
     }
+    cout << "done." << endl;
+    NodeManager::GetNodeManager()->PurgeOpCache();
     NodeManager::GetNodeManager()->SetDescendantsList(NULL);
     NodeManager::GetNodeManager()->SetOrdering(NULL);
     return pr;

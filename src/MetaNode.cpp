@@ -24,8 +24,9 @@ MetaNode::ANDNode::ANDNode(double w, const vector<MetaNodePtr> &ch) :
 }
 
 MetaNode::ANDNode::~ANDNode() {
-    BOOST_FOREACH(MetaNodePtr i, children) {
+    BOOST_FOREACH(MetaNodePtr &i, children) {
         i->RemoveParent(this);
+        i.reset();
     }
 }
 
@@ -131,6 +132,9 @@ MetaNode::MetaNode(int varidIn, int cardIn, const vector<ANDNodePtr> &ch) :
 }
 
 MetaNode::~MetaNode() {
+    BOOST_FOREACH(ANDNodePtr &i, children) {
+        i.reset();
+    }
 }
 
 double MetaNode::Normalize() {
@@ -192,7 +196,7 @@ double MetaNode::Sum(const Assignment &a) {
     else if (elimValueCached) {
         return cachedElimValue;
     }
-    else if ( (val = a.GetVal(varID)) != ERROR_VAL) {
+    else if ( (val = a.GetVal(varID)) >= 0 ) {
         double temp = children[val]->GetWeight();
         BOOST_FOREACH(MetaNodePtr j, children[val]->GetChildren()) {
             temp *= j->Sum(a);

@@ -48,6 +48,7 @@ public:
     void Maximize(const Scope &elimVars, bool mutableIDs = true);
     void MaximizeFast(const Scope &elimVars, bool mutableIDs = true);
     void Minimize(const Scope &elimVars, bool mutableIDs = true);
+    void ConditionFast(const Assignment &cond);
     void Condition(const Assignment &cond);
 
     double Maximum(const Assignment &cond);
@@ -106,11 +107,11 @@ public:
         BOOST_FOREACH(MetaNodePtr m, root->GetChildren()) {
             memUsage += m->ComputeTotalMemory();
         }
-        return memUsage + sizeof(AOMDDFunction) + (root->GetChildren().size() * sizeof(MetaNodePtr)) + sizeof(double);
+        return memUsage + sizeof(AOMDDFunction) + root->MemUsage();
     }
 
     inline double SelfMemUsage() const {
-        return sizeof(AOMDDFunction) + (root->GetChildren().size() * sizeof(MetaNodePtr)) + sizeof(double);
+        return sizeof(AOMDDFunction) + root->MemUsage() + domain.Mem();
     }
 };
 

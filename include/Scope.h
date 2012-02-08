@@ -50,7 +50,7 @@ public:
     virtual unsigned long GetCard() const;
 
     // Get the log cardinality of the scope
-    virtual unsigned long GetLogCard() const;
+    virtual double GetLogCard() const;
 
     // Get the cardinality of the scope as a map of exponents
     virtual std::map<int, unsigned int> GetCardExp() const;
@@ -71,6 +71,10 @@ public:
     virtual Scope& operator=(const Scope &rhs);
 
     virtual void Save(std::ostream &out) const;
+
+    virtual unsigned long Mem() const {
+        return varCard.size()*sizeof(unsigned int) + ordering.size()*sizeof(int);
+    }
 
 };
 

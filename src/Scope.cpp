@@ -115,8 +115,8 @@ inline unsigned long Scope::GetCard() const {
     return totalCard;
 }
 
-inline unsigned long Scope::GetLogCard() const {
-    unsigned long totalCard = 0;
+inline double Scope::GetLogCard() const {
+    double totalCard = 0;
 
     list<int>::const_iterator it =
             ordering.begin();
@@ -255,7 +255,7 @@ inline bool Assignment::AddVar(int i, unsigned int val) {
             size_t j = varAssigns.size();
             varAssigns.resize(i+1);
             for ( ;j < varAssigns.size(); ++j) {
-                varAssigns[i] = UNKNOWN_VAL;
+                varAssigns[j] = UNKNOWN_VAL;
             }
         }
         return true;
@@ -265,7 +265,7 @@ inline bool Assignment::AddVar(int i, unsigned int val) {
 
 inline bool Assignment::RemoveVar(int i) {
     if (Scope::RemoveVar(i)) {
-        varAssigns[i] = -1;
+        varAssigns[i] = UNKNOWN_VAL;
         return true;
         /*
         map<int, int>::iterator it = varAssigns.find(i);
@@ -303,7 +303,7 @@ inline void Assignment::SetAssign(const Assignment &a) {
     list<int>::const_iterator it = ordering.begin();
     for (; it != ordering.end(); ++it) {
         int val = a.GetVal(*it);
-        if (val != ERROR_VAL)
+        if (val != UNKNOWN_VAL)
             SetVal(*it, val);
     }
 }
@@ -338,7 +338,7 @@ inline int Assignment::GetVal(int i) const {
     if (it == varAssigns.end())
         return ERROR_VAL;
         */
-    if (i >= int(varAssigns.size())) return ERROR_VAL;
+    if (i >= int(varAssigns.size())) return UNKNOWN_VAL;
     return varAssigns[i];
 }
 
