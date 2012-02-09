@@ -438,7 +438,7 @@ int main(int argc, char **argv) {
             if (outputToFile) {
                 out << "Largest message exceeds memory bound." << endl;
             }
-            return 0;
+//            return 0;
         }
         bt = new BucketTree(m, ordering, evidence);
 	    if (vbeSpace) {

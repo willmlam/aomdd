@@ -217,7 +217,7 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
 
 //            if (*rit == 452) buckets[122].PrintFunctionTables(cout);
 
-//            if (*rit == 815) exit(0);
+//            if (*rit == 286) exit(0);
 
             // empty scope, no need to send message, update final result
             if (message->GetScope().IsEmpty()) {

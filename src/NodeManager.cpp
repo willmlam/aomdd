@@ -950,23 +950,23 @@ double NodeManager::MarginalizeFast(MetaNodePtr root, const Scope &s,
     }
     */
 
-    // idea: do a dfs visit and store the nodes encountered
-    stack<MetaNode*> stk;
+    // idea: do a bfs visit and store the nodes encountered
+    queue<MetaNode*> q;
     vector<MetaNode*> visitOrder;
     set<MetaNode*> visited;
     set<ANDNode*> visitedAND;
 
-    stk.push(root.get());
-    while (!stk.empty()) {
-        MetaNode *c = stk.top();
+    q.push(root.get());
+    while (!q.empty()) {
+        MetaNode *c = q.front();
         visitOrder.push_back(c);
-        stk.pop();
+        q.pop();
         BOOST_FOREACH(ANDNodePtr a, c->GetChildren()) {
             visitedAND.insert(a.get());
             BOOST_FOREACH(MetaNodePtr m, a->GetChildren()) {
                 if (visited.find(m.get()) == visited.end() &&
                         relevantVars.find(m->GetVarID()) != relevantVars.end()) {
-	                stk.push(m.get());
+	                q.push(m.get());
                 }
                 visited.insert(m.get());
             }
@@ -1028,12 +1028,41 @@ double NodeManager::MarginalizeFast(MetaNodePtr root, const Scope &s,
                 }
             }
 
+            if (m->IsRedundant()) {
+                double w = m->GetChildren()[0]->GetWeight();
+                BOOST_FOREACH(ANDNode *a, m->GetParents()) {
+                    a->ScaleWeight(w);
+                    receivedWeight.insert(a);
+                    vector<MetaNodePtr> &aCh = a->GetChildren();
+                    MetaNodePtr mCh = m->GetChildren()[0]->GetChildren()[0];
+                    if (mCh == MetaNode::GetZero()) {
+                        for (size_t j = 0; j < aCh.size(); ++j)  {
+                            aCh[j]->RemoveParent(a);
+                        }
+                        aCh.clear();
+                        aCh.push_back(MetaNode::GetZero());
+                    }
+                    else {
+                        for (size_t j = 0; j < aCh.size(); ++j)  {
+                            if (m == aCh[j].get()) {
+	                            aCh[j]->RemoveParent(a);
+                                aCh.erase(aCh.begin() +j);
+                                break;
+                            }
+                        }
+                    }
+                    if (aCh.empty()) {
+                        aCh.push_back(MetaNode::GetOne());
+                    }
+                }
+            }
+            else {
             // Normalize the node and promote its weights to the parents
-            double w = m->Normalize();
-            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
-                if (m != root.get() && visitedAND.find(i) == visitedAND.end()) continue;
-//                cout << "(" << i << ") " << m->GetVarID() << " " << w << endl;
-                i->ScaleWeight(w);
+	            double w = m->Normalize();
+	            BOOST_FOREACH(ANDNode *a, m->GetParents()) {
+	                if (m != root.get() && visitedAND.find(a) == visitedAND.end()) continue;
+	                a->ScaleWeight(w);
+	            }
             }
         }
     }
@@ -1251,23 +1280,22 @@ double NodeManager::MaximizeFast(MetaNodePtr root, const Scope &s,
     }
 
     // idea: do a dfs visit and store the nodes encountered
-    stack<MetaNode*> stk;
+    queue<MetaNode*> q;
     vector<MetaNode*> visitOrder;
     set<MetaNode*> visited;
 
-    stk.push(root.get());
-    while (!stk.empty()) {
-        MetaNode *c = stk.top();
+    q.push(root.get());
+    while (!q.empty()) {
+        MetaNode *c = q.front();
         visitOrder.push_back(c);
-        stk.pop();
+        q.pop();
         BOOST_FOREACH(ANDNodePtr a, c->GetChildren()) {
             BOOST_FOREACH(MetaNodePtr m, a->GetChildren()) {
                 if (visited.find(m.get()) == visited.end() &&
                         relevantVars.find(m->GetVarID()) != relevantVars.end()) {
 	                visited.insert(m.get());
-	                stk.push(m.get());
+	                q.push(m.get());
                 }
-
             }
         }
     }
@@ -1310,10 +1338,39 @@ double NodeManager::MaximizeFast(MetaNodePtr root, const Scope &s,
             }
         }
         else {
+            if (m->IsRedundant()) {
+                double w = m->GetChildren()[0]->GetWeight();
+                BOOST_FOREACH(ANDNode *a, m->GetParents()) {
+                    a->ScaleWeight(w);
+                    vector<MetaNodePtr> &aCh = a->GetChildren();
+                    MetaNodePtr mCh = m->GetChildren()[0]->GetChildren()[0];
+                    if (mCh == MetaNode::GetZero()) {
+                        for (size_t j = 0; j < aCh.size(); ++j)  {
+                            aCh[j]->RemoveParent(a);
+                        }
+                        aCh.clear();
+                        aCh.push_back(MetaNode::GetZero());
+                    }
+                    else {
+                        for (size_t j = 0; j < aCh.size(); ++j)  {
+                            if (m == aCh[j].get()) {
+	                            aCh[j]->RemoveParent(a);
+                                aCh.erase(aCh.begin() +j);
+                                break;
+                            }
+                        }
+                    }
+                    if (aCh.empty()) {
+                        aCh.push_back(MetaNode::GetOne());
+                    }
+                }
+            }
+            else {
             // Normalize the node and promote its weights to the parents
-            double w = m->Normalize();
-            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
-                i->ScaleWeight(w);
+	            double w = m->Normalize();
+	            BOOST_FOREACH(ANDNode *a, m->GetParents()) {
+	                a->ScaleWeight(w);
+	            }
             }
         }
     }
@@ -1445,21 +1502,21 @@ double NodeManager::ConditionFast(MetaNodePtr root, const Assignment &s,
     }
 
     // idea: do a dfs visit and store the nodes encountered
-    stack<MetaNode*> stk;
+    queue<MetaNode*> q;
     vector<MetaNode*> visitOrder;
     set<MetaNode*> visited;
 
-    stk.push(root.get());
-    while (!stk.empty()) {
-        MetaNode *c = stk.top();
+    q.push(root.get());
+    while (!q.empty()) {
+        MetaNode *c = q.front();
         visitOrder.push_back(c);
-        stk.pop();
+        q.pop();
         BOOST_FOREACH(ANDNodePtr a, c->GetChildren()) {
             BOOST_FOREACH(MetaNodePtr m, a->GetChildren()) {
                 if (visited.find(m.get()) == visited.end() &&
                         relevantVars.find(m->GetVarID()) != relevantVars.end()) {
 	                visited.insert(m.get());
-	                stk.push(m.get());
+	                q.push(m.get());
                 }
 
             }
@@ -1500,9 +1557,39 @@ double NodeManager::ConditionFast(MetaNodePtr root, const Assignment &s,
         }
         else {
             // Normalize the node and promote its weights to the parents
-            double w = m->Normalize();
-            BOOST_FOREACH(ANDNode *a, m->GetParents()) {
-                a->ScaleWeight(w);
+            // Check if m is now redundant
+            if (m->IsRedundant()) {
+                double w = m->GetChildren()[0]->GetWeight();
+                BOOST_FOREACH(ANDNode *a, m->GetParents()) {
+                    a->ScaleWeight(w);
+                    vector<MetaNodePtr> &aCh = a->GetChildren();
+                    MetaNodePtr mCh = m->GetChildren()[0]->GetChildren()[0];
+                    if (mCh == MetaNode::GetZero()) {
+                        for (size_t j = 0; j < aCh.size(); ++j)  {
+                            aCh[j]->RemoveParent(a);
+                        }
+                        aCh.clear();
+                        aCh.push_back(MetaNode::GetZero());
+                    }
+                    else {
+                        for (size_t j = 0; j < aCh.size(); ++j)  {
+                            if (m == aCh[j].get()) {
+	                            aCh[j]->RemoveParent(a);
+                                aCh.erase(aCh.begin() +j);
+                                break;
+                            }
+                        }
+                    }
+                    if (aCh.empty()) {
+                        aCh.push_back(MetaNode::GetOne());
+                    }
+                }
+            }
+            else {
+	            double w = m->Normalize();
+	            BOOST_FOREACH(ANDNode *a, m->GetParents()) {
+	                a->ScaleWeight(w);
+	            }
             }
         }
     }

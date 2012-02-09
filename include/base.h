@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <stack>
+#include <queue>
 #include <algorithm>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
