@@ -60,7 +60,7 @@ map<int, int> parseEvidence(string filename) {
 
     string buffer;
     int ne, intBuffer;
-    getline(infile, buffer);
+//    getline(infile, buffer);
 
     infile >> ne;
 

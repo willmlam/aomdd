@@ -107,7 +107,7 @@ public:
     MetaNode(const Scope &var, const std::vector<ANDNodePtr> &ch);
     MetaNode(int varidIn, int cardIn, const std::vector<ANDNodePtr> &ch);
 
-    inline int GetVarID() const { return varID; }
+    int GetVarID() const { return varID; }
 
     inline unsigned int GetCard() const { return card; }
 /*

@@ -1465,8 +1465,9 @@ double NodeManager::ConditionFast(MetaNodePtr root, const Assignment &s,
 
     for (int i = visitOrder.size() - 1; i >= 0; --i) {
         MetaNode *&m = visitOrder[i];
-        if (s.VarExists(m->GetVarID())) {
-            double w = m->GetChildren()[s.GetVal(m->GetVarID())]->GetWeight();
+        int vid = m->GetVarID();
+        if (s.VarExists(vid)) {
+            double w = m->GetChildren()[s.GetVal(vid)]->GetWeight();
             /*
             if (i == 0) {
                 assert(m == root.get());
@@ -1474,9 +1475,9 @@ double NodeManager::ConditionFast(MetaNodePtr root, const Assignment &s,
             }
             */
             // propagate weight directly to parents -- reassign children
-            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
-                i->ScaleWeight(w);
-                vector<MetaNodePtr> &aCh = i->GetChildren();
+            BOOST_FOREACH(ANDNode *a, m->GetParents()) {
+                a->ScaleWeight(w);
+                vector<MetaNodePtr> &aCh = a->GetChildren();
                 for (size_t j = 0; j < aCh.size(); ++j) {
                     if (m == aCh[j].get()) {
                         if (w == 0) {
@@ -1497,8 +1498,8 @@ double NodeManager::ConditionFast(MetaNodePtr root, const Assignment &s,
         else {
             // Normalize the node and promote its weights to the parents
             double w = m->Normalize();
-            BOOST_FOREACH(ANDNode *i, m->GetParents()) {
-                i->ScaleWeight(w);
+            BOOST_FOREACH(ANDNode *a, m->GetParents()) {
+                a->ScaleWeight(w);
             }
         }
     }
