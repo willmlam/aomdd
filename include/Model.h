@@ -38,6 +38,10 @@ public:
         return functions;
     }
 
+    inline std::vector<TableFunction> &GetFunctions() {
+        return functions;
+    }
+
     inline const std::vector<Scope> &GetScopes() const {
         return scopes;
     }
@@ -70,6 +74,19 @@ public:
     }
 
     void Save(std::ostream &out);
+
+    void ApplyEvidence(std::map<int,int> evidence) {
+
+	    Assignment evid;
+	    std::map<int,int>::iterator it = evidence.begin();
+	    for (; it != evidence.end(); ++it) {
+	        evid.AddVar(it->first, completeScope.GetVarCard(it->first));
+	        evid.SetVal(it->first, it->second);
+	    }
+	    BOOST_FOREACH(TableFunction &t, functions) {
+	        t.Condition(evid);
+	    }
+    }
 
 };
 

@@ -342,6 +342,7 @@ int main(int argc, char **argv) {
     const Scope &completeScope = m.GetCompleteScope();
     g.InduceEdges(ordering);
     PseudoTree pt(g, completeScope);
+//    m.ApplyEvidence(evidence);
 
     cout << endl << "Problem information:" << endl;
 

@@ -22,6 +22,7 @@ CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
         : pt(ptIn), ordering(orderIn), evidence(evidIn), largestBucket(bucketID),
         compiled(false), globalWeight(1.0) {
 
+
     int numBuckets = ordering.size();
     if (pt->HasDummy()) {
         ordering.push_front(numBuckets++);
@@ -213,7 +214,7 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
 //            cout << "After eliminating " << *rit << endl;
 
 //            message->Save(cout); cout << endl;
-//            message->PrintAsTable(cout); cout << endl;
+//           message->PrintAsTable(cout); cout << endl;
 
 //            if (*rit == 452) buckets[122].PrintFunctionTables(cout);
 
@@ -231,6 +232,7 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
                     delete message;
                 }
             }
+            /*
             // message is a constant value
             else if (message->IsConstantValue() && ei != ei_end) {
                 int parent = source(*ei, tree);
@@ -238,13 +240,14 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
                 buckets[parent].Reweigh(message->GetRootWeight());
                 delete message;
             }
+            */
             // Not at root
             else if (ei != ei_end) {
                 int bParent = message->GetScope().GetOrdering().back();
 //                cout << "True bParent: " << bParent << endl;
-                int parent = source(*ei, tree);
-//                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
-                buckets[parent].AddFunction(message);
+//                int parent = source(*ei, tree);
+//                cout << "Sending message from <" << *rit << "> to <" << bParent << ">" << endl;
+                buckets[bParent].AddFunction(message);
             }
             // At root
             else {
