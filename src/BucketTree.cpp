@@ -86,6 +86,7 @@ double BucketTree::Query(QueryType q, bool logOut) {
         }
 //        cout << "After eliminating " << *rit << endl;
 //        message->PrintAsTable(cout); cout << endl;
+//        if (*rit == 815) exit(0);
         if (message->GetScope().IsEmpty()) {
             if (logOut) {
                 double val = message->GetVal(empty, true);

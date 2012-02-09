@@ -37,6 +37,7 @@ CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
             continue;
         }
         AOMDDFunction *f = new AOMDDFunction(functions[i].GetScope(), pt, functions[i].GetValues());
+        if (idx == 122) f->Save(cout);
         buckets[idx].AddFunction(f);
     }
     for (unsigned int i = 0; i < buckets.size(); i++) {
@@ -189,6 +190,7 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
             elim.AddVar(*rit, card);
 
             map<int, int>::iterator eit = evidence.find(*rit);
+//            if (*rit == 452) buckets[122].PrintFunctionTables(cout);
 
             if (eit != evidence.end()) {
                 Assignment cond(elim);
@@ -213,6 +215,10 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
 
 //            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
+
+//            if (*rit == 452) buckets[122].PrintFunctionTables(cout);
+
+//            if (*rit == 815) exit(0);
 
             // empty scope, no need to send message, update final result
             if (message->GetScope().IsEmpty()) {

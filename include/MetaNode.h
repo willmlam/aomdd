@@ -48,6 +48,7 @@ public:
         void SetChildren(const std::vector<MetaNodePtr> &ch);
 
         inline void SetParent(MetaNodePtr p) { parent = p; }
+        inline MetaNodePtr GetParent() { return parent; }
 
         inline std::vector<MetaNodePtr> &GetChildren() { return children; }
         inline const std::vector<MetaNodePtr> &GetChildren() const { return children; }

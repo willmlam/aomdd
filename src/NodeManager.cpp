@@ -954,6 +954,7 @@ double NodeManager::MarginalizeFast(MetaNodePtr root, const Scope &s,
     stack<MetaNode*> stk;
     vector<MetaNode*> visitOrder;
     set<MetaNode*> visited;
+    set<ANDNode*> visitedAND;
 
     stk.push(root.get());
     while (!stk.empty()) {
@@ -961,13 +962,13 @@ double NodeManager::MarginalizeFast(MetaNodePtr root, const Scope &s,
         visitOrder.push_back(c);
         stk.pop();
         BOOST_FOREACH(ANDNodePtr a, c->GetChildren()) {
+            visitedAND.insert(a.get());
             BOOST_FOREACH(MetaNodePtr m, a->GetChildren()) {
                 if (visited.find(m.get()) == visited.end() &&
                         relevantVars.find(m->GetVarID()) != relevantVars.end()) {
-	                visited.insert(m.get());
 	                stk.push(m.get());
                 }
-
+                visited.insert(m.get());
             }
         }
     }
@@ -1030,6 +1031,8 @@ double NodeManager::MarginalizeFast(MetaNodePtr root, const Scope &s,
             // Normalize the node and promote its weights to the parents
             double w = m->Normalize();
             BOOST_FOREACH(ANDNode *i, m->GetParents()) {
+                if (m != root.get() && visitedAND.find(i) == visitedAND.end()) continue;
+//                cout << "(" << i << ") " << m->GetVarID() << " " << w << endl;
                 i->ScaleWeight(w);
             }
         }
