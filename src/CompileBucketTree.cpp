@@ -37,7 +37,6 @@ CompileBucketTree::CompileBucketTree(const Model &m, const PseudoTree *ptIn,
             continue;
         }
         AOMDDFunction *f = new AOMDDFunction(functions[i].GetScope(), pt, functions[i].GetValues());
-        if (idx == 122) f->Save(cout);
         buckets[idx].AddFunction(f);
     }
     for (unsigned int i = 0; i < buckets.size(); i++) {
