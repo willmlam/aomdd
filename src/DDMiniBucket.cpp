@@ -120,6 +120,7 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
     else if (metric == DIAGRAM_SIZE) {
         // calculate upper bound on non-partitioned diagram size
         unsigned long size = 1;
+        double logSize = 0;
 
         list<LongIntPair> functionSizes;
 
@@ -127,13 +128,17 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
             int numMeta, numAND;
             tie(numMeta, numAND) = functions[i]->Size();
             functionSizes.push_back(LongIntPair(numMeta+numAND+1, i));
-//            cout << "Function " << i << " size" << numMeta + numAND << endl;
-            size *= numMeta + numAND;
+//            cout << "Function " << i << " size " << numMeta + numAND + 1<< endl;
+            size *= numMeta + numAND + 1;
+            logSize += log(numMeta+numAND + 1);
         }
         functionSizes.sort(CompareLongIntPair);
 
-//        cout << "Estimated combined bucket size: " << size << endl;
-//        cout << "Bound: " << bound << endl;
+        /*
+        cout << "Estimated combined bucket size: " << size << endl;
+        cout << "Estimated combined bucket logsize: " << logSize << endl;
+        cout << "Bound: " << bound << endl;
+        */
 
         // partition if size is > bound
         if (bound > 0 && size > bound) {
@@ -168,9 +173,17 @@ vector<AOMDDFunction*> DDMiniBucket::GenerateMessages() {
                 if (!found) {
 //                    cerr << "Creating a new partition." << endl;
                     ++curPartition;
+                    partitionSizes[curPartition] = 1;
                     partitions.push_back(vector<int>());
                 }
             }
+
+            /*
+            for (unsigned int i = 0; i < partitions.size(); ++i) {
+                cout << " " << partitionSizes[i];
+            }
+            cout << endl;
+            */
 
             // generate messages for each partition
             for (unsigned int i = 0; i < partitions.size(); ++i) {

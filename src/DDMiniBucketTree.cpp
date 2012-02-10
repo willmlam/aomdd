@@ -256,7 +256,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                     Assignment cond(elim);
                     cond.SetVal(*rit, eit->second);
                     //                cout << "Conditioning with "; cond.Save(cout); cout << endl;
-                    message->Condition(cond);
+                    message->ConditionFast(cond);
                 }
                 else {
                     if (q == PE && i == 0) {
