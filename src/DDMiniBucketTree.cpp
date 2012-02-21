@@ -19,7 +19,7 @@ DDMiniBucketTree::DDMiniBucketTree() : compiled(false), globalWeight(1.0) {
 DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
         const map<int, int> &evidIn, int bucketID, unsigned long bound)
         : pt(ptIn), ordering(m.GetOrdering()), evidence(evidIn), largestBucket(bucketID),
-        compiled(false), globalWeight(1.0) {
+        compiled(false), globalWeight(1.0), keepFunctions(false) {
 
     int numBuckets = ordering.size();
     if (pt->HasDummy()) {
@@ -42,7 +42,9 @@ DDMiniBucketTree::DDMiniBucketTree(const Model &m, const PseudoTree *ptIn,
         }
         AOMDDFunction *f = new AOMDDFunction(functions[i].GetScope(), pt, functions[i].GetValues());
         buckets[idx].AddFunction(f);
+#ifdef DEBUG
         bucketSource[idx].push_back(idx);
+#endif
     }
     for (unsigned int i = 0; i < buckets.size(); i++) {
         initialBucketSizes[i] = buckets[i].GetBucketSize();
@@ -162,11 +164,12 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
     // Otherwise, compile, but eliminate variables along the way
     else {
         // FOR DEBUGGING 
+#ifdef DEBUG
         vector< vector<int> > augSource;
         vector< vector<int> > intSource;
         augSource.resize(buckets.size());
         intSource.resize(buckets.size());
-        // *****
+#endif
 
         ResetBuckets();
         list<int>::reverse_iterator rit = ordering.rbegin();
@@ -248,7 +251,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                 elim.AddVar(*rit, card);
 
                 Scope newScope = message->GetScope();
-                newScope = newScope - elim;
+           newScope = newScope - elim;
 
                 map<int, int>::iterator eit = evidence.find(*rit);
 
@@ -295,8 +298,11 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                         pr += message->GetVal(a, logOut);
                         if (pt->HasDummy()) {
                             int dest = pt->GetRoot();
-                            augmented[dest].push_back(message);
+                            if(keepFunctions)
+	                            augmented[dest].push_back(message);
+#ifdef DEBUG
                             augSource[dest].push_back(*rit);
+#endif
                         }
                         else {
                             delete message;
@@ -306,8 +312,11 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                         pr *= message->GetVal(a, logOut);
                         if (pt->HasDummy()) {
                             int dest = pt->GetRoot();
-                            augmented[dest].push_back(message);
+                            if (keepFunctions)
+	                            augmented[dest].push_back(message);
+#ifdef DEBUG
                             augSource[dest].push_back(*rit);
+#endif
                         }
                         else {
                             delete message;
@@ -319,21 +328,28 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                     int dest = newScope.GetOrdering().back();
 //                    cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
                     int parent = source(*ei, tree);
-                    while (parent != dest && ei != ei_end) {
+                    while (keepFunctions && parent != dest && ei != ei_end) {
+#ifdef DEBUG
                         intSource[parent].push_back(*rit);
-                        intermediate[parent].push_back(new AOMDDFunction(*message));
+#endif
+                        if (keepFunctions)
+	                        intermediate[parent].push_back(new AOMDDFunction(*message));
                         tie(ei, ei_end) = in_edges(parent, tree);
                         parent = source(*ei, tree);
                     }
+#ifdef DEBUG
                     augSource[dest].push_back(*rit);
-                    augmented[dest].push_back(new AOMDDFunction(*message));
-                    buckets[dest].AddFunction(message);
                     bucketSource[dest].push_back(*rit);
+#endif
+                    if (keepFunctions)
+	                    augmented[dest].push_back(new AOMDDFunction(*message));
+                    buckets[dest].AddFunction(message);
                 }
             }
         }
         cout << "done."<< endl;
-        treeCompiled = true;
+        if (keepFunctions)
+	        treeCompiled = true;
 
         /*
         // DEBUGGING OUTPUT OF AUG/INT
