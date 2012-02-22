@@ -226,7 +226,9 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
 #endif
 
             vector<AOMDDFunction *> messages = buckets[*rit].GenerateMessages();
-                buckets[*rit].PurgeFunctions();
+//            NodeManager::GetNodeManager()->PrintReferenceCount(cout); cout << endl;
+            buckets[*rit].PurgeFunctions();
+//            NodeManager::GetNodeManager()->PrintReferenceCount(cout); cout << endl;
             for (unsigned int i = 0; i < messages.size(); ++i) {
 	            messages[i]->SetScopeOrdering(ordering);
             }
@@ -251,7 +253,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
                 elim.AddVar(*rit, card);
 
                 Scope newScope = message->GetScope();
-           newScope = newScope - elim;
+                newScope = newScope - elim;
 
                 map<int, int>::iterator eit = evidence.find(*rit);
 
@@ -351,9 +353,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
         if (keepFunctions)
 	        treeCompiled = true;
 
-        /*
-        // DEBUGGING OUTPUT OF AUG/INT
-
+#ifdef DEBUG
         for (unsigned int i = 0; i < augmented.size(); ++i) {
             cout << "$ AUG" << i << ": [";
             const vector <const AOMDDFunction *> &aug = augmented[i];
@@ -410,7 +410,7 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
             cout << "]" << endl;
         }
         // END DEBUG
-         */
+#endif
 
         if (logOut) {
             pr += log10(globalWeight);
@@ -425,7 +425,6 @@ double DDMiniBucketTree::Query(QueryType q, bool logOut) {
         logPR = pr;
     else
         logPR = log10(pr);
-    cout << "log P(e) = " << pr << endl;
     NodeManager::GetNodeManager()->SetDescendantsList(NULL);
     NodeManager::GetNodeManager()->SetOrdering(NULL);
     return pr;

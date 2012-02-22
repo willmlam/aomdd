@@ -303,25 +303,32 @@ public:
     double MemUsage() const;
 
     inline void UTGarbageCollect() {
-        if (utMemUsage <= MBLimit ) return;
-        UniqueTable::iterator it = ut.begin();
-        bool done = false;
-        while (!done) {
-            done = true;
-            for (; it != ut.end(); ++it) {
-                if ((*it)->refs == 1) {
-                    done = false;
-//                    utMemUsage -= (*it)->MemUsage() / MB_PER_BYTE;
-                    ut.erase(it);
-                }
-            }
-            if (!done) it = ut.begin();
+//        if (utMemUsage <= MBLimit ) return;
+        for( ; ; ) {
+	        std::vector<MetaNode*> toDelete;
+	        UniqueTable::iterator it = ut.begin();
+	        for (; it != ut.end(); ++it) {
+	            if ((*it)->refs == 1) {
+	                toDelete.push_back(it->get());
+	            }
+	        }
+	        if (toDelete.empty()) break;
+
+	        BOOST_FOREACH(MetaNode *m, toDelete) {
+	            ut.erase(MetaNodePtr(m));
+	        }
         }
 #if defined USE_SPARSE | defined USE_DENSE
         ut.resize(0);
 #endif
         utMemUsage = MemUsage();
     }
+
+    inline void RemoveFromUT(MetaNode *m) {
+        UniqueTable::iterator it = ut.find(MetaNodePtr(m));
+        ut.erase(it);
+    }
+
 
     double OpCacheMemUsage() const;
 
