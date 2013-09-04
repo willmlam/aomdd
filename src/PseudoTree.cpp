@@ -34,10 +34,13 @@ PseudoTree::PseudoTree(const Model &m) {
     }
 }
 
-PseudoTree::PseudoTree(const Graph &inducedGraph, const Scope &sIn)
+PseudoTree::PseudoTree(const Graph &inducedGraph, const Scope &sIn, bool chainStructure)
 : inducedWidth(inducedGraph.GetInducedWidth()), s(sIn), hasDummy(false) {
     context.resize(s.GetNumVars());
-    DFSGenerator(inducedGraph);
+    if (!chainStructure)
+        DFSGenerator(inducedGraph);
+    else
+        ChainGenerator(inducedGraph);
     ComputeContext(inducedGraph);
     if (hasDummy) {
         s.AddVar(root, 1);
@@ -155,7 +158,7 @@ void PseudoTree::DFSGenerator(const Graph &inducedGraph) {
         // Make a dummy root
         root = component.size();
         // Connect components to dummy root
-        vector<bool> connected(6, false);
+        vector<bool> connected(numOfComponents, false);
         list<int>::const_iterator it = ordering.begin();
         for (; it != ordering.end(); ++it) {
             if (!connected[component[*it]]) {
@@ -171,7 +174,18 @@ void PseudoTree::DFSGenerator(const Graph &inducedGraph) {
             edge_color_map(get(edge_color,ig)));
 }
 
-
+void PseudoTree::ChainGenerator(const Graph &inducedGraph) {
+    list<int> ordering = inducedGraph.GetOrdering();
+    list<int>::iterator it = ordering.begin();
+    int current = root = *it;
+    int previous;
+    ++it;
+    for (; it != ordering.end(); ++it) {
+        previous = current;
+        current = *it;
+        add_edge(previous,current,g);
+    }
+}
 
 
 // To finish later

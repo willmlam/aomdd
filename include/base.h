@@ -46,7 +46,12 @@ const double MB_LIMIT = 2048;
 #ifndef QUERY_TYPE_ENUM
 #define QUERY_TYPE_ENUM
 enum QueryType {PE, MPE};
+#endif
 
+#ifndef GRAPH_ENUMS
+#define GRAPH_ENUMS
+enum NodeType {OR, AND};
+enum EdgeType {ORtoAND, ANDtoOR};
 #endif
 
 

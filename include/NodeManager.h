@@ -172,9 +172,11 @@ class NodeManager {
 
     double MBLimit;
     double OCMBLimit;
+    bool cmOnly;
 
     std::vector< std::set<int> > *descendants;
     std::list<int> *ordering;
+
 
     NodeManager() {
 #if defined USE_SPARSE | defined USE_DENSE
@@ -220,6 +222,8 @@ public:
     // Variable ordering is defined by the scope
     ANDNodePtr CreateMetaNode(const Scope &vars,
             const std::vector<double> &vals);
+    void SetCMOnly(bool _cmOnly) { cmOnly = _cmOnly; }
+    bool GetCMOnly() { return cmOnly; }
 
     /*
     // Be sure the input node is a root!

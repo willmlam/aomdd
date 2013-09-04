@@ -7,6 +7,7 @@
  *
  */
 
+/*
 #ifndef foreach
 #define foreach BOOST_FOREACH
 #endif
@@ -14,6 +15,7 @@
 #ifndef reverse_foreach
 #define reverse_foreach BOOST_REVERSE_FOREACH
 #endif
+*/
 
 #include "base.h"
 #include "Model.h"
@@ -137,6 +139,10 @@ void Model::parseUAI(string filename) {
      exit(1);
      */
     /* DEBUG */
+}
+
+void Model::parseWCSP(string filename) {
+
 }
 
 } // end of aomdd namespace

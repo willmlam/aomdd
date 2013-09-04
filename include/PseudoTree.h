@@ -145,7 +145,7 @@ public:
 
     PseudoTree(const Model &m);
     // Assumes graph is an induced graph...
-    PseudoTree(const Graph &inducedGraph, const Scope &sIn);
+    PseudoTree(const Graph &inducedGraph, const Scope &sIn, bool chainStructure=false);
     virtual ~PseudoTree();
 
     const DirectedGraph &GetTree() const { return g; }
@@ -162,6 +162,7 @@ public:
 
 private:
     void DFSGenerator(const Graph &inducedGraph);
+    void ChainGenerator(const Graph &inducedGraph);
     void BalancingGenerator(const Graph &inducedGraph);
 
     void ComputeContext(const Graph &inducedGraph);

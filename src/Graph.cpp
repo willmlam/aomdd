@@ -13,7 +13,6 @@ namespace aomdd {
 using namespace std;
 
 Graph::Graph() : root(-1) {
-    // TODO Auto-generated constructor stub
 }
 
 Graph::Graph(int n, const vector<Scope> &scopes) :

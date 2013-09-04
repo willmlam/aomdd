@@ -58,6 +58,8 @@ double TableFunction::GetVal(const Assignment &a, bool logOut) const {
     int idx = 0;
     int offset = 1;
     for (; it != domain.GetOrdering().rend(); ++it) {
+        // temporary for generating OR tree size
+        if (a.GetVal(*it) == -1) return !logOut ? 1 : log10(1);
         idx += a.GetVal(*it) * offset;
         offset *= domain.GetVarCard(*it);
     }

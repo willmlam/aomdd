@@ -101,6 +101,7 @@ public:
 
     virtual void Save(std::ostream &out) const;
     void PrintAsTable(std::ostream &out) const;
+    void GenerateDot(std::ostream &out) const;
 
     inline double MemUsage() const {
         double memUsage = 0;

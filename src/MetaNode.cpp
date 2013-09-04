@@ -8,6 +8,7 @@
  */
 
 #include "MetaNode.h"
+#include "NodeManager.h"
 #include <sstream>
 
 
@@ -73,6 +74,18 @@ void MetaNode::ANDNode::RecursivePrint(ostream &out, string prefix) const {
     }
 }
 
+void MetaNode::ANDNode::RecursiveGenerateDot(google::sparse_hash_map<size_t,int> &nodes, int &currentNodeId, AOGraph &g) const {
+    BOOST_FOREACH(const MetaNodePtr &i, children) {
+        if (NodeManager::GetNodeManager()->GetCMOnly() && i->IsTerminal()) continue;
+        if (nodes.find(size_t(i.get())) == nodes.end()) {
+            nodes.insert(make_pair<size_t,int>(size_t(i.get()),currentNodeId++));
+            add_vertex(AOVertexProp(i->GetVarID(),OR),g);
+            i->RecursiveGenerateDot(nodes,currentNodeId,g);
+        }
+        add_edge(nodes[size_t(this)],nodes[size_t(i.get())],AOEdgeProp(1,ANDtoOR),g);
+    }
+}
+
 void MetaNode::ANDNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const {
     stringstream ss;
     ss << this;
@@ -87,7 +100,8 @@ void MetaNode::ANDNode::GenerateDiagram(DirectedGraph &diagram, const DVertexDes
 
 bool operator==(const ANDNodePtr &lhs, const ANDNodePtr &rhs) {
     if (lhs.get() == rhs.get()) return true;
-    if (fabs(lhs->GetWeight() - rhs->GetWeight()) >= TOLERANCE ||
+    if (NodeManager::GetNodeManager()->GetCMOnly() || 
+            fabs(lhs->GetWeight() - rhs->GetWeight()) >= TOLERANCE ||
             lhs->GetChildren().size() != rhs->GetChildren().size() ||
             lhs->GetChildren() != rhs->GetChildren()) {
         return false;
@@ -279,6 +293,16 @@ void MetaNode::RecursivePrint(ostream &out, string prefix) const {
 
 void MetaNode::RecursivePrint(ostream &out) const {
     RecursivePrint(out, "");
+}
+
+void MetaNode::RecursiveGenerateDot(google::sparse_hash_map<size_t,int> &nodes, int &currentNodeId, AOGraph &g) const {
+    for (unsigned i = 0; i < children.size(); ++i) {
+        nodes.insert(make_pair<size_t,int>(size_t(children[i].get()),currentNodeId++));
+        add_vertex(AOVertexProp(i,AND),g);
+        add_edge(nodes[size_t(this)],nodes[size_t(children[i].get())],
+                AOEdgeProp(children[i]->GetWeight(),ORtoAND),g);
+        children[i]->RecursiveGenerateDot(nodes,currentNodeId,g);
+    }
 }
 
 DirectedGraph MetaNode::GenerateDiagram() const {

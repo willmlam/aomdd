@@ -34,6 +34,10 @@ public:
     inline int GetNumVars() const { return numVars; }
     inline int GetMaxDomain() const { return maxDomain; }
 
+    inline const std::vector<int> &GetDomains() const {
+        return domains;
+    }
+
     inline const std::vector<TableFunction> &GetFunctions() const {
         return functions;
     }
@@ -59,6 +63,7 @@ public:
 
     // parsers
     void parseUAI(std::string filename);
+    void parseWCSP(std::string filename);
 
     void AddFunction(const Scope &s, const std::vector<double>& values);
 

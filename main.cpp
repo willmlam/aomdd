@@ -76,12 +76,16 @@ map<int, int> parseEvidence(string filename) {
     return evidence;
 }
 
-string inputFile, orderFile, evidFile, dotFile, outputResultFile;
+string inputFile, orderFile, evidFile, dotFile, ddDotFile, outputResultFile;
 bool compileMode, peMode, mpeMode, vbeMode, logMode;
+bool useChain;
 bool miniBucketMode;
 bool outCompile;
 bool verifyVals;
 bool vbeSpace;
+bool computeORTreeSize;
+
+bool computeOrdering = false;
 
 bool ParseCommandLine(int argc, char **argv) {
     bool haveInputFile = false;
@@ -196,6 +200,7 @@ int main(int argc, char **argv) {
     outputOptions.add_options()
             ("treedot,t", po::value<string>(), "path to DOT file to output generated pseudo-tree")
             ("res,r", po::value<string>(), "path to output results")
+            ("dddot,d", po::value<string>(), "path to DOT file to output generated AOMDD")
             ;
     po::options_description infOptions("Inference options");
     infOptions.add_options()
@@ -210,6 +215,9 @@ int main(int argc, char **argv) {
             ;
     po::options_description otherOptions("Other options");
     otherOptions.add_options()
+            ("computeortreesize","compute OR tree size only")
+            ("cmonly","generate cm graph instead(via compilation)")
+            ("chaintree", "use chain pseudo-tree structure")
             ("mlim", po::value<double>(), "Memory limit (MB) for nodes")
             ("oclim", po::value<double>(), "Memory limit (MB) for operation cache")
             ("outcompile", "Output compiled AOMDD")
@@ -262,8 +270,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (!vm.count("file") || !vm.count("order")) {
-        cout << "Missing UAI file or ordering file" << endl;
+    if (!vm.count("file")) {
+        cout << "Missing UAI file" << endl;
         cout << allOptions << endl;
         return 1;
     }
@@ -276,11 +284,16 @@ int main(int argc, char **argv) {
 
     try {
         inputFile = vm["file"].as<string>();
-        orderFile = vm["order"].as<string>();
+        if (vm.count("order"))
+	        orderFile = vm["order"].as<string>();
+        else
+            computeOrdering = true;
         if (vm.count("evid"))
             evidFile = vm["evid"].as<string>();
         if (vm.count("treedot"))
             dotFile = vm["treedot"].as<string>();
+        if (vm.count("dddot"))
+            ddDotFile = vm["dddot"].as<string>();
         if (vm.count("res"))
             outputResultFile = vm["res"].as<string>();
         compileMode = vm.count("compile");
@@ -291,6 +304,9 @@ int main(int argc, char **argv) {
         miniBucketMode = vm.count("mbe");
         outCompile = vm.count("outcompile");
         vbeSpace = vm.count("bespace");
+        useChain = vm.count("chaintree");
+        computeORTreeSize = vm.count("computeortreesize");
+        NodeManager::GetNodeManager()->SetCMOnly(vm.count("cmonly"));
 
         if (vm.count("mlim"))
             MBLimit = vm["mlim"].as<double>();
@@ -322,11 +338,15 @@ int main(int argc, char **argv) {
     }
 
     m.parseUAI(inputFile);
-    cout << "Reading from ordering file: " << orderFile << endl;
-    if (outputToFile) {
-        out << "Reading from ordering file: " << orderFile << endl;
-    }
-    list<int> ordering = parseOrder(orderFile);
+    list<int> ordering;
+    if (!computeOrdering) {
+	    cout << "Reading from ordering file: " << orderFile << endl;
+	    if (outputToFile) {
+	        out << "Reading from ordering file: " << orderFile << endl;
+	    }
+	    ordering = parseOrder(orderFile);
+	    m.SetOrdering(ordering);
+	}
     map<int, int> evidence;
     if (evidFile != "") {
         cout << "Reading from evidence file: " << evidFile << endl;
@@ -336,12 +356,16 @@ int main(int argc, char **argv) {
         evidence = parseEvidence(evidFile);
     }
 
-    m.SetOrdering(ordering);
 
     Graph g(m.GetNumVars(), m.GetScopes());
+    if (computeOrdering) {
+	    MinFill mf;
+	    ordering = g.ComputeOrdering(mf);
+	    m.SetOrdering(ordering);
+    }
     const Scope &completeScope = m.GetCompleteScope();
     g.InduceEdges(ordering);
-    PseudoTree pt(g, completeScope);
+    PseudoTree pt(g, completeScope, useChain);
 //    m.ApplyEvidence(evidence);
 
     cout << endl << "Problem information:" << endl;
@@ -430,6 +454,42 @@ int main(int argc, char **argv) {
     if (outputToFile) {
         out << "MB Limit=" << MBLimit << endl;
         out << "OC MB Limit=" << OCMBLimit << endl;
+    }
+    if (computeORTreeSize) {
+        long count = 0;
+        vector <int> vOrdering(ordering.begin(),ordering.end());
+        const vector<TableFunction> &fun = m.GetFunctions();
+        Assignment a(m.GetCompleteScope());
+        stack<pair<Assignment, int> > stk;
+        for (int k = 0; k < m.GetDomains()[vOrdering[0]]; ++k) {
+            a.SetVal(vOrdering[0],k);
+            stk.push(make_pair<Assignment, int>(a,0));
+        }
+        while(!stk.empty()) {
+            count++;
+            cout << count << " ";
+            cout << stk.size() << endl;
+            pair<Assignment,int> aa = stk.top();
+            stk.pop();
+            double value = 1;
+            for (int i = 0; i < fun.size(); ++i) {
+                value *= fun[i].GetVal(aa.first);
+                if (value == 0) break;
+            }
+            int nextDepth = aa.second+1;
+            // only push new nodes on stack if non-zero
+            if (value != 0 && nextDepth < vOrdering.size() ) {
+                int nextVar = vOrdering[nextDepth];
+                for (int k = 0; k < m.GetDomains()[nextVar]; ++k) {
+                    aa.first.SetVal(nextVar,k);
+                    stk.push(make_pair<Assignment, int>(aa.first,nextDepth));
+                }
+            }
+
+        }
+        cout << "OR tree values: " << count;
+        
+        return 0;
     }
 
     if (vbeMode) {
@@ -542,6 +602,12 @@ int main(int argc, char **argv) {
         vector<double> varESemanticWidth(m.GetNumVars(), 0.0);
         tie(numMeta, numANDMDD) = combined.GetCounts(m.GetNumVars());
 
+        cout << "Number of metanodes by variable: " << endl;
+        for (int i = 0; i < m.GetNumVars(); ++i) {
+            cout << i << ": " << numMeta[i] << endl;
+        }
+        cout << endl;
+
         // Compute semantic widths
         /*
         for (int i = 0; i < m.GetNumVars(); ++i) {
@@ -628,6 +694,11 @@ int main(int argc, char **argv) {
             out << "Compression ratio (wrtAND)=" << double(numAND) / countAND << endl;
             out << "AOMDD Memory (MBytes)=" << combined.MemUsage() / (1024.0*1024) << endl;
             out << "Effective semantic width=" << probESemanticWidth << endl;
+        }
+        if (ddDotFile != "") {
+            cout << "Writing AOMDD graph to: " << ddDotFile << endl;
+            ofstream outfile(ddDotFile.c_str());
+            combined.GenerateDot(outfile);
         }
     }
 

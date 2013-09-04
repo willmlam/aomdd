@@ -63,6 +63,7 @@ public:
         void Save(std::ostream &out, std::string prefix = "") const;
         void RecursivePrint(std::ostream &out, std::string prefix) const;
         void RecursivePrint(std::ostream &out) const;
+        void RecursiveGenerateDot(google::sparse_hash_map<size_t,int> &nodes, int &currentNodeId, AOGraph &g) const;
         void GenerateDiagram(DirectedGraph &diagram, const DVertexDesc &parent) const;
 
         inline size_t MemUsage() const {
@@ -163,6 +164,8 @@ public:
     void Save(std::ostream &out, std::string prefix = "") const;
     void RecursivePrint(std::ostream &out, std::string prefix) const;
     void RecursivePrint(std::ostream &out) const;
+
+    void RecursiveGenerateDot(google::sparse_hash_map<size_t,int> &nodes, int &currentNodeId, AOGraph &g) const;
 
     // Returns a pair (numMeta, numAND)
     std::pair<unsigned int, unsigned int> NumOfNodes() const;

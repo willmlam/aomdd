@@ -243,7 +243,6 @@ void DDMiniBucket::PrintDiagramSizes(ostream &out) const {
 }
 
 DDMiniBucket::~DDMiniBucket() {
-    // TODO Auto-generated destructor stub
 }
 
 } /* namespace aomdd */

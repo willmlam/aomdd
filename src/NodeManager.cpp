@@ -411,7 +411,8 @@ ANDNodePtr NodeManager::CreateMetaNode(int varid, unsigned int card,
     if (temp->GetChildren().size() > 1 || temp->GetChildren()[0].get() != newNode.get()) {
         return temp;
     }
-    temp->ScaleWeight(temp->GetChildren()[0]->Normalize());
+    if (!cmOnly)
+        temp->ScaleWeight(temp->GetChildren()[0]->Normalize());
     temp = LookupUT(temp);
 //    cout << newNode->refs << endl;
     return temp;

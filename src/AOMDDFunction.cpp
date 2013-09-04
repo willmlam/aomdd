@@ -740,6 +740,22 @@ void AOMDDFunction::PrintAsTable(ostream &out) const {
     } while (a.Iterate());
 }
 
+void AOMDDFunction::GenerateDot(ostream &out) const {
+    google::sparse_hash_map<size_t,int> nodes;
+    int currentNodeId = 0;
+    AOGraph g;
+    
+    nodes.insert(make_pair<size_t,int>(size_t(root.get()),currentNodeId++));
+    add_vertex(AOVertexProp("",AND),g);
+    BOOST_FOREACH(MetaNodePtr m, root->GetChildren()) {
+        nodes.insert(make_pair<size_t,int>(size_t(m.get()),currentNodeId++));
+        add_vertex(AOVertexProp(m->GetVarID(),OR),g);
+        m->RecursiveGenerateDot(nodes, currentNodeId, g);
+        add_edge(0,nodes[size_t(m.get())],AOEdgeProp(root->GetWeight(),ANDtoOR),g);
+    }
+    write_graphviz(out,g,AOVertexPropWriter(g),AOEdgePropWriter(g));
+}
+
 NodeManager *AOMDDFunction::mgr = NodeManager::GetNodeManager();
 
 }

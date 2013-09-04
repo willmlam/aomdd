@@ -99,7 +99,10 @@ AOMDDFunction CompileBucketTree::Compile() {
             // Not at root
             if (ei != ei_end) {
                 int parent = source(*ei, tree);
-//                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
+                cout << "Sending message from <" << *rit << "> to <" << parent << ">" << endl;
+                int mt,ann;
+                tie(mt,ann) = message->Size();
+                cout << "Size(Meta): " << mt << endl;
                 buckets[parent].AddFunction(message);
             }
             // At root
@@ -167,8 +170,16 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
             message->SetScopeOrdering(ordering);
 //            cout << "After flattening" << endl;
 
-//            message->Save(cout); cout << endl;
+            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
+/*
+            DirectedGraph embedpt;
+            int embedr;
+            tie(embedpt, embedr) = pt->GenerateEmbeddable(message->GetScope());
+            stringstream ss;
+            ss << "debugC" << *rit << ".dot";
+            WriteDot(embedpt, ss.str());
+            */
 
             DInEdge ei, ei_end;
             tie(ei, ei_end) = in_edges(*rit, tree);
