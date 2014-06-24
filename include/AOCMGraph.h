@@ -27,7 +27,7 @@ namespace aomdd {
         Model *m;
         PseudoTree *pt;
         AOCMGraphNode *root;
-        sparse_hash_set<size_t> *nodes;
+        google::sparse_hash_set<size_t> *nodes;
         public:
             AOCMGraph();
             AOCMGraph(Model *_m, PseudoTree *_pt) : m(_m), pt(_pt) {}

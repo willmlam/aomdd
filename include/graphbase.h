@@ -31,7 +31,7 @@ typedef graph_traits<UndirectedGraph>::edge_descriptor EdgeDesc;
 typedef graph_traits<UndirectedGraph>::vertex_iterator Vertex;
 typedef graph_traits<UndirectedGraph>::out_edge_iterator Edge;
 
-typedef adjacency_list<setS, vecS, bidirectionalS, property<vertex_name_t, std::string> > DirectedGraph;
+typedef adjacency_list<setS, vecS, bidirectionalS, property<vertex_name_t, std::string>, property<edge_color_t, default_color_type> > DirectedGraph;
 typedef graph_traits<DirectedGraph>::vertex_iterator DVertex;
 typedef graph_traits<DirectedGraph>::vertex_descriptor DVertexDesc;
 typedef graph_traits<DirectedGraph>::out_edge_iterator DEdge;

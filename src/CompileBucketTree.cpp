@@ -170,7 +170,7 @@ double CompileBucketTree::Query(QueryType q, bool logOut) {
             message->SetScopeOrdering(ordering);
 //            cout << "After flattening" << endl;
 
-            message->Save(cout); cout << endl;
+//            message->Save(cout); cout << endl;
 //            message->PrintAsTable(cout); cout << endl;
 /*
             DirectedGraph embedpt;
