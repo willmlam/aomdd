@@ -146,7 +146,7 @@ const set<int> &PseudoTree::ComputeContext(int r, const Graph &inducedGraph, set
 
 void PseudoTree::DFSGenerator(const Graph &inducedGraph) {
     using namespace boost;
-    DFSTreeGenerator vis(g);
+
     UndirectedGraph ig(inducedGraph.GetGraph());
     vector<int> component(num_vertices(ig));
     root = inducedGraph.GetRoot();
@@ -169,9 +169,33 @@ void PseudoTree::DFSGenerator(const Graph &inducedGraph) {
         ordering.push_front(root);
     }
 
-    undirected_dfs(ig, ordering, root_vertex(VertexDesc(root)).
-            visitor(vis).
-            edge_color_map(get(edge_color,ig)));
+    vector<bool> visited(ordering.size(), false);
+    stack<pair<int,int> > stk;
+    stk.push(make_pair(-1, root));
+
+    Edge ei, ei_end;
+
+    while (!stk.empty()) {
+        int u = stk.top().first;
+        int v = stk.top().second; 
+        stk.pop();
+        if (!visited[v]) {
+            if (u >= 0) add_edge(u, v, g);
+            visited[v] = true;
+            set<int> adj;
+            boost::tie(ei, ei_end) = out_edges(v, ig);
+            for (; ei != ei_end; ++ei) {
+                adj.insert(target(*ei, ig));
+            }
+
+            list<int>::const_reverse_iterator rit = ordering.rbegin();
+            for (; rit != ordering.rend(); ++rit) {
+                if (adj.count(*rit)) {
+                    stk.push(make_pair(v,*rit));
+                }
+            }
+        }
+    }
 }
 
 void PseudoTree::ChainGenerator(const Graph &inducedGraph) {

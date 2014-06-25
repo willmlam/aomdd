@@ -19,7 +19,7 @@
 #include "base.h"
 
 // Using the customized version that takes in an ordering
-#include "undirected_dfs.hpp"
+//#include "undirected_dfs.hpp"
 
 namespace aomdd {
 using namespace boost;
