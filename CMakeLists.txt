@@ -10,6 +10,16 @@ option(AOMDD_LINK_STATIC "Link binary statically" OFF)
 
 add_definitions(-Wall)
 
+if(WIN32)
+  add_definitions(-DWINDOWS)
+else()
+  add_definitions(-DLINUX)
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3")
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g3")
 
@@ -22,6 +32,15 @@ if(AOMDD_LINK_STATIC)
 endif()
 
 find_package( Boost REQUIRED COMPONENTS program_options graph )
+
+include_directories(
+  ${AOMDD_SOURCE_DIR}/include
+  ${AOMDD_SOURCE_DIR}/lib
+)
+
+
+add_subdirectory(lib)
+set(LIBS Cvo)
 
 # ########## src library ##########
 # Sources:
@@ -46,4 +65,4 @@ SET(src_library_SRCS
 )
 
 add_executable(aomdd main.cpp ${src_library_SRCS})
-target_link_libraries(aomdd ${Boost_PROGRAM_OPTIONS_LIBRARY})
+target_link_libraries(aomdd ${LIBS} ${Boost_PROGRAM_OPTIONS_LIBRARY})

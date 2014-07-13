@@ -31,7 +31,6 @@ daooptW
 *.py
 *.pl
 *.sh
-CVO
 
 Makefile
 tst/*

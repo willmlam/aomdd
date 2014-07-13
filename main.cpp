@@ -16,6 +16,10 @@
 #include <fstream>
 #include <sstream>
 #include <boost/program_options.hpp>
+
+#include "lib/cvo/ARP/ARPall.hxx"
+
+
 using namespace aomdd;
 using namespace std;
 
@@ -84,6 +88,10 @@ bool outCompile;
 bool verifyVals;
 bool vbeSpace;
 bool computeORTreeSize;
+
+bool useCVO;
+int cvo_iter;
+int cvo_time;
 
 bool computeOrdering = false;
 
@@ -222,6 +230,11 @@ int main(int argc, char **argv) {
             ("oclim", po::value<double>(), "Memory limit (MB) for operation cache")
             ("outcompile", "Output compiled AOMDD")
             ("bespace", "Output space for standard table BE (only)")
+            ("cvo", "Use Kalev Kask's variable ordering code")
+            ("cvoit", po::value<int>()->default_value(10),
+             "Iterations to run for cvo")
+            ("cvotime", po::value<int>()->default_value(-1),
+             "Time to run for cvo")
             ("help,h", "Output list of options")
             ;
 
@@ -308,6 +321,12 @@ int main(int argc, char **argv) {
         computeORTreeSize = vm.count("computeortreesize");
         NodeManager::GetNodeManager()->SetCMOnly(vm.count("cmonly"));
 
+        useCVO = vm.count("cvo");
+        if (vm.count("cvoit"))
+          cvo_iter = vm["cvoit"].as<int>();
+        if (vm.count("cvotime"))
+          cvo_time = vm["cvotime"].as<int>();
+
         if (vm.count("mlim"))
             MBLimit = vm["mlim"].as<double>();
         if (vm.count("oclim"))
@@ -359,14 +378,94 @@ int main(int argc, char **argv) {
 
     Graph g(m.GetNumVars(), m.GetScopes());
     if (computeOrdering) {
-	    MinFill mf;
-	    ordering = g.ComputeOrdering(mf);
-	    m.SetOrdering(ordering);
+      time_t time_order_start, time_order_cur;
+      double timediff = 0.0;
+      time(&time_order_start);
+      if (useCVO) {
+        scoped_ptr<ARE::Graph> cvo_graph;
+        scoped_ptr<ARE::Graph> cvo_master_graph;
+        scoped_ptr<CMauiAVLTreeSimple> cvo_avl_vars2check_score;
+        scoped_ptr<ARE::AdjVarMemoryDynamicManager> cvo_temp_adj_var_space;
+        
+        vector<vector<int> > scopes_vec;
+
+        BOOST_FOREACH(const Scope &s, m.GetScopes()) {
+          scopes_vec.push_back(vector<int>(s.GetOrdering().begin(),
+                                           s.GetOrdering().end()));
+        }
+
+        vector<const vector<int>*> fn_signatures;
+        BOOST_FOREACH(const vector<int> &s, scopes_vec) {
+          fn_signatures.push_back(&s);
+        }
+
+        cvo_master_graph.reset(new ARE::Graph);
+        cvo_master_graph->Create(m.GetNumVars(), fn_signatures);
+        if (!cvo_master_graph->_IsValid)
+          return false;
+
+        cvo_avl_vars2check_score.reset(new CMauiAVLTreeSimple);
+        cvo_temp_adj_var_space.reset(new ARE::AdjVarMemoryDynamicManager(
+                                         ARE_TempAdjVarSpaceSize));
+
+        cvo_master_graph->
+            ComputeVariableEliminationOrder_Simple_wMinFillOnly(
+                INT_MAX, false, true, 10, -1, 0.0, *cvo_avl_vars2check_score,
+                *cvo_temp_adj_var_space);
+        cvo_master_graph->ReAllocateEdges();
+        cvo_graph.reset(new ARE::Graph);
+
+        int w = numeric_limits<int>::max();
+        int iter_count = 0;
+        int remaining = cvo_iter;
+
+        while (true) {
+          if (cvo_iter > -1 && remaining == 0)
+            break;
+
+          vector<int> elim_cand;
+          int new_w;
+          *cvo_graph = *cvo_master_graph;
+          new_w = cvo_graph->ComputeVariableEliminationOrder_Simple_wMinFillOnly(
+              w, true, false, 10, -1, 0.0, *cvo_avl_vars2check_score,
+              *cvo_temp_adj_var_space);
+          if (new_w != 0) {
+            new_w = INT_MAX;
+          } else {
+            new_w = cvo_graph->_VarElimOrderWidth;
+            elim_cand.assign(cvo_graph->_VarElimOrder, 
+                cvo_graph->_VarElimOrder + cvo_graph->_OrderLength);
+          }
+
+          if (new_w < w) {
+            ordering.clear();
+            ordering.assign(elim_cand.begin(), elim_cand.end());
+            reverse(ordering.begin(), ordering.end());
+            w = new_w;
+          }
+          ++iter_count, --remaining;
+          time(&time_order_cur);
+          timediff = difftime(time_order_cur, time_order_start);
+          if (cvo_time > 0 && timediff > cvo_time) {
+            break;
+          }
+        }
+        time(&time_order_cur);
+        timediff = difftime(time_order_cur, time_order_start);
+        cout << endl << "Ran " << iter_count << " iterations (" << int(timediff)
+          << " seconds), lowest width found: "
+          << w << endl;
+      }
+      else {
+        MinFill mf;
+        ordering = g.ComputeOrdering(mf);
+      }
+      m.SetOrdering(ordering);
     }
     const Scope &completeScope = m.GetCompleteScope();
     g.InduceEdges(ordering);
     PseudoTree pt(g, completeScope, useChain);
-//    m.ApplyEvidence(evidence);
+    m.ApplyEvidence(evidence);
 
     cout << endl << "Problem information:" << endl;
 
