@@ -858,6 +858,14 @@ int main(int argc, char **argv) {
         out << prefix << pr << endl;
     }
 
+    /* UAI2014 output */
+    string uai_out_filename = inputFile + ".PR";
+    ofstream uai_out(uai_out_filename.c_str());
+    uai_out << "PR" << endl; 
+    uai_out << pr << endl;
+    uai_out.close();
+    /* UAI2014 output */
+
     if (verifyVals) {
         if (compileMode) {
             Assignment a(completeScope);

@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# Simple wrapper script for UAI Inference Competition 2014.
+# Adapted from Lars Otten's script for daoopt
+
+INF_TIME=20
+INF_MEMORY=1000
+
+if [ "$4" != "PR" ] ; then
+  echo "Expecting MPE task as fourth argument"
+  exit 1
+fi
+
+if [ "${INF_TIME}" == "" ] ; then
+  echo "Environment variable for time limit not found."
+  exit 1
+fi
+
+if [ "${INF_MEMORY}" == "" ] ; then
+  echo "Environment variable for memory limit not found."
+  exit 1
+fi
+
+echo "Found time limit ${INF_TIME} and memory limit ${INF_MEMORY}."
+
+# fixed random seed
+SEED=4242
+
+# 20 second timelimit
+if [ ${INF_TIME} -eq 20 ] ; then
+  ./aomdd -f $1 -e $2 --cvo --cvoit 500 --cvotime 3 --log --pe
+
+# 20 minute timelimit
+elif [ ${INF_TIME} -eq 1200 ] ; then
+  ./aomdd -f $1 -e $2 --cvo --cvoit 10000 --cvotime 60 --log --pe
+
+# 1 hour timelimit
+elif [ ${INF_TIME} -eq 3600 ] ; then
+  ./aomdd -f $1 -e $2 --cvo --cvoit 30000 --cvotime 180 --log --pe
+
+# unknown timelimit
+else
+  echo "Only timelimit 60, 1200, 3600 are supported."
+  exit 1
+fi
+
