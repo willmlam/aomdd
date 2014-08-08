@@ -859,7 +859,8 @@ int main(int argc, char **argv) {
     }
 
     /* UAI2014 output */
-    string uai_out_filename = inputFile + ".PR";
+    size_t idx = inputFile.find_last_of('/');
+    string uai_out_filename = inputFile.substr(idx + 1) + ".PR";
     ofstream uai_out(uai_out_filename.c_str());
     uai_out << "PR" << endl; 
     uai_out << pr << endl;
